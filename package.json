@@ -1,7 +1,7 @@
 {
   "name": "onyx-client",
   "productName": "Onyx Client",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Launcher de Minecraft de Onyx Studios",
   "main": "src/main/main.js",
   "author": {

@@ -17,7 +17,11 @@
     { id: 'off-2', type: 'offline', name: 'Invitado', uuid: 'y', skin: null }
   ];
   const instances = q.get('empty') ? [] : [
-    { id: 'survival-onyx', name: 'IGNITE EXTREMO 3', studio: { name: 'Onyx Studios' }, description: 'IGNITE EXTREMO 3 es una serie de supervivencia extrema donde cada día el mundo se vuelve más peligroso. Los participantes deberán completar misiones, proteger sus refugios y sobrevivir con vidas limitadas.\n\nEl azufre se extiende, los monstruos evolucionan y poderosos jefes comienzan a despertar.', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' }, premium: false, addedAt: Date.now() - 1e8, lastPlayed: Date.now() - 4e6, playTime: 5.4e6, server: { address: 'play.onyx.gg' } },
+    { id: 'survival-onyx', name: 'IGNITE EXTREMO 3', studio: { name: 'Onyx Studios' }, description: 'IGNITE EXTREMO 3 es una serie de supervivencia extrema donde cada día el mundo se vuelve más peligroso. Los participantes deberán completar misiones, proteger sus refugios y sobrevivir con vidas limitadas.\n\nEl azufre se extiende, los monstruos evolucionan y poderosos jefes comienzan a despertar.', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' }, premium: false, addedAt: Date.now() - 1e8, lastPlayed: Date.now() - 4e6, playTime: 5.4e6, server: { address: 'play.onyx.gg' },
+      source: 'panel', category: 'Serie', banner: q.get('look') ? '../../web/img/arte-3.webp' : null, logo: q.get('look') ? 'assets/logo-wordmark.png' : null,
+      look: q.get('look') ? { accent: '#f59e0b', playColor: '#ea580c', vignette: true, snow: true, music: { url: 'x.mp3', volume: 30, loop: true }, sponsor: { name: 'HostNova', url: 'https://example.com' } } : {},
+      schedule: q.get('soon') ? { opensAt: Date.now() + 2 * 864e5, predownload: true } : null },
+    { id: 'torneo', name: 'Torneo PvP', category: 'Torneo', minecraft: '1.8.9', loader: { type: 'vanilla' }, premium: false, addedAt: Date.now() - 3e8, state: 'locked', lockedMessage: 'Volvemos a las 18:00', source: 'panel' },
     { id: 'eventos', name: 'Eventos Onyx', description: '', minecraft: '1.20.4', loader: { type: 'vanilla' }, premium: true, addedAt: Date.now() - 2e8 }
   ];
   window.onyx = {
@@ -51,7 +55,7 @@
     },
     instances: {
       list: () => wait(instances), get: (id) => wait(instances.find(i => i.id === id)), redeem: () => wait(null, 300).then(() => { throw new Error('Código no válido o caducado'); }),
-      remove: wait, setMemory: wait, play: wait, stop: wait, onProgress: () => () => {},
+      remove: wait, setMemory: wait, play: wait, stop: wait, onProgress: () => () => {}, onChanged: () => () => {}, sync: wait,
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },

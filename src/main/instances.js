@@ -1,8 +1,11 @@
-// Instancias: se añaden con un código de acceso, se sincronizan desde GitHub y se lanzan.
+// Instancias: se añaden con un código de acceso, se sincronizan desde el panel de Onyx
+// (o desde GitHub para las antiguas) y se lanzan.
 const fs = require('fs');
 const path = require('path');
 const { JsonStore } = require('./store');
 const data = require('./data');
+const panel = require('./panel');
+const Sync = require('./sync');
 const { downloadAll } = require('./game/download');
 const game = require('./game/launch');
 const log = require('./logger');
@@ -12,23 +15,41 @@ const running = new Map();
 
 function init(gameRoot) {
   root = gameRoot;
-  store = new JsonStore(path.join(root, 'instances.json'), { instances: [] });
+  store = new JsonStore(path.join(root, 'instances.json'), { instances: [], dismissed: [] });
 }
+
+const isPanel = (i) => !!(i && i.manifest && i.manifest.source === 'panel');
 
 function view(i) {
   const m = i.manifest || {};
+  const look = m.look || {};
   return {
     id: i.id,
+    source: m.source || 'github',
     name: m.name || i.id,
+    category: m.category || null,
     description: m.description || '',
     icon: m.icon || null,
+    iconAnimated: m.iconAnimated || null,
     banner: m.banner || null,
+    bannerAnimated: m.bannerAnimated || null,
+    logo: m.logo || null,
+    logoAnimated: m.logoAnimated || null,
+    look: {
+      accent: look.accent || null, playColor: look.playColor || null, vignette: look.vignette !== false,
+      hideTitle: !!look.hideTitle, hideTech: !!look.hideTech, hideAuthor: !!look.hideAuthor, snow: !!look.snow,
+      music: look.music || null, sponsor: look.sponsor || null
+    },
     minecraft: m.minecraft,
     loader: m.loader || { type: 'vanilla' },
     studio: m.studio || null,
     about: m.about || null,
     premium: !!m.premium,
+    maxPlayers: m.maxPlayers || null,
     server: m.server || null,
+    state: m.state || 'open',
+    schedule: m.schedule ? { opensAt: m.schedule.opensAt || null, closesAt: m.schedule.closesAt || null, predownload: !!m.schedule.predownload } : null,
+    lockedMessage: typeof m.maintenance === 'string' ? m.maintenance : null,
     addedAt: i.addedAt,
     lastPlayed: i.lastPlayed || null,
     playTime: i.playTime || 0,
@@ -48,16 +69,9 @@ function get(id) {
 
 const CODE_RE = /^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$/;
 
-async function redeem(code) {
-  code = String(code || '').trim();
-  if (!CODE_RE.test(code)) throw new Error('El código debe tener el formato XXXX-XXXX-XXXX');
-  if (!data.baseUrl()) throw new Error('El launcher aún no está conectado al repositorio de datos (onyx.config.json → dataUrl).');
-  const codes = await data.getJson('codes.json', { maxAge: 5e3, fallback: {} });
-  const id = codes[data.hashCode(code)];
-  if (!id) throw new Error('Código no válido o caducado');
-  const manifest = await data.getJson(`instances/${id}.json`, { maxAge: 5e3 });
-  if (!manifest) throw new Error('La instancia de este código ya no existe');
+function addOrUpdate(id, manifest) {
   const d = store.get();
+  d.dismissed = (d.dismissed || []).filter(x => x !== id);
   const existing = d.instances.find(x => x.id === id);
   if (existing) { existing.manifest = manifest; store.replace(d); return { instance: view(existing), already: true }; }
   const inst = { id, manifest, addedAt: Date.now(), managedFiles: [] };
@@ -67,7 +81,70 @@ async function redeem(code) {
   return { instance: view(inst), already: false };
 }
 
-async function refreshManifest(inst) {
+// Códigos antiguos publicados en el repo onyx-data de GitHub
+async function redeemGithub(code) {
+  const codes = await data.getJson('codes.json', { maxAge: 5e3, fallback: {} });
+  const id = codes[data.hashCode(code)];
+  if (!id) return null;
+  const manifest = await data.getJson(`instances/${id}.json`, { maxAge: 5e3 });
+  if (!manifest) throw new Error('La instancia de este código ya no existe');
+  return addOrUpdate(id, manifest);
+}
+
+async function redeem(code, account) {
+  const raw = String(code || '').trim();
+  if (!CODE_RE.test(raw)) throw new Error('El código debe tener el formato XXXX-XXXX-XXXX');
+  code = raw.toUpperCase();
+  let panelError = null;
+  if (panel.enabled()) {
+    if (!account) throw new Error('Inicia sesión para canjear códigos');
+    try {
+      const r = await panel.redeem(account, code);
+      const res = addOrUpdate(r.instance.id, r.instance);
+      res.already = res.already || !!r.already;
+      return res;
+    } catch (e) {
+      // Si el panel no conoce el código (o no responde), se prueba con los códigos antiguos de GitHub
+      if (!['code', 'offline'].includes(e.code)) throw e;
+      panelError = e;
+    }
+  }
+  if (data.baseUrl()) {
+    try { const r = (await redeemGithub(raw)) || (raw !== code ? await redeemGithub(code) : null); if (r) return r; }
+    catch (e) { if (!panelError) throw e; }
+  }
+  if (panelError) throw panelError;
+  if (!data.baseUrl()) throw new Error('El launcher aún no está conectado al repositorio de datos (onyx.config.json → dataUrl).');
+  throw new Error('Código no válido o caducado');
+}
+
+// Trae del panel las instancias a las que el jugador tiene acceso (lista manual, públicas...)
+let lastPanelSync = 0;
+async function syncPanel(account, { force = false } = {}) {
+  if (!panel.enabled() || !account) return list();
+  if (!force && Date.now() - lastPanelSync < 60e3) return list();
+  lastPanelSync = Date.now();
+  try {
+    const remote = await panel.listInstances(account);
+    const d = store.get();
+    const dismissed = new Set(d.dismissed || []);
+    for (const m of remote) {
+      const ex = d.instances.find(x => x.id === m.id);
+      if (ex) ex.manifest = m;
+      else if (!dismissed.has(m.id)) d.instances.push({ id: m.id, manifest: m, addedAt: Date.now(), managedFiles: [] });
+    }
+    store.replace(d);
+  } catch (e) { lastPanelSync = 0; log.warn('[panel] No se pudo sincronizar la lista:', e.message); }
+  return list();
+}
+
+async function refreshManifest(inst, account) {
+  if (isPanel(inst)) {
+    if (!account) return inst;
+    const m = await panel.getInstance(account, inst.id);
+    if (m) inst.manifest = m;
+    return inst;
+  }
   const m = await data.getJson(`instances/${inst.id}.json`, { maxAge: 30e3 });
   if (m) inst.manifest = m;
   return inst;
@@ -79,17 +156,21 @@ function safeRel(p) {
   return n;
 }
 
-// Descarga mods/configs de la instancia y borra los que ya no están en la lista.
+// Descarga mods/configs de la instancia y limpia según el modo de sincronización del studio.
 async function syncFiles(inst, gameDir, concurrency, progress) {
-  const files = (inst.manifest.files || []).filter(f => f && f.url && f.path);
-  const rels = files.map(f => safeRel(f.path));
-  const tasks = files.map((f, i) => ({ url: f.url, dest: path.join(gameDir, rels[i]), sha1: f.sha1, size: f.size }));
+  const m = inst.manifest || {};
+  const files = (m.files || []).filter(f => f && f.url && f.path);
+  for (const f of files) safeRel(f.path); // rutas peligrosas → error
+  const prev = inst.syncState || { managed: inst.managedFiles || [], once: [], urls: {} };
+  const p = Sync.plan({ files, sync: m.sync, local: Sync.listFiles(gameDir), state: prev });
+  for (const rel of p.replace) { try { fs.unlinkSync(path.join(gameDir, rel)); } catch { /* nada */ } }
+  const tasks = p.download.map(({ rel, file }) => ({ url: file.url, dest: path.join(gameDir, rel), sha1: file.sha1, size: file.size, verify: !!file.sha1 }));
   progress({ stage: 'files', done: 0, total: tasks.length });
   await downloadAll(tasks, { concurrency, onProgress: (d, t) => progress({ stage: 'files', done: d, total: t }) });
-  for (const old of inst.managedFiles || []) {
-    if (!rels.includes(old)) { try { fs.unlinkSync(path.join(gameDir, old)); } catch { /* nada */ } }
-  }
-  inst.managedFiles = rels;
+  for (const rel of p.remove) { try { fs.unlinkSync(path.join(gameDir, rel)); } catch { /* nada */ } }
+  if (p.remove.length) { Sync.pruneEmpty(gameDir); log.info(`[sync] ${inst.id}: ${p.remove.length} archivo(s) quitados (modo ${p.mode})`); }
+  inst.syncState = p.state;
+  inst.managedFiles = p.state.managed;
 }
 
 async function play(id, { account, settings, launcherVersion, progress, onLog, onExit, onStart }) {
@@ -97,31 +178,68 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   const d = store.get();
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
-  await refreshManifest(inst).catch(() => {});
+  const fromPanel = isPanel(inst);
+  if (fromPanel) await refreshManifest(inst, account); // si ya no hay acceso, avisa aquí
+  else await refreshManifest(inst).catch(() => {});
   const m = inst.manifest;
   if (m.premium && account.type !== 'msa') {
     throw new Error('Esta instancia es Premium: inicia sesión con una cuenta de Microsoft que tenga Minecraft.');
   }
-  if (m.maintenance) throw new Error(m.maintenance === true ? 'La instancia está en mantenimiento' : String(m.maintenance));
+  if (!fromPanel && m.maintenance) throw new Error(m.maintenance === true ? 'La instancia está en mantenimiento' : String(m.maintenance));
 
   const gameDir = path.join(root, 'instances', id);
   fs.mkdirSync(gameDir, { recursive: true });
-  await syncFiles(inst, gameDir, settings.fastDownload ? 16 : 4, progress);
-  store.replace(d);
+  const concurrency = settings.fastDownload ? 16 : 4;
+  const gameInfo = { id, minecraft: m.minecraft, loader: m.loader || { type: 'vanilla' }, java: m.java, server: m.server, memoryMb: inst.memoryMb || null };
 
-  const started = Date.now();
-  const child = await game.launch(root, {
-    instance: { id, minecraft: m.minecraft, loader: m.loader || { type: 'vanilla' }, server: m.server, memoryMb: inst.memoryMb || null },
-    account, settings, progress, onLog, launcherVersion,
-    onExit: (code) => {
-      running.delete(id);
-      const d2 = store.get();
-      const i2 = d2.instances.find(x => x.id === id);
-      if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
-      onExit && onExit(code);
+  // El panel decide si puede entrar ahora (horario, bloqueo, plazas, baneos...)
+  let session = null;
+  if (fromPanel) {
+    try { session = await panel.startPlay(account, id); }
+    catch (e) {
+      if (e.code === 'not_open' && e.predownload) {
+        // Descarga anticipada: se deja todo listo para entrar al instante cuando abra
+        await syncFiles(inst, gameDir, concurrency, progress);
+        store.replace(d);
+        await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
+        const ready = new Error('Todo descargado. La instancia abre el {date}');
+        ready.code = 'predownloaded'; ready.vars = e.vars;
+        throw ready;
+      }
+      throw e;
     }
-  });
-  running.set(id, child);
+  }
+
+  let stopBeat = () => {};
+  let kicked = false;
+  try {
+    await syncFiles(inst, gameDir, concurrency, progress);
+    store.replace(d);
+    const started = Date.now();
+    const child = await game.launch(root, {
+      instance: gameInfo,
+      account, settings, progress, onLog, launcherVersion,
+      onExit: (code) => {
+        running.delete(id);
+        stopBeat();
+        const d2 = store.get();
+        const i2 = d2.instances.find(x => x.id === id);
+        if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
+        onExit && onExit(code, { kicked });
+      }
+    });
+    running.set(id, child);
+    if (session) {
+      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, () => {
+        kicked = true;
+        log.info(`[panel] El studio cerró ${id}: se cierra el juego`);
+        stop(id);
+      });
+    }
+  } catch (e) {
+    if (session) panel.endPlay(account, session.play).catch(() => {});
+    throw e;
+  }
   inst.lastPlayed = Date.now();
   store.replace(d);
   onStart && onStart();
@@ -137,6 +255,9 @@ function stop(id) {
 function remove(id, deleteFiles) {
   stop(id);
   const d = store.get();
+  const inst = d.instances.find(x => x.id === id);
+  // Una instancia del panel quitada a mano no vuelve sola (solo con su código)
+  if (isPanel(inst)) d.dismissed = [...new Set([...(d.dismissed || []), id])];
   d.instances = d.instances.filter(x => x.id !== id);
   store.replace(d);
   if (deleteFiles) {
@@ -185,12 +306,12 @@ async function serverStatus(id) {
 }
 
 // "Actualizar": vuelve a leer la instancia de GitHub y sincroniza sus archivos
-async function update(id, { settings, progress }) {
+async function update(id, { settings, progress, account }) {
   if (running.has(id)) throw new Error('Cierra el juego antes de actualizar');
   const d = store.get();
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
-  await refreshManifest(inst);
+  await refreshManifest(inst, account);
   const gameDir = path.join(root, 'instances', id);
   fs.mkdirSync(gameDir, { recursive: true });
   await syncFiles(inst, gameDir, settings.fastDownload ? 16 : 4, progress);
@@ -206,6 +327,7 @@ function wipe(id) {
   if (!inst) throw new Error('Instancia no encontrada');
   fs.rmSync(path.join(root, 'instances', id), { recursive: true, force: true });
   inst.managedFiles = [];
+  inst.syncState = null;
   store.replace(d);
   return view(inst);
 }
@@ -222,4 +344,4 @@ function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, play, stop, remove, setMemory, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

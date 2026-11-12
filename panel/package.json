@@ -1,0 +1,9 @@
+{
+  "name": "onyx-panel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --no-warnings test/run.js",
+    "dev": "node --no-warnings dev/server.js"
+  }
+}

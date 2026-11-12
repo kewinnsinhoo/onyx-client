@@ -86,7 +86,10 @@ function buildArguments(version, o, env = {}) {
 }
 
 // Descarga todo lo necesario para una instancia. progress({stage, done, total})
-async function prepare(root, { mc, loader }, { concurrency, progress, verify = false, javaPath = '', onLog }) {
+// Java que puede pedir el studio desde el panel → componente de Mojang
+const JAVA_COMPONENTS = { '8': 'jre-legacy', '17': 'java-runtime-gamma', '21': 'java-runtime-delta', '25': 'java-runtime-epsilon' };
+
+async function prepare(root, { mc, loader, java: javaWanted }, { concurrency, progress, verify = false, javaPath = '', onLog }) {
   const step = (stage, done = 0, total = 1) => progress && progress({ stage, done, total });
 
   step('version');
@@ -124,10 +127,14 @@ async function prepare(root, { mc, loader }, { concurrency, progress, verify = f
   step('java');
   let java = javaPath && fs.existsSync(javaPath) ? javaPath : null;
   if (!java) {
-    const component = (version.javaVersion && version.javaVersion.component) || 'jre-legacy';
-    java = await ensureJava(root, component, {
-      concurrency, onProgress: (d, t) => step('java', d, t)
-    });
+    const auto = (version.javaVersion && version.javaVersion.component) || 'jre-legacy';
+    const forced = JAVA_COMPONENTS[String(javaWanted || '')];
+    const opts = { concurrency, onProgress: (d, t) => step('java', d, t) };
+    if (forced && forced !== auto) {
+      try { java = await ensureJava(root, forced, opts); }
+      catch (e) { if (onLog) onLog(`[Onyx] No se pudo preparar Java ${javaWanted} (${e.message}); se usa el automático.\n`); }
+    }
+    if (!java) java = await ensureJava(root, auto, opts);
   }
 
   // Forge / NeoForge: parchear Minecraft la primera vez y usar el jar con el nombre de la versión
@@ -144,7 +151,7 @@ async function launch(root, opts) {
   const { instance, account, settings, progress, onLog, onExit, launcherVersion } = opts;
   const concurrency = settings.fastDownload ? 16 : 4;
 
-  const prep = await prepare(root, { mc: instance.minecraft, loader: instance.loader }, {
+  const prep = await prepare(root, { mc: instance.minecraft, loader: instance.loader, java: instance.java }, {
     concurrency, progress, javaPath: settings.javaPath, onLog
   });
   const { version, libs, index, loggingArg, java } = prep;

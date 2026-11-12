@@ -13,6 +13,7 @@ const discord = require('./discord');
 const presence = require('./presence');
 const data = require('./data');
 const instances = require('./instances');
+const panel = require('./panel');
 const referrals = require('./referrals');
 const report = require('./report');
 
@@ -71,6 +72,7 @@ app.whenReady().then(() => {
   accounts.init(userData);
   skins.init(userData);
   data.init(userData);
+  panel.init(userData);
   instances.init(ROOT);
   log.info(`Onyx Client ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}`);
   createWindow();
@@ -90,6 +92,37 @@ app.on('before-quit', () => presence.shutdown());
 
 app.on('window-all-closed', () => { app.quit(); });
 
+// Cuenta activa para hablar con el panel (el token de Minecraft se pide solo si hace falta)
+function panelAccount() {
+  const a = accounts.active();
+  if (!a) return null;
+  return { id: a.id, type: a.type, name: a.name, uuid: a.uuid, getToken: () => accounts.ensureFresh(a.id).then(x => x.accessToken) };
+}
+
+// Trae del panel las instancias nuevas sin hacer esperar a la interfaz
+let panelSyncing = null;
+function kickPanelSync(force = false) {
+  if (panelSyncing || !panel.enabled()) return;
+  const acc = panelAccount();
+  if (!acc) return;
+  const before = JSON.stringify(instances.list().map(i => [i.id, i.name, i.state, i.banner, i.icon]));
+  panelSyncing = instances.syncPanel(acc, { force })
+    .then((list) => {
+      if (JSON.stringify(list.map(i => [i.id, i.name, i.state, i.banner, i.icon])) !== before) send('instances:changed', list);
+      return sendPendingReferral(acc);
+    })
+    .catch((e) => log.warn('[panel]', e.message))
+    .finally(() => { panelSyncing = null; });
+}
+
+// El referido elegido antes de tener cuenta se envía al panel en cuanto la hay
+async function sendPendingReferral(acc) {
+  const r = settingsStore.get().referral;
+  if (!r || r.sent || !r.studio || !acc || !panel.enabled()) return;
+  try { await panel.referral(acc, r.studio); settingsStore.set({ referral: { ...r, sent: true } }); }
+  catch (e) { if (e.code !== 'offline') settingsStore.set({ referral: { ...r, sent: true } }); }
+}
+
 // ---------- utilidades IPC ----------
 function handle(channel, fn) {
   ipcMain.handle(channel, async (event, ...args) => {
@@ -97,7 +130,7 @@ function handle(channel, fn) {
       return { ok: true, data: await fn(...args) };
     } catch (e) {
       log.error(`[${channel}]`, e);
-      return { ok: false, error: e.message || String(e), code: e.code };
+      return { ok: false, error: e.message || String(e), code: e.code, vars: e.vars };
     }
   });
 }
@@ -165,11 +198,11 @@ handle('accounts:loginMicrosoft', (mode) => accounts.loginMicrosoft(BrowserWindo
   lang: settingsStore.get().language,
   // Al volver del navegador, traer el launcher al frente
   onCode: () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
-}));
+}).then((r) => { setTimeout(() => kickPanelSync(true), 300); return r; }));
 handle('accounts:cancelLogin', () => require('./auth/microsoft').cancelBrowserLogin());
 handle('accounts:reopenLogin', () => require('./auth/microsoft').reopenBrowserLogin());
-handle('accounts:addOffline', (name) => accounts.addOffline(name));
-handle('accounts:setActive', (id) => accounts.setActive(id));
+handle('accounts:addOffline', async (name) => { const r = await accounts.addOffline(name); setTimeout(() => kickPanelSync(true), 300); return r; });
+handle('accounts:setActive', async (id) => { const r = await accounts.setActive(id); setTimeout(() => kickPanelSync(true), 300); return r; });
 handle('accounts:remove', (id) => accounts.remove(id));
 handle('accounts:refresh', (id) => accounts.refreshProfile(id));
 
@@ -249,9 +282,10 @@ handle('data:terms', async (lang) => {
 });
 
 // ---------- instancias ----------
-handle('instances:list', () => instances.list());
+handle('instances:list', () => { kickPanelSync(); return instances.list(); });
+handle('instances:sync', () => { kickPanelSync(true); return true; });
 handle('instances:get', (id) => instances.get(id));
-handle('instances:redeem', (code) => instances.redeem(code));
+handle('instances:redeem', (code) => instances.redeem(code, panelAccount()));
 handle('instances:remove', (id, del) => instances.remove(id, del));
 handle('instances:setMemory', (id, mb) => instances.setMemory(id, mb));
 handle('instances:stop', (id) => instances.stop(id));
@@ -259,6 +293,7 @@ handle('instances:status', (id) => instances.serverStatus(id));
 handle('instances:wipe', (id) => instances.wipe(id));
 handle('instances:update', (id) => instances.update(id, {
   settings: settingsStore.get(),
+  account: panelAccount(),
   progress: (p) => send('instances:progress', { id, ...p, updating: true })
 }).finally(() => send('instances:progress', { id, stage: 'exited', updating: true })));
 handle('instances:importPack', async (id) => {
@@ -289,8 +324,8 @@ handle('instances:play', async (id) => {
         else if (after === 'hide') win.hide();
         else if (after === 'close') setTimeout(() => app.quit(), 1500);
       },
-      onExit: (code) => {
-        send('instances:progress', { id, stage: 'exited', code });
+      onExit: (code, info) => {
+        send('instances:progress', { id, stage: 'exited', code, kicked: !!(info && info.kicked) });
         presence.stopped();
         if (win && !win.isVisible()) win.show();
         log.info(`Instancia ${id} cerrada con código ${code}`);
@@ -318,8 +353,8 @@ handle('gallery:open', (p) => shell.openPath(p));
 handle('referrals:ranking', (period) => referrals.ranking(period));
 handle('referrals:link', async (code) => {
   if (settingsStore.get().referral) throw new Error('Ya apoyas a un estudio');
-  const acc = accounts.active();
-  const r = await referrals.link(code, acc ? { uuid: acc.uuid, name: acc.name } : null);
+  const acc = panelAccount();
+  const r = await referrals.link(code, acc);
   settingsStore.set({ referral: r });
   return r;
 });

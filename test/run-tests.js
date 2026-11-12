@@ -481,3 +481,109 @@ public class Proc { public static void main(String[] a) throws Exception {
     passed++; console.log('  ✓ login de Microsoft en el navegador (servidor local)');
   } catch (e) { console.error('  ✗ login en el navegador\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// ---------------------------------------------------------------- sincronización de archivos (modos del panel)
+test('sincronización: conservar / gestionada / reinicio y rutas del jugador', () => {
+  const { plan, modeFor } = require('../src/main/sync');
+  const files = [
+    { path: 'mods/sodium.jar', url: 'https://x/sodium.jar' },
+    { path: 'options.txt', url: 'https://x/options.txt' },
+    { path: 'config/voicechat/a.json', url: 'https://x/a.json' },
+    { path: 'saves/mapa/level.dat', url: 'https://x/level.dat' },
+    { path: '../fuera.txt', url: 'https://x/mal' }
+  ];
+  const pp = [{ path: 'options.txt', mode: 'once' }, { path: 'saves', mode: 'player' }, { path: 'config/voicechat', mode: 'studio' }, { path: 'config', mode: 'once' }];
+  assert.strictEqual(modeFor('config/voicechat/a.json', pp), 'studio'); // la regla más concreta gana
+  assert.strictEqual(modeFor('config/otro.json', pp), 'once');
+  const local = ['mods/sodium.jar', 'mods/mio.jar', 'options.txt', 'saves/mundo/level.dat', 'screenshots/a.png', 'logs/latest.log', 'resourcepacks/x.zip', 'config/otro.json'];
+  const prev = { managed: ['mods/viejo.jar', 'mods/sodium.jar'], once: [], urls: {} };
+
+  const keep = plan({ files, sync: { mode: 'keep', playerPaths: pp }, local: [...local, 'mods/viejo.jar'], state: prev });
+  assert.deepStrictEqual(keep.download.map(d => d.rel).sort(), ['config/voicechat/a.json', 'mods/sodium.jar']); // options ya existe; saves es del jugador; ../ no
+  assert.deepStrictEqual(keep.remove, ['mods/viejo.jar']); // lo que el studio quitó
+  assert.ok(keep.state.once.includes('options.txt'));
+
+  const man = plan({ files, sync: { mode: 'managed', playerPaths: pp }, local, state: prev });
+  assert.ok(man.remove.includes('mods/mio.jar'), 'gestionada borra lo que sobra en mods/');
+  assert.ok(!man.remove.includes('resourcepacks/x.zip') && !man.remove.includes('screenshots/a.png') && !man.remove.includes('config/otro.json'));
+
+  const reset = plan({ files, sync: { mode: 'reset', playerPaths: pp }, local, state: prev });
+  assert.deepStrictEqual(reset.remove.sort(), ['mods/mio.jar', 'resourcepacks/x.zip', 'screenshots/a.png']);
+  // "once" ya instalado no se vuelve a bajar aunque el jugador lo borre
+  const again = plan({ files, sync: { mode: 'keep', playerPaths: pp }, local: [], state: keep.state });
+  assert.ok(!again.download.some(d => d.rel === 'options.txt'));
+  // Enlace cambiado sin sha1 → se vuelve a bajar
+  const changed = plan({ files: [{ path: 'mods/sodium.jar', url: 'https://x/sodium-2.jar' }], sync: {}, local: ['mods/sodium.jar'], state: { managed: ['mods/sodium.jar'], urls: { 'mods/sodium.jar': 'https://x/sodium.jar' } } });
+  assert.deepStrictEqual(changed.replace, ['mods/sodium.jar']);
+});
+
+test('panel: errores legibles', () => {
+  const panel = require('../src/main/panel');
+  const e1 = panel.toError({ ok: false, reason: 'full', max: 30 }, 403);
+  assert.strictEqual(e1.message, 'La instancia está llena ({max} jugadores). Prueba en un rato.');
+  assert.strictEqual(e1.vars.max, 30);
+  const e2 = panel.toError({ ok: false, reason: 'not_open', opensAt: Date.now() + 864e5, predownload: true }, 403);
+  assert.ok(e2.predownload && e2.vars.at && e2.vars.date);
+  assert.strictEqual(panel.toError({ ok: false, reason: 'locked', message: 'Volvemos a las 18:00' }, 403).message, 'Volvemos a las 18:00');
+  assert.strictEqual(panel.toError(null, 500).code, 'server');
+  // Todos los textos tienen traducción en la interfaz
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'i18n.js'), 'utf8');
+  for (const m of Object.values(panel.MESSAGES)) assert.ok(src.includes(`['${m.replace(/'/g, "\\'")}'`), 'falta traducir: ' + m);
+});
+
+// El launcher contra el panel de verdad (servidor local con datos de ejemplo)
+(async () => {
+  const { spawn } = require('child_process');
+  const port = 8797;
+  const srv = spawn(process.execPath, ['--no-warnings', path.join(__dirname, '..', 'panel', 'dev', 'server.js'), String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    await new Promise((res, rej) => {
+      const to = setTimeout(() => rej(new Error('el panel local no arrancó')), 15000);
+      srv.stdout.on('data', d => { if (String(d).includes('Panel local')) { clearTimeout(to); res(); } });
+      srv.on('exit', c => rej(new Error('panel salió ' + c)));
+    });
+    const { config } = require('../src/main/config');
+    config.panelUrl = `http://localhost:${port}`;
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'onyx-panel-'));
+    const panel = require('../src/main/panel');
+    const instances = require('../src/main/instances');
+    const referrals = require('../src/main/referrals');
+    panel.init(tmp);
+    instances.init(tmp);
+    const acc = { id: 'off-probador', type: 'offline', name: 'Probador', uuid: 'x' };
+
+    // Canjear un código del panel
+    const r = await instances.redeem('ignt-2026-abcd', acc);
+    assert.strictEqual(r.instance.id, 'ignite-extremo-3');
+    assert.strictEqual(r.instance.source, 'panel');
+    assert.ok(r.instance.banner.startsWith(`http://localhost:${port}/m/`), 'imágenes con dirección completa');
+    assert.strictEqual(r.instance.look.accent, '#f59e0b');
+    const bad = await instances.redeem('ZZZZ-ZZZZ-ZZZZ', acc).catch(e => e);
+    assert.strictEqual(bad.code, 'code');
+
+    // Lista, jugar, latido y fin
+    assert.ok((await panel.listInstances(acc)).some(i => i.id === 'ignite-extremo-3'));
+    const s = await panel.startPlay(acc, 'ignite-extremo-3');
+    assert.ok(s.ok && s.play && s.beatEvery === 60);
+    assert.strictEqual((await panel.beat(acc, s.play)).kick, false);
+    assert.ok((await panel.endPlay(acc, s.play)).ok);
+    const locked = await panel.startPlay(acc, 'torneo-pvp').catch(e => e);
+    assert.strictEqual(locked.code, 'no_access');
+    assert.strictEqual(locked.message, 'Ya no tienes acceso a esta instancia');
+
+    // Quitar a mano una instancia del panel: no vuelve sola
+    instances.remove('ignite-extremo-3', true);
+    await instances.syncPanel(acc, { force: true });
+    assert.ok(!instances.list().some(i => i.id === 'ignite-extremo-3'));
+
+    // Referidos con el código del studio
+    const st = await referrals.studios();
+    assert.ok(st.some(x => x.code === 'ONYX-STUDIOS'));
+    const ref = await referrals.link('onyx-studios', acc);
+    assert.ok(ref.sent && ref.studio === 'onyx-studios');
+    const rank = await referrals.ranking('all');
+    assert.ok(rank[0].code === 'ONYX-STUDIOS' && rank[0].players >= 5);
+    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, referidos)');
+  } catch (e) { console.error('  ✗ launcher ↔ panel\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+  finally { srv.kill(); }
+})();

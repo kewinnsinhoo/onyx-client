@@ -528,3 +528,31 @@ textarea.input { height: 90px; padding: 12px 14px; resize: none; }
 .ms-alt { display: block; margin: 14px auto 0; background: none; border: 0; color: var(--muted); font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .ms-alt:hover { color: var(--text-2); }
 .reduce-motion .ms-dots i { animation: none; opacity: .7; }
+
+/* ---------- Personalización de la instancia (panel) ---------- */
+.badge.danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.badge.warn { background: rgba(251,191,90,.12); color: var(--warn); border-color: transparent; text-transform: none; }
+.inst-page .badge.accent { background: color-mix(in srgb, var(--inst-accent, var(--accent)) 16%, transparent); color: var(--inst-accent, var(--accent)); }
+.inst-page .ihero .big-icon { color: var(--inst-accent, var(--accent)); }
+.ihero.has-play .play-big:not(.stop) { background: var(--inst-play); box-shadow: 0 16px 40px -12px color-mix(in srgb, var(--inst-play) 80%, transparent); }
+.ihero.no-vig::before { background: linear-gradient(0deg, rgba(7,9,18,.7) 0%, transparent 38%); }
+.ihero { isolation: isolate; }
+.ihero-video { position: absolute !important; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1 !important; pointer-events: none; }
+.ihero-logo { display: block; max-height: 84px; max-width: min(380px, 100%); object-fit: contain; object-position: left bottom; filter: drop-shadow(0 8px 22px rgba(0,0,0,.55)); }
+.ihero .snow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.ihero .snow i { position: absolute; top: -10px; width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: onyx-snow linear infinite; }
+.ihero .snow i:nth-child(3n) { width: 3px; height: 3px; }
+@keyframes onyx-snow { to { transform: translate3d(28px, 380px, 0); } }
+@media (prefers-reduced-motion: reduce) { .ihero .snow { display: none; } }
+.inst-note { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 13px 16px; color: var(--text-2); border-color: rgba(255,122,138,.25); }
+.inst-note svg { width: 16px; height: 16px; color: var(--danger); flex: none; }
+.inst-lower { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.inst-lower .about-inst { margin-top: 14px; }
+.sponsor { margin-top: 14px; width: 220px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; text-align: left; padding: 16px; position: relative; cursor: pointer; transition: border-color .15s; }
+.sponsor:disabled { cursor: default; }
+.sponsor:not(:disabled):hover { border-color: var(--inst-accent, var(--accent)); }
+.sponsor .k { font-size: 11.5px; color: var(--text-3, var(--text-2)); font-weight: 600; }
+.sponsor img { max-height: 46px; max-width: 160px; object-fit: contain; }
+.sponsor b { font-size: 15px; }
+.sponsor .go { position: absolute; top: 14px; right: 14px; color: var(--text-2); }
+.sponsor .go svg { width: 14px; height: 14px; }

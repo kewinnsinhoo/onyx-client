@@ -12,7 +12,7 @@
     const root = $('#toasts');
     const t = document.createElement('div');
     t.className = 'toast ' + type;
-    t.innerHTML = icon(type === 'error' ? 'alert' : type === 'success' ? 'check' : 'info') + `<div>${esc(message)}</div>`;
+    t.innerHTML = icon(type === 'error' ? 'alert' : type === 'success' ? 'check' : 'info') + `<div>${esc(window.t ? window.t(String(message)) : message)}</div>`;
     root.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, ms);
   }

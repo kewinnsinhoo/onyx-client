@@ -195,7 +195,7 @@
           toast(r.already ? t('Ya tenías {name}: se ha actualizado', { name: r.instance.name }) : t('¡{name} añadida!', { name: r.instance.name }), 'success');
           pushNotification({ title: t('Instancia añadida: {name}', { name: r.instance.name }), kind: 'success' });
           go('instance', { id: r.instance.id });
-        } catch (e) { err.textContent = e.message; busy(btn, false); }
+        } catch (e) { err.textContent = t(e.message, e.vars); busy(btn, false); }
       };
       btn.onclick = submit;
       input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
@@ -365,7 +365,9 @@
     } catch (e) {
       delete S.progress[id];
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: { id } }));
-      toast(e.message, 'error', 7000);
+      const vars = { ...(e.vars || {}) };
+      if (vars.at) vars.date = new Date(vars.at).toLocaleString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+      toast(t(e.message, vars), e.code === 'predownloaded' ? 'success' : 'error', 8000);
     }
   }
 
@@ -381,10 +383,20 @@
 
     onyx.instances.onProgress((p) => {
       const was = S.progress[p.id] && S.progress[p.id].stage;
-      if (p.stage === 'exited') { delete S.progress[p.id]; loadInstances().then(renderChrome); }
+      if (p.stage === 'exited') {
+        delete S.progress[p.id];
+        loadInstances().then(renderChrome);
+        if (p.kicked) toast(t('El studio ha cerrado la instancia'), 'error', 9000);
+      }
       else S.progress[p.id] = p;
       if ((p.stage === 'running') !== (was === 'running')) renderChrome();
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: p }));
+    });
+    // El panel añadió o cambió instancias (lista manual, instancia pública, nueva portada...)
+    if (onyx.instances.onChanged) onyx.instances.onChanged((list) => {
+      S.instances = list;
+      renderChrome();
+      if (S.route && ['home', 'instances', 'instance'].includes(S.route.name)) { const v = document.getElementById('view'); if (v) v.dataset.still = '1'; rerender(); }
     });
     onyx.win.onState(({ maximized }) => { const b = $('#tb-max'); if (b) b.innerHTML = icon(maximized ? 'restore' : 'maximize'); });
 

@@ -1,0 +1,25 @@
+// Onyx Panel en Cloudflare Workers.
+// En Cloudflare: Workers & Pages → Create → Import a repository → onyx-client → Advanced settings → Path = panel
+// La base de datos (D1) y el almacén de archivos (KV) se crean solos en el primer despliegue.
+{
+  "name": "onyx-panel",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "routes": [{ "pattern": "panel.onyxclient.site", "custom_domain": true }],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/auth/*", "/m/*"]
+  },
+  "d1_databases": [{ "binding": "DB", "database_name": "onyx-panel-db" }],
+  "kv_namespaces": [{ "binding": "MEDIA" }],
+  "vars": {
+    "DISCORD_CLIENT_ID": "1570540697461989376",
+    "CREATOR_DISCORD_IDS": "",
+    "PUBLIC_URL": "https://panel.onyxclient.site"
+  },
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "enabled": true }
+}

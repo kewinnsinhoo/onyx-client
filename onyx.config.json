@@ -7,6 +7,7 @@
   "discordRedirect": "http://127.0.0.1:53682/discord",
   "discordInvite": "https://discord.gg/TU-INVITACION",
 
+  "panelUrl": "https://panel.onyxclient.site",
   "dataUrl": "https://raw.githubusercontent.com/kewinnsinhoo/onyx-data/main",
   "githubRepo": "kewinnsinhoo/onyx-client",
 

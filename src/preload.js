@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 async function call(channel, ...args) {
   const r = await ipcRenderer.invoke(channel, ...args);
-  if (!r.ok) { const e = new Error(r.error); e.code = r.code; throw e; }
+  if (!r.ok) { const e = new Error(r.error); e.code = r.code; e.vars = r.vars; throw e; }
   return r.data;
 }
 function on(channel, cb) {
@@ -81,7 +81,9 @@ contextBridge.exposeInMainWorld('onyx', {
     wipe: (id) => call('instances:wipe', id),
     update: (id) => call('instances:update', id),
     importPack: (id) => call('instances:importPack', id),
-    onProgress: (cb) => on('instances:progress', cb)
+    sync: () => call('instances:sync'),
+    onProgress: (cb) => on('instances:progress', cb),
+    onChanged: (cb) => on('instances:changed', cb)
   },
   game: {
     log: () => call('game:log'),
