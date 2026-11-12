@@ -23,8 +23,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V="v${{ steps.v.outputs.version }}"
-          if gh release view "$V" >/dev/null 2>&1; then
-            echo "La release $V ya existe. Sube la versión en package.json." && exit 1
+          if gh release view "$V" --json isDraft --jq .isDraft 2>/dev/null | grep -q true; then
+            echo "Ya hay un borrador de $V: se reutiliza." && exit 0
+          elif gh release view "$V" >/dev/null 2>&1; then
+            echo "La release $V ya está publicada. Sube la versión en package.json." && exit 1
           fi
           gh release create "$V" --draft --target "${{ github.sha }}" --title "Onyx Client $V" --notes "Versión $V de Onyx Client."
 
@@ -53,7 +55,9 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
   publicar:
+    # Publica aunque falle Mac (a veces GitHub no tiene equipos Mac libres), siempre que exista el .exe
     needs: [preparar, compilar]
+    if: always() && needs.preparar.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Publicar la release
@@ -62,6 +66,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           V="v${{ needs.preparar.outputs.version }}"
+          if ! gh release view "$V" --json assets --jq '.assets[].name' | grep -q '\.exe$'; then
+            echo "No se generó el instalador de Windows: no se publica." && exit 1
+          fi
           if [[ "$V" == *-* ]]; then
             gh release edit "$V" --draft=false --prerelease
           else
