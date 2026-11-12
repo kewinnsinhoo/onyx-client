@@ -16,9 +16,26 @@
     applySettings();
     return S.settings;
   }
+  const premiumSkins = {};
   async function loadAccounts() {
     S.accounts = await onyx.accounts.list();
     S.account = S.accounts.accounts.find(a => a.id === S.accounts.active) || S.accounts.accounts[0] || null;
+    // Cuentas offline sin skin propia: usar la skin de Minecraft del jugador premium con ese nombre (si existe)
+    for (const a of S.accounts.accounts) {
+      if (a.type === 'msa' || (a.localSkin && a.localSkin.data)) continue;
+      const key = a.name.toLowerCase();
+      if (premiumSkins[key] === undefined) {
+        premiumSkins[key] = null;
+        onyx.skins.lookup(a.name).then((p) => {
+          if (!p || !p.skin) return;
+          premiumSkins[key] = p;
+          loadAccounts().then(() => { renderTopbar(); if (S.route && ['home', 'skins', 'settings'].includes(S.route.name)) rerender(); });
+        }).catch(() => {});
+      } else if (premiumSkins[key]) {
+        a.skin = premiumSkins[key].skin;
+        a.skinVariant = premiumSkins[key].variant;
+      }
+    }
     return S.account;
   }
   async function loadInstances() {

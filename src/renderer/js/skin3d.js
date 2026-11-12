@@ -433,6 +433,34 @@
     }
   }
 
+
+  // Detecta si una skin es Slim (brazos de 3 px) o Clásica (4 px), con la misma regla que usa NameMC:
+  // en las skins slim la última columna de cada brazo está vacía (transparente) o es toda negra/blanca.
+  const modelCache = new Map();
+  async function detectModel(url) {
+    if (!url) return 'classic';
+    if (modelCache.has(url)) return modelCache.get(url);
+    let result = 'classic';
+    try {
+      const src = await resolveTexture(url);
+      const img = await loadImage(src);
+      if (img && img.naturalHeight !== img.naturalWidth / 2) {
+        const w = img.naturalWidth, h = img.naturalHeight, k = w / 64;
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0);
+        const areas = [[50, 16, 2, 4], [54, 20, 2, 12], [42, 48, 2, 4], [46, 52, 2, 12]]
+          .map(([x, y, aw, ah]) => ctx.getImageData(x * k, y * k, aw * k, ah * k).data);
+        const transparent = (d) => { for (let i = 3; i < d.length; i += 4) if (d[i] !== 255) return true; return false; };
+        const solid = (d, v) => { for (let i = 0; i < d.length; i += 4) if (d[i] !== v || d[i + 1] !== v || d[i + 2] !== v || d[i + 3] !== 255) return false; return true; };
+        const slim = areas.some(transparent) || areas.every(d => solid(d, 0)) || areas.every(d => solid(d, 255));
+        result = slim ? 'slim' : 'classic';
+      }
+    } catch { /* si falla, clásico */ }
+    modelCache.set(url, result);
+    return result;
+  }
+
   // Cabeza 2D (avatar) a partir de la textura de skin
   function head(url, size = 32, radius) {
     const k = size / 8;
@@ -483,5 +511,5 @@
     return `<div class="cape-img" style="width:${10 * k}px;height:${16 * k}px;background-image:url('${url}');background-size:${64 * k}px auto;background-position:${-1 * k}px ${-1 * k}px"></div>`;
   }
 
-  window.Skin3D = { SkinViewer, CssSkinViewer, DEFAULT_DATA, head, flat, fixLegacy, capePreview, STEVE, loadImage };
+  window.Skin3D = { detectModel, SkinViewer, CssSkinViewer, DEFAULT_DATA, head, flat, fixLegacy, capePreview, STEVE, loadImage };
 })();

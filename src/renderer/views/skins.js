@@ -108,11 +108,28 @@
         <div class="n">${esc(name)}</div><div class="s">${esc(sub || '')}</div></div>`;
     }
     function bindTiles(body, source) {
-      body.querySelectorAll('.skin-tile[data-skin]').forEach(el => el.onclick = (e) => {
-        if (e.target.closest('[data-del]')) return;
-        preview = { skin: el.dataset.skin, variant: el.dataset.variant, name: el.dataset.name, source };
-        body.querySelectorAll('.skin-tile').forEach(x => x.classList.toggle('on', x === el));
-        drawPreview();
+      body.querySelectorAll('.skin-tile[data-skin]').forEach(el => {
+        el.onclick = (e) => {
+          if (e.target.closest('[data-del]')) return;
+          preview = { skin: el.dataset.skin, variant: el.dataset.variant, name: el.dataset.name, source };
+          body.querySelectorAll('.skin-tile').forEach(x => x.classList.toggle('on', x === el));
+          drawPreview();
+          if (source !== 'explore') {
+            const chosen = preview;
+            Skin3D.detectModel(chosen.skin).then(v => { if (preview === chosen && v !== chosen.variant) { chosen.variant = v; drawPreview(); } });
+          }
+        };
+        // Las skins subidas/guardadas: detectar el modelo real (Slim o Clásico) desde el PNG
+        if (source !== 'explore' && el.dataset.skin.startsWith('data:')) {
+          Skin3D.detectModel(el.dataset.skin).then(v => {
+            if (v === el.dataset.variant) return;
+            el.dataset.variant = v;
+            el.querySelector('.prev').innerHTML = Skin3D.flat(el.dataset.skin, 3.3, v);
+            const sub = el.querySelector('.s');
+            if (sub && (sub.textContent === 'Slim' || sub.textContent === t('Clásico'))) sub.textContent = v === 'slim' ? 'Slim' : t('Clásico');
+            Skin3D.fixLegacy(el);
+          });
+        }
       });
       Skin3D.fixLegacy(body);
     }
@@ -145,7 +162,8 @@
       const useData = async (name, data) => {
         try {
           await onyx.skins.validate(data);
-          preview = { skin: data, variant: preview.variant, name: name || 'Skin', source: 'upload' };
+          const variant = await Skin3D.detectModel(data);
+          preview = { skin: data, variant, name: name || 'Skin', source: 'upload' };
           drawPreview();
           toast(t('Vista previa lista: pulsa Aplicar'), 'success');
         } catch (e) { toast(e.message, 'error'); }
@@ -212,6 +230,17 @@
 
     drawPreview();
     setTab(tab);
+
+    // Skin propia guardada en el launcher (offline): corregir el modelo si se guardó mal.
+    if (current.skin.startsWith('data:')) {
+      Skin3D.detectModel(current.skin).then(async (v) => {
+        if (v === current.variant) return;
+        const wasSame = preview.skin === current.skin && preview.variant === current.variant;
+        current.variant = v;
+        if (wasSame) { preview.variant = v; drawPreview(); }
+        if (!isMsa) { try { await onyx.skins.apply({ data: current.skin, variant: v }); await App.loadAccounts(); } catch { /* nada */ } }
+      });
+    }
     return () => viewer.destroy();
   };
 })();
