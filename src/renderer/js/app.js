@@ -316,6 +316,7 @@
     const view = $('#view');
     view.scrollTop = 0;
     view.innerHTML = '';
+    delete view.dataset.still;
     const v = Views[name] || Views.home;
     const r = v(view, params);
     if (typeof r === 'function') cleanup = r;

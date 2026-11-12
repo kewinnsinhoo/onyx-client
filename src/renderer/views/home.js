@@ -13,6 +13,34 @@
     return { vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' }[type] || type;
   }
 
+
+  // Estado de una instancia: sin progreso, preparando o jugando.
+  function modeOf(id) {
+    const p = S.progress[id];
+    return !p ? 'idle' : p.stage === 'running' ? 'running' : 'progress';
+  }
+
+  // Escucha el progreso sin redibujar toda la página (evita parpadeos):
+  // solo se vuelve a pintar todo cuando cambia el modo; si no, se actualizan los textos.
+  function smoothProgress(render, update) {
+    const modes = {};
+    let frame = 0;
+    const onP = (e) => {
+      const id = e.detail && e.detail.id;
+      const now = id ? modeOf(id) : null;
+      if (!id || modes[id] !== now) { if (id) modes[id] = now; document.getElementById('view').dataset.still = '1'; render(); return; }
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; update(id); });
+    };
+    document.addEventListener('onyx:progress', onP);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('onyx:progress', onP); };
+  }
+
+  function updateCardText(root, id) {
+    const meta = root.querySelector(`.inst-card[data-id="${CSS.escape(id)}"] .meta`);
+    const p = S.progress[id];
+    if (meta && p) meta.textContent = App.stageText(p);
+  }
+
   function instanceCard(i) {
     const p = S.progress[i.id];
     return html`<div class="inst-card" data-id="${esc(i.id)}">
@@ -66,9 +94,7 @@
       bindCards(root);
     };
     render();
-    const onP = () => render();
-    document.addEventListener('onyx:progress', onP);
-    return () => document.removeEventListener('onyx:progress', onP);
+    return smoothProgress(render, (id) => updateCardText(root, id));
   };
 
   V.instances = function (root) {
@@ -84,9 +110,7 @@
       bindCards(root);
     };
     render();
-    const onP = () => render();
-    document.addEventListener('onyx:progress', onP);
-    return () => document.removeEventListener('onyx:progress', onP);
+    return smoothProgress(render, (id) => updateCardText(root, id));
   };
 
   function fmtTime(ms) {
@@ -120,17 +144,10 @@
               : `<button class="btn btn-primary btn-lg" id="ins-play" ${p ? 'disabled' : ''}>${p ? icon('refresh', 'spin') : icon('play')}${p ? t('Preparando...') : t('Jugar')}</button>`}
           </div>
         </div>
-        ${p && !running ? html`<div class="progress-box"><div class="progress"><i style="width:${pct == null ? 8 : pct}%"></i></div>
-          <div class="progress-label"><span>${esc(App.stageText(p))}</span><span>${pct == null ? '' : pct + '%'}</span></div></div>` : ''}
+        ${p && !running ? html`<div class="progress-box"><div class="progress"><i id="ins-bar" style="width:${pct == null ? 8 : pct}%"></i></div>
+          <div class="progress-label"><span id="ins-stage">${esc(App.stageText(p))}</span><span id="ins-pct">${pct == null ? '' : pct + '%'}</span></div></div>` : ''}
         ${inst.description ? `<p class="muted" style="margin:22px 2px 0;line-height:1.6;user-select:text">${esc(inst.description)}</p>` : ''}
-        <h2 class="section">${t('Detalles')}</h2>
-        <div class="card">
-          <div class="setting-row"><div class="lbl">${t('Tiempo jugado')}</div><span class="muted">${fmtTime(inst.playTime || 0)}</span></div>
-          <div class="setting-row"><div class="lbl">${t('Última vez')}</div><span class="muted">${inst.lastPlayed ? UI.timeAgo(inst.lastPlayed) : t('Nunca')}</span></div>
-          <div class="setting-row"><div class="lbl">${t('Memoria para esta instancia')}<div class="desc">${t('Vacío = usar la de Ajustes > Juego')}</div></div>
-            <input class="input" id="ins-mem" style="width:120px;text-align:center" placeholder="${Math.round((S.settings.memoryMb || 4096) / 1024)} GB" value="${inst.memoryMb ? Math.round(inst.memoryMb / 1024) : ''}"></div>
-        </div>
-        <div class="row" style="margin-top:16px">
+        <div class="row" style="margin-top:22px">
           <button class="btn btn-outline" id="ins-folder">${icon('folder')}${t('Abrir carpeta')}</button>
           <button class="btn btn-outline" id="ins-shots">${icon('image')}${t('Capturas')}</button>
           <div class="grow"></div>
@@ -142,12 +159,6 @@
       if (b('#ins-stop')) b('#ins-stop').onclick = () => onyx.instances.stop(id);
       b('#ins-folder').onclick = () => onyx.app.openPath('instance', id);
       b('#ins-shots').onclick = () => onyx.app.openPath('screenshots', id);
-      b('#ins-mem').onchange = async (e) => {
-        const gb = parseFloat(e.target.value);
-        await onyx.instances.setMemory(id, gb > 0 ? Math.round(gb * 1024) : null);
-        await App.loadInstances();
-        toast(t('Guardado'), 'success', 1800);
-      };
       b('#ins-del').onclick = async () => {
         const ok = await UI.confirmModal({ title: t('¿Eliminar {name}?', { name: inst.name }), text: t('Se borrarán sus mundos, capturas y ajustes de esta instancia.'), confirm: t('Eliminar'), danger: true, ico: 'trash' });
         if (!ok) return;
@@ -157,8 +168,16 @@
       };
     };
     render();
-    const onP = (e) => { if (!e.detail || !e.detail.id || e.detail.id === id) render(); };
-    document.addEventListener('onyx:progress', onP);
-    return () => document.removeEventListener('onyx:progress', onP);
+    const update = (pid) => {
+      if (pid !== id) return;
+      const p = S.progress[id];
+      const bar = root.querySelector('#ins-bar');
+      if (!p || !bar) return render();
+      const pct = p.total ? Math.round((p.done / p.total) * 100) : null;
+      bar.style.width = (pct == null ? 8 : pct) + '%';
+      root.querySelector('#ins-stage').textContent = App.stageText(p);
+      root.querySelector('#ins-pct').textContent = pct == null ? '' : pct + '%';
+    };
+    return smoothProgress(() => render(), update);
   };
 })();
