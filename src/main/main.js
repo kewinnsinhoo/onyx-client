@@ -225,6 +225,17 @@ handle('instances:redeem', (code) => instances.redeem(code));
 handle('instances:remove', (id, del) => instances.remove(id, del));
 handle('instances:setMemory', (id, mb) => instances.setMemory(id, mb));
 handle('instances:stop', (id) => instances.stop(id));
+handle('instances:status', (id) => instances.serverStatus(id));
+handle('instances:wipe', (id) => instances.wipe(id));
+handle('instances:update', (id) => instances.update(id, {
+  settings: settingsStore.get(),
+  progress: (p) => send('instances:progress', { id, ...p, updating: true })
+}).finally(() => send('instances:progress', { id, stage: 'exited', updating: true })));
+handle('instances:importPack', async (id) => {
+  const r = await dialog.showOpenDialog(win, { title: 'Instalar desde .onyxpack', filters: [{ name: 'Onyx Pack', extensions: ['onyxpack', 'zip'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  return instances.importPack(id, r.filePaths[0]);
+});
 handle('instances:play', async (id) => {
   const settings = settingsStore.get();
   const account = await accounts.ensureFresh();

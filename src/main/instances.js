@@ -25,6 +25,8 @@ function view(i) {
     banner: m.banner || null,
     minecraft: m.minecraft,
     loader: m.loader || { type: 'vanilla' },
+    studio: m.studio || null,
+    about: m.about || null,
     premium: !!m.premium,
     server: m.server || null,
     addedAt: i.addedAt,
@@ -173,4 +175,51 @@ function screenshots() {
 
 function isRunning() { return running.size > 0; }
 
-module.exports = { init, list, get, redeem, play, stop, remove, setMemory, dir, screenshots, isRunning, CODE_RE };
+// Estado del servidor de la instancia (jugadores conectados)
+async function serverStatus(id) {
+  const i = store.get().instances.find(x => x.id === id);
+  const srv = i && i.manifest && i.manifest.server;
+  if (!srv || !srv.address) return null;
+  try { return { ...(await require('./game/ping').ping(srv.address, srv.port || 25565)), address: srv.address }; }
+  catch { return { offline: true, address: srv.address }; }
+}
+
+// "Actualizar": vuelve a leer la instancia de GitHub y sincroniza sus archivos
+async function update(id, { settings, progress }) {
+  if (running.has(id)) throw new Error('Cierra el juego antes de actualizar');
+  const d = store.get();
+  const inst = d.instances.find(x => x.id === id);
+  if (!inst) throw new Error('Instancia no encontrada');
+  await refreshManifest(inst);
+  const gameDir = path.join(root, 'instances', id);
+  fs.mkdirSync(gameDir, { recursive: true });
+  await syncFiles(inst, gameDir, settings.fastDownload ? 16 : 4, progress);
+  store.replace(d);
+  return view(inst);
+}
+
+// "Borrar archivos": elimina los archivos descargados de la instancia (mundos incluidos) pero la deja en la lista
+function wipe(id) {
+  if (running.has(id)) throw new Error('Cierra el juego antes de borrar los archivos');
+  const d = store.get();
+  const inst = d.instances.find(x => x.id === id);
+  if (!inst) throw new Error('Instancia no encontrada');
+  fs.rmSync(path.join(root, 'instances', id), { recursive: true, force: true });
+  inst.managedFiles = [];
+  store.replace(d);
+  return view(inst);
+}
+
+// "Instalar desde .onyxpack": un .zip con una carpeta overrides/ (mods, config, resourcepacks...)
+function importPack(id, file) {
+  const { extract, list } = require('./game/zip');
+  const names = list(file);
+  if (!names.length) throw new Error('El archivo está vacío');
+  const gameDir = path.join(root, 'instances', id);
+  fs.mkdirSync(gameDir, { recursive: true });
+  const strip = names.some(n => n.startsWith('overrides/')) ? 'overrides/' : null;
+  extract(file, gameDir, { strip, exclude: ['META-INF/'] });
+  return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
+}
+
+module.exports = { init, list, get, redeem, play, stop, remove, setMemory, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

@@ -42,18 +42,23 @@ function entryData(buf, e) {
 
 // Extrae un zip/jar a destDir. exclude = prefijos a ignorar (p.ej. META-INF/)
 // filter(name) opcional para quedarse con algunos archivos.
-function extract(zipFile, destDir, { exclude = [], filter } = {}) {
+function extract(zipFile, destDir, { exclude = [], filter, strip } = {}) {
   const buf = fs.readFileSync(zipFile);
   const root = path.resolve(destDir);
   for (const e of readEntries(buf)) {
     if (e.name.endsWith('/')) continue;
     if (exclude.some(p => e.name.startsWith(p))) continue;
     if (filter && !filter(e.name)) continue;
-    const out = path.resolve(root, e.name);
+    let name = e.name;
+    if (strip) { if (!name.startsWith(strip)) continue; name = name.slice(strip.length); if (!name) continue; }
+    const out = path.resolve(root, name);
     if (!out.startsWith(root + path.sep)) continue; // protección contra rutas maliciosas
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, entryData(buf, e));
   }
 }
 
-module.exports = { extract, readEntries };
+// Lista los nombres de un zip
+function list(zipFile) { return readEntries(fs.readFileSync(zipFile)).map(e => e.name); }
+
+module.exports = { extract, readEntries, list };

@@ -86,6 +86,8 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
   "description": "Texto que verán los jugadores",
   "icon": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-icono.png",
   "banner": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-banner.png",
+  "studio": { "name": "Onyx Studios", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
+  "about": "Texto largo para la sección 'Sobre esta instancia'. Separa párrafos con una línea en blanco.",
   "premium": true,
   "minecraft": "1.21.1",
   "loader": { "type": "fabric", "version": "latest" },
@@ -101,6 +103,12 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
 - `files` → mods, configs o resource packs. Para los mods, copia el enlace de descarga del archivo en modrinth.com. Si quitas un archivo de la lista, el launcher también lo borra de los jugadores. Los mods que ponga el propio jugador no se tocan.
 - Las imágenes las puedes subir a la carpeta `img/` del repo.
 - `"maintenance": "Volvemos a las 18:00"` bloquea la instancia temporalmente.
+- `studio` muestra "por Onyx Studios" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
+- Si hay `server.address`, la instancia muestra los **jugadores conectados** en vivo (ej. 12 / 100).
+
+### Packs `.onyxpack`
+Un `.onyxpack` es un `.zip` con una carpeta `overrides/` dentro (por ejemplo `overrides/mods/`, `overrides/config/`, `overrides/resourcepacks/`).
+En la página de una instancia: botón **⋯ → Instalar desde .onyxpack** copia todo eso dentro de la instancia. Sirve para pasar mods o configs a mano sin subirlos a GitHub.
 
 ### Crear un código
 1. Abre `onyx-data/herramientas/generar-codigo.html` con doble clic (se abre en tu navegador).

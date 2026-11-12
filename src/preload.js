@@ -74,6 +74,10 @@ contextBridge.exposeInMainWorld('onyx', {
     setMemory: (id, mb) => call('instances:setMemory', id, mb),
     play: (id) => call('instances:play', id),
     stop: (id) => call('instances:stop', id),
+    status: (id) => call('instances:status', id),
+    wipe: (id) => call('instances:wipe', id),
+    update: (id) => call('instances:update', id),
+    importPack: (id) => call('instances:importPack', id),
     onProgress: (cb) => on('instances:progress', cb)
   },
   game: {

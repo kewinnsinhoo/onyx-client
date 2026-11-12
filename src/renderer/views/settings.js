@@ -4,10 +4,10 @@
   const V = window.Views = window.Views || {};
 
   const THEMES = [
-    { id: 'oled', name: 'Minimal OLED', bg: '#000', s: '#111114', a: '#8a8a90' },
-    { id: 'graphite', name: 'Grafito', bg: '#16171a', s: '#25262b', a: '#9a9ba2' },
-    { id: 'midnight', name: 'Medianoche', bg: '#070a14', s: '#141b2e', a: '#4b6be6' },
-    { id: 'amethyst', name: 'Amatista', bg: '#0b0811', s: '#1d1629', a: '#8b5cf0' }
+    { id: 'onyx', name: 'Noche Índigo', bg: 'linear-gradient(135deg,#0b0e1b,#070912 60%,#1c2050)', s: 'rgba(160,172,255,.16)', a: 'linear-gradient(135deg,#9aa6ff,#5260dc)' },
+    { id: 'oled', name: 'OLED', bg: '#000', s: 'rgba(160,172,255,.12)', a: 'linear-gradient(135deg,#9aa6ff,#5260dc)' },
+    { id: 'amethyst', name: 'Amatista', bg: 'linear-gradient(135deg,#120b20,#0b0714 60%,#2f1652)', s: 'rgba(200,160,255,.16)', a: 'linear-gradient(135deg,#d3afff,#7c3aed)' },
+    { id: 'aurora', name: 'Aurora', bg: 'linear-gradient(135deg,#071816,#04100f 60%,#0d3b36)', s: 'rgba(120,240,220,.16)', a: 'linear-gradient(135deg,#7ff0dc,#0f8f84)' }
   ];
   const LANGS = [['es', 'Español'], ['ca', 'Català'], ['en', 'English'], ['fr', 'Français']];
 
@@ -50,7 +50,7 @@
         ${d ? `<button class="btn btn-ghost btn-sm" id="dc-un">${t('Desvincular')}</button>` : `<button class="btn btn-discord" id="dc-link">${t('Vincular')}</button>`}
       </div>
       <div class="list-item clickable" id="go-skins" style="margin-top:12px">${icon('user')}<div class="grow name" style="font-size:14px">${t('Skins')}</div>${icon('chevronRight')}</div>
-      <button class="btn btn-outline btn-lg" id="acc-add" style="margin-top:16px">${icon('plus')}${t('Añadir cuenta')}</button>
+      <button class="btn btn-primary" id="acc-add" style="margin-top:16px">${icon('plus')}${t('Añadir cuenta')}</button>
     </div>`;
     body.querySelectorAll('[data-use]').forEach(b => b.onclick = async () => { await onyx.accounts.setActive(b.dataset.use); await App.refreshAccountUi(); });
     body.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
@@ -80,13 +80,13 @@
         ${LANGS.map(([id, name]) => `<button class="lang-opt ${s.language === id ? 'on' : ''}" data-lang="${id}">${flag(id)}${name}${s.language === id ? `<span class="check">${icon('check')}</span>` : ''}</button>`).join('')}
       </div></div>
       <div class="card"><h3>${t('Apariencia')}</h3><div class="field-label">${t('Temas')}</div><div class="theme-grid">
-        ${THEMES.map(th => html`<button class="theme-opt ${s.theme === th.id ? 'on' : ''}" data-theme="${th.id}">
+        ${THEMES.map(th => html`<button class="theme-opt ${(s.theme || 'onyx') === th.id ? 'on' : ''}" data-theme="${th.id}">
           <span class="theme-prev" style="background:${th.bg}">
             <i style="left:6px;top:6px;right:6px;height:6px;background:${th.s}"></i>
             <i style="left:6px;top:17px;width:36px;height:30px;background:${th.s}"></i>
             <i style="left:46px;top:17px;width:40px;height:30px;background:${th.s}"></i>
             <i style="right:10px;bottom:13px;width:22px;height:7px;background:${th.a}"></i></span>
-          <span><div class="t">${esc(th.name)}</div><div class="s">${s.theme === th.id ? t('En uso') : t('Aplicar tema')}</div></span></button>`).join('')}
+          <span><div class="t">${esc(th.name)}</div><div class="s">${(s.theme || 'onyx') === th.id ? t('En uso') : t('Aplicar tema')}</div></span></button>`).join('')}
       </div></div>
       <div class="card"><h3>${t('Rendimiento')}</h3>
         <div class="setting-row"><div class="lbl"><div>${t('Aceleración por hardware')}<div class="desc">${t('Desactívala si ves fallos gráficos en el launcher. Requiere reiniciar.')}</div></div></div>${toggle('hardwareAcceleration', s.hardwareAcceleration !== false)}</div>
@@ -223,11 +223,10 @@
   // ---------- Acerca de ----------
   TABS.about = function (body) {
     const i = S.info;
-    body.innerHTML = html`<div class="card"><div class="about">${onyxMark('logo')}
-        <h2>${esc(i.name)}</h2>
+    body.innerHTML = html`<div class="card"><div class="about"><img class="wordmark" src="assets/logo-wordmark.png" alt="${esc(i.name)}">
         <div class="ver mono">${t('Versión')} v${esc(i.version)} · ${t('Compilación')} ${esc(i.build)} · Core ${esc(i.core)}</div>
         <div class="by">${t('Hecho por {s}', { s: esc(i.studio) })}</div>
-        <button class="btn btn-outline btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button></div></div>
+        <button class="btn btn-primary btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button></div></div>
       <div class="card"><h3>${t('Canal de actualizaciones')} <span class="info-i" title="${t('Beta recibe novedades antes, pero puede tener fallos.')}">i</span></h3>
         <div class="segmented" id="ab-ch"><button data-c="stable">${t('Estable')}</button><button data-c="beta">Beta</button></div>
         <div class="hint" id="ab-ch-d"></div></div>

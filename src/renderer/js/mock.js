@@ -7,17 +7,17 @@
   const SK = 'assets/default-skin.png';
   const ALT = q.get('alt') || SK;
   let settings = {
-    language: q.get('lang') || 'es', theme: q.get('theme') || 'oled', memoryMb: 8192, windowWidth: '1920', windowHeight: '1080',
-    fastDownload: true, afterLaunch: 'minimize', updateChannel: 'stable', hardwareAcceleration: true,
+    language: q.get('lang') || 'es', theme: q.get('theme') || 'onyx', memoryMb: 8192, windowWidth: '1920', windowHeight: '1080',
+    fastDownload: true, afterLaunch: 'minimize', updateChannel: 'stable', hardwareAcceleration: true, onboarded: !q.get('onboard'),
     referral: q.get('noref') ? null : { code: 'ONYX', name: 'Onyx Studios', logo: null, linkedAt: Date.parse('2026-10-21') }, discord: null
   };
-  const loggedOut = q.get('login') === '1';
+  const loggedOut = q.get('login') === '1' || q.get('onboard') === '1';
   const accounts = loggedOut ? [] : [
     { id: 'msa-1', type: 'msa', name: 'Kewinsinho', uuid: 'x', skin: SK, skinVariant: 'classic', capes: [] },
     { id: 'off-2', type: 'offline', name: 'Invitado', uuid: 'y', skin: null }
   ];
   const instances = q.get('empty') ? [] : [
-    { id: 'survival-onyx', name: 'Survival Onyx', description: 'Survival con mods de rendimiento y el servidor del estudio.', minecraft: '1.21.1', loader: { type: 'fabric' }, premium: false, addedAt: Date.now() - 1e8, lastPlayed: Date.now() - 4e6, playTime: 5.4e6, server: { address: 'play.onyx.gg' } },
+    { id: 'survival-onyx', name: 'IGNITE EXTREMO 3', studio: { name: 'Onyx Studios' }, description: 'IGNITE EXTREMO 3 es una serie de supervivencia extrema donde cada día el mundo se vuelve más peligroso. Los participantes deberán completar misiones, proteger sus refugios y sobrevivir con vidas limitadas.\n\nEl azufre se extiende, los monstruos evolucionan y poderosos jefes comienzan a despertar.', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' }, premium: false, addedAt: Date.now() - 1e8, lastPlayed: Date.now() - 4e6, playTime: 5.4e6, server: { address: 'play.onyx.gg' } },
     { id: 'eventos', name: 'Eventos Onyx', description: '', minecraft: '1.20.4', loader: { type: 'vanilla' }, premium: true, addedAt: Date.now() - 2e8 }
   ];
   window.onyx = {
@@ -30,8 +30,8 @@
     settings: { get: () => wait({ ...settings }), set: (p) => { settings = { ...settings, ...p }; return wait({ ...settings }); } },
     updater: { check: () => wait({ status: 'latest' }, Number(q.get('splash') || 400)), install: wait, onEvent: () => () => {} },
     accounts: {
-      list: () => wait({ accounts, active: accounts[0] ? accounts[0].id : null }),
-      loginMicrosoft: () => wait(null, 300), addOffline: (n) => wait({ name: n }), setActive: wait, remove: wait, refresh: wait
+      list: () => wait({ accounts: [...accounts], active: accounts[0] ? accounts[0].id : null }),
+      loginMicrosoft: () => wait(null, 300), addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
     },
     discord: { link: () => wait({ username: 'kewin' }), unlink: wait },
     skins: {
@@ -51,7 +51,8 @@
     },
     instances: {
       list: () => wait(instances), get: (id) => wait(instances.find(i => i.id === id)), redeem: () => wait(null, 300).then(() => { throw new Error('Código no válido o caducado'); }),
-      remove: wait, setMemory: wait, play: wait, stop: wait, onProgress: () => () => {}
+      remove: wait, setMemory: wait, play: wait, stop: wait, onProgress: () => () => {},
+      status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },
     gallery: { list: () => wait([]), remove: wait, open: wait },

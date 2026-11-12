@@ -218,3 +218,24 @@ function makeZip(files) {
 }
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);
+
+// ---- Ping a un servidor de Minecraft falso (protocolo Server List Ping) ----
+(async () => {
+  const net = require('net');
+  const { ping, varInt, readVarInt } = require('../src/main/game/ping');
+  const server = net.createServer((sock) => {
+    sock.once('data', () => {
+      const json = Buffer.from(JSON.stringify({ version: { name: '1.21.1' }, players: { online: 7, max: 100 } }));
+      const body = Buffer.concat([varInt(0), varInt(json.length), json]);
+      sock.write(Buffer.concat([varInt(body.length), body]));
+    });
+  });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  try {
+    assert.deepStrictEqual(readVarInt(varInt(25565), 0).value, 25565);
+    const r = await ping('127.0.0.1', server.address().port);
+    assert.strictEqual(r.online, 7); assert.strictEqual(r.max, 100);
+    passed++; console.log('  ✓ ping de servidor (jugadores conectados)');
+  } catch (e) { console.error('  ✗ ping de servidor\n    ' + e.message); process.exitCode = 1; }
+  server.close();
+})();

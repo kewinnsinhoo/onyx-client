@@ -1,4 +1,4 @@
-// Aplicación: arranque, barra superior, rutas, login y modales globales.
+// Aplicación: arranque, barra lateral, rutas, cuentas y modales globales.
 (function () {
   const { esc, $, html, toast, modal, dropdown, busy } = UI;
   const S = window.S = { info: {}, settings: {}, accounts: { accounts: [], active: null }, account: null, instances: [], progress: {}, route: null, notifications: [] };
@@ -7,7 +7,7 @@
 
   // ---------- utilidades de estado ----------
   function applySettings() {
-    document.documentElement.dataset.theme = S.settings.theme || 'oled';
+    document.documentElement.dataset.theme = ['onyx', 'oled', 'amethyst', 'aurora'].includes(S.settings.theme) ? S.settings.theme : 'onyx';
     document.body.classList.toggle('reduce-motion', !!S.settings.reduceMotion);
     I18N.set(S.settings.language || 'es');
   }
@@ -81,45 +81,18 @@
     return true;
   }
 
-  // ---------- login ----------
-  function showLogin({ adding = false } = {}) {
-    const el = $('#login');
-    el.classList.remove('hidden');
+  // ---------- cuenta: usa la bienvenida (onboarding) ----------
+  function showLogin() {
     $('#shell').classList.add('hidden');
-    el.innerHTML = html`
-      ${S.info.platform !== 'darwin' ? `<div class="winctl">
-        <button data-w="min">${icon('minimize')}</button><button data-w="max">${icon('maximize')}</button><button class="close" data-w="close">${icon('close')}</button></div>` : ''}
-      <div class="box">
-        ${onyxMark('logo')}
-        <h1>${t('Inicia sesión para continuar')}</h1>
-        <p class="sub">${t('Necesitas una cuenta para jugar.')}</p>
-        <button class="login-opt" data-l="ms">
-          <span class="ico"><span class="ms-logo"><i></i><i></i><i></i><i></i></span></span>
-          <span><div class="t">${t('Iniciar sesión con Microsoft')}</div><div class="s">${t('Recomendado')}</div></span>
-        </button>
-        <button class="login-opt" data-l="off">
-          <span class="ico">${icon('user')}</span>
-          <span><div class="t">${t('Cuenta offline')}</div><div class="s">${t('Sin licencia · no disponible en instancias Premium')}</div></span>
-        </button>
-        <button class="quit">${adding ? t('Volver') : t('Salir del launcher')}</button>
-      </div>`;
-    bindWinCtl(el);
-    el.querySelector('[data-l=ms]').onclick = async (e) => {
-      const b = e.currentTarget; b.classList.add('busy');
-      try { await onyx.accounts.loginMicrosoft(); await afterLogin(); }
-      catch (err) { if (err.code !== 'cancelled') toast(err.message, 'error', 6000); }
-      finally { b.classList.remove('busy'); }
-    };
-    el.querySelector('[data-l=off]').onclick = () => offlineModal(afterLogin);
-    el.querySelector('.quit').onclick = () => adding && S.account ? hideLogin() : onyx.app.quit();
+    Onboarding.show({ startAt: S.settings.onboarded ? 'account' : 'welcome', accountOnly: !!S.settings.onboarded });
   }
-  function hideLogin() { $('#login').classList.add('hidden'); $('#shell').classList.remove('hidden'); }
-  async function afterLogin() {
+  async function enterApp(firstTime) {
     await loadAccounts();
-    hideLogin();
-    renderTopbar();
+    $('#onboard').classList.add('hidden');
+    $('#shell').classList.remove('hidden');
+    renderChrome();
     go('home');
-    toast(t('Sesión iniciada como {name}', { name: S.account.name }), 'success');
+    if (firstTime && S.account) toast(t('¡Bienvenido, {name}!', { name: S.account.name }), 'success');
   }
 
   function offlineModal(done) {
@@ -148,9 +121,9 @@
     modal((m, close) => {
       m.innerHTML = html`<div class="m-ico">${icon('users')}</div><h2>${t('Añadir cuenta')}</h2>
         <p class="sub">${t('Elige el tipo de cuenta')}</p>
-        <button class="login-opt" data-l="ms"><span class="ico"><span class="ms-logo"><i></i><i></i><i></i><i></i></span></span>
+        <button class="opt-card" data-l="ms"><span class="ico"><span class="ms-logo"><i></i><i></i><i></i><i></i></span></span>
           <span><div class="t">${t('Microsoft')}</div><div class="s">${t('Recomendado')}</div></span></button>
-        <button class="login-opt" data-l="off"><span class="ico">${icon('user')}</span>
+        <button class="opt-card" data-l="off"><span class="ico">${icon('user')}</span>
           <span><div class="t">${t('Offline')}</div><div class="s">${t('Sin licencia')}</div></span></button>`;
       m.querySelector('[data-l=ms]').onclick = async (e) => {
         e.currentTarget.classList.add('busy');
@@ -164,7 +137,7 @@
   async function refreshAccountUi() {
     await loadAccounts();
     if (!S.account) { showLogin(); return; }
-    renderTopbar();
+    renderChrome();
     rerender();
   }
 
@@ -275,61 +248,60 @@
     });
   }
 
-  function renderTopbar() {
+  const SECTION = { home: 'Inicio', instances: 'Instancias', instance: 'Instancias', gallery: 'Galería', creators: 'Creadores', skins: 'Skins', settings: 'Ajustes', console: 'Consola' };
+
+  function renderChrome() {
     const tb = $('#titlebar');
     const mac = S.info.platform === 'darwin';
-    tb.className = 'titlebar' + (mac ? ' mac' : '');
     const r = S.route ? S.route.name : 'home';
-    const act = (n) => (r === n ? 'active' : '');
+    tb.className = 'titlebar' + (mac ? ' mac' : '');
     tb.innerHTML = html`
-      <div class="brand">${onyxMark()}<span>${esc(S.info.name || 'Onyx Client')}</span></div>
-      <nav>
-        <button class="${act('home')}" data-go="home">${t('Inicio')}</button>
-        <button class="${r === 'instances' || r === 'instance' ? 'active' : ''}" id="nav-inst">${t('Instancias')} ${icon('chevronDown')}</button>
-        <button class="${act('gallery')}" data-go="gallery">${t('Galería')}</button>
-        <button class="${act('creators')}" data-go="creators">${t('Creadores')}</button>
-      </nav>
+      <div class="brand"><img src="assets/logo-wordmark.png" alt="Onyx Client"><span class="ver">v${esc(S.info.version || '')}</span></div>
+      <span class="crumb">${t(SECTION[r] || 'Inicio')}</span>
       <div class="spacer"></div>
       <div class="tools">
-        <button class="icon-btn ${act('console')}" data-go="console" title="${t('Consola')}">${icon('logs')}</button>
-        <button class="avatar-btn ${act('skins')}" data-go="skins" title="${t('Skins')}">${Skin3D.head(skinOf(S.account), 30, 0)}</button>
-        <button class="icon-btn ${act('settings')}" data-go="settings" title="${t('Ajustes')}">${icon('settings')}</button>
-        <span class="tb-sep"></span>
+        <button class="icon-btn ${r === 'console' ? 'active' : ''}" data-go="console" title="${t('Consola')}">${icon('logs')}</button>
         <button class="icon-btn" id="tb-bell" title="${t('Avisos')}">${icon('bell')}</button>
         <button class="icon-btn" id="tb-report" title="${t('Enviar informe')}">${icon('alert')}</button>
       </div>
-      ${mac ? '' : `<div class="winctl"><button data-w="min">${icon('minimize')}</button><button data-w="max" id="tb-max">${icon('maximize')}</button><button class="close" data-w="close">${icon('close')}</button></div>`}`;
+      ${mac ? '' : `<span class="tb-sep"></span><div class="winctl"><button data-w="min">${icon('minimize')}</button><button data-w="max" id="tb-max">${icon('maximize')}</button><button class="close" data-w="close">${icon('close')}</button></div>`}`;
     tb.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     bindWinCtl(tb);
-    $('#nav-inst').onclick = (e) => instancesMenu(e.currentTarget);
     $('#tb-bell').onclick = (e) => openNotifications(e.currentTarget);
     $('#tb-report').onclick = reportModal;
-    tb.ondblclick = (e) => { if (e.target === tb || e.target.classList.contains('spacer')) onyx.win.maximize(); };
+    tb.ondblclick = (e) => { if (e.target === tb || e.target.classList.contains('spacer') || e.target.classList.contains('crumb')) onyx.win.maximize(); };
+
+    const sb = $('#sidebar');
+    const nav = (name, ic, label, extra = '') => `<button class="nav-btn ${r === name || extra ? 'active' : ''}" data-go="${name}" title="${t(label)}">${icon(ic)}</button>`;
+    const curInst = r === 'instance' && S.route.params ? S.route.params.id : null;
+    sb.innerHTML = html`
+      ${nav('home', 'home', 'Inicio')}
+      ${nav('instances', 'grid', 'Instancias', r === 'instance' && !S.instances.find(i => i.id === curInst))}
+      ${nav('gallery', 'image', 'Galería')}
+      ${nav('creators', 'users', 'Creadores')}
+      <span class="nav-sep"></span>
+      <div class="inst-pins">
+        ${S.instances.slice(0, 6).map(i => html`<button class="pin ${curInst === i.id ? 'active' : ''}" data-inst="${esc(i.id)}" title="${esc(i.name)}"
+          style="${i.icon ? `background-image:url('${esc(i.icon)}')` : ''}">${i.icon ? '' : esc(i.name.slice(0, 2).toUpperCase())}${S.progress[i.id] && S.progress[i.id].stage === 'running' ? '<span class="live"></span>' : ''}</button>`).join('')}
+        <button class="pin add-pin" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
+      </div>
+      <div class="bottom">
+        <button class="avatar-btn ${r === 'skins' ? 'active' : ''}" data-go="skins" title="${t('Skins')}">${Skin3D.head(skinOf(S.account), 38, 0)}</button>
+        ${nav('settings', 'settings', 'Ajustes')}
+      </div>`;
+    sb.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+    sb.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => go('instance', { id: b.dataset.inst }));
+    $('#sb-add').onclick = addInstanceModal;
     updateBell();
   }
-
-  function instancesMenu(anchor) {
-    dropdown(anchor, (dd, close) => {
-      const items = S.instances.slice(0, 8);
-      dd.innerHTML = (items.length ? items.map(i => html`<button class="dd-item" data-id="${esc(i.id)}">
-          <span class="ic" style="${i.icon ? `background-image:url('${esc(i.icon)}')` : ''}">${i.icon ? '' : icon('box')}</span>
-          <span class="grow">${esc(i.name)}</span><span class="muted" style="font-size:11.5px">${esc(i.minecraft || '')}</span></button>`).join('')
-        : `<div class="dd-empty">${t('Aún no hay instancias')}</div>`) +
-        `<div class="dd-sep"></div>
-         <button class="dd-item" data-a="all"><span class="ic">${icon('layers')}</span>${t('Ver todas')}</button>
-         <button class="dd-item" data-a="add"><span class="ic">${icon('plus')}</span>${t('Añadir instancia')}</button>`;
-      dd.querySelectorAll('[data-id]').forEach(b => b.onclick = () => { close(); go('instance', { id: b.dataset.id }); });
-      dd.querySelector('[data-a=all]').onclick = () => { close(); go('instances'); };
-      dd.querySelector('[data-a=add]').onclick = () => { close(); addInstanceModal(); };
-    }, { align: 'left', width: 270 });
-  }
+  const renderTopbar = renderChrome;
 
   // ---------- rutas ----------
   function go(name, params = {}) {
     UI.closeDropdown();
     if (cleanup) { try { cleanup(); } catch { /* nada */ } cleanup = null; }
     S.route = { name, params };
-    renderTopbar();
+    renderChrome();
     const view = $('#view');
     view.scrollTop = 0;
     view.innerHTML = '';
@@ -377,12 +349,14 @@
       S.settings = await onyx.settings.get();
     } catch (e) { console.error(e); }
     applySettings();
-    $('#splash .logo-wrap').innerHTML = onyxWordmark('logo');
+    $('#splash .logo-wrap').innerHTML = '<img src="assets/logo-wordmark.png" alt="Onyx Client">';
     if (S.info.platform === 'darwin') document.body.classList.add('mac');
 
     onyx.instances.onProgress((p) => {
-      if (p.stage === 'exited') { delete S.progress[p.id]; loadInstances(); }
+      const was = S.progress[p.id] && S.progress[p.id].stage;
+      if (p.stage === 'exited') { delete S.progress[p.id]; loadInstances().then(renderChrome); }
       else S.progress[p.id] = p;
+      if ((p.stage === 'running') !== (was === 'running')) renderChrome();
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: p }));
     });
     onyx.win.onState(({ maximized }) => { const b = $('#tb-max'); if (b) b.innerHTML = icon(maximized ? 'restore' : 'maximize'); });
@@ -396,15 +370,15 @@
     sp.style.opacity = '0';
     setTimeout(() => sp.remove(), 380);
 
-    if (!S.account) showLogin();
-    else { hideLogin(); go('home'); }
+    if (!S.settings.onboarded || !S.account) showLogin();
+    else enterApp(false);
     loadNotifications();
     setInterval(loadNotifications, 5 * 60e3);
   }
 
   window.App = {
-    go, rerender, play, stageText, addInstanceModal, addAccountModal, offlineModal, reportModal, showLogin,
-    loadAccounts, loadInstances, refreshAccountUi, saveSettings, skinOf, variantOf, pushNotification, renderTopbar
+    go, rerender, play, stageText, addInstanceModal, addAccountModal, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    loadAccounts, loadInstances, refreshAccountUi, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);
 })();
