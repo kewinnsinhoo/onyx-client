@@ -1,6 +1,7 @@
 // Visor de skins en 3D hecho con CSS (sin librerías), + cabezas y vistas planas.
 (function () {
   const STEVE = 'assets/default-skin.png';
+  const DEFAULT_DATA = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAByklEQVR4Xu3asUoDMRgH8It0KM4qtUjnWnSpjk4ivoEO+grS5RQcHB0c7FJ8AUEdfAGhlE59A0Wci9TSinSSbooHBe9s8/UzFxOT/w+6Nbnky5dc7nIiICwtzH3I/lK/OJbWUNo9FNQ1TJoxeXEbIAA2jIJJCIDJ6NsAAbBhFEwS1H1et+feq9F9gvcZkJlmhCft9rYPzqYpbrUMtZWlOqla3jQyA746uLwTBvvVl+CkcBO197S9F1yHi0HddOtTIB5vz6UPO6qoDPpXi+BD6z76uYScAt+tbKy61PfIj3twsbQemxLNxl2s0/n8vPS+ncsVlKZUt9tm1d+sVWLt475/8H4fgAA4N6mZRHLOcw3eehOLjObnZqXGrTY11JqCDNCZATZABhBYGyGOcOsp9vdqo8gp/me8XwO0ZYCtI56EDNAx2bLZ2bHVDofvOi6nREsA0pRcTLmOrsYPxojodPpKT2/l8hq3TSzJpz0u6unQ+zUAAAAAAAAAAPwjPYv/jbS/L1A9/6d4/0YIAaBSxHXKa4Dp02Xq9JfifQYgAFSKuA4BcH2EKQgAFSHXeR8A498H6D7/pyjvBFW/Lxi0Lqk2SlHn/xTvp8An7rBuGjT0eSgAAAAASUVORK5CYII=';
 
   function loadImage(url) {
     return new Promise((resolve) => {
@@ -65,7 +66,7 @@
   const mouse = { x: window.innerWidth / 2, y: window.innerHeight * 0.3, active: false };
   window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }, { passive: true });
 
-  class SkinViewer {
+  class CssSkinViewer {
     constructor(container, opts = {}) {
       this.container = container;
       this.opts = Object.assign({ scale: 7, rotY: -24, rotX: -6, interactive: true, spin: 'none', walk: false, wave: true, follow: true }, opts);
@@ -265,6 +266,146 @@
     }
   }
 
+
+  // ================= Visor WebGL (skinview3d + three.js) =================
+  // Es el mismo motor que usan los launchers de Minecraft: luces reales, modelo oficial y animaciones.
+  const texCache = new Map();
+  async function resolveTexture(url) {
+    if (!url || url === STEVE) return DEFAULT_DATA;
+    if (url.startsWith('data:')) return url;
+    if (/^https?:\/\//.test(url) && window.onyx && onyx.skins && onyx.skins.dataUrl) {
+      if (!texCache.has(url)) texCache.set(url, onyx.skins.dataUrl(url).catch(() => null));
+      return (await texCache.get(url)) || DEFAULT_DATA;
+    }
+    return url;
+  }
+
+  function webglOk() {
+    try { const c = document.createElement('canvas'); return !!(window.skinview3d && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch { return false; }
+  }
+
+  class SkinViewer {
+    constructor(container, opts = {}) {
+      if (!webglOk()) return new CssSkinViewer(container, opts);
+      this.opts = Object.assign({ rotY: -26, interactive: true, wave: true, follow: true, walk: false, zoom: 0.86 }, opts);
+      this.container = container;
+      this.root = el('skin3d webgl');
+      this.canvas = document.createElement('canvas');
+      this.root.appendChild(this.canvas);
+      container.appendChild(this.root);
+      const r = container.getBoundingClientRect();
+      const v = this.viewer = new skinview3d.SkinViewer({
+        canvas: this.canvas, width: Math.max(50, r.width), height: Math.max(50, r.height),
+        pixelRatio: 'match-device', preserveDrawingBuffer: true, zoom: this.opts.zoom, fov: 40
+      });
+      v.background = null;
+      v.globalLight.intensity = 2.6;
+      v.cameraLight.intensity = 0.9;
+      v.controls.enableZoom = false;
+      v.controls.enablePan = false;
+      v.controls.enableRotate = !!this.opts.interactive;
+      v.playerWrapper.rotation.y = this.opts.rotY * DEG;
+      this.walk = !!this.opts.walk;
+      this.headYaw = 0; this.headPitch = 0;
+      this.waveStart = null;
+      this.anim = new skinview3d.FunctionAnimation((player, t, delta) => this._animate(player, t, delta));
+      v.animation = this.anim;
+      this._ro = new ResizeObserver(() => {
+        const b = container.getBoundingClientRect();
+        if (b.width > 10 && b.height > 10) v.setSize(b.width, b.height);
+      });
+      this._ro.observe(container);
+      this.root.addEventListener('dblclick', () => this.wave());
+    }
+
+    wave() { this.waveStart = performance.now(); }
+
+    _animate(player, t) {
+      const skin = player.skin;
+      const now = performance.now();
+
+      // --- respiración (quieto) ---
+      const breathe = Math.cos(t * 2);
+      let rArmX = 0, rArmZ = -(Math.PI * 0.02) - breathe * 0.03;
+      let lArmX = 0, lArmZ = (Math.PI * 0.02) + breathe * 0.03;
+      let rLeg = 0, lLeg = 0;
+      let capeX = Math.PI * 0.06 + Math.sin(t * 2) * 0.01;
+
+      // --- caminar ---
+      if (this.walk) {
+        const w = t * 8;
+        rLeg = Math.sin(w + Math.PI) * 0.5; lLeg = Math.sin(w) * 0.5;
+        rArmX = Math.sin(w) * 0.5; lArmX = Math.sin(w + Math.PI) * 0.5;
+        capeX = Math.PI * 0.06 + Math.sin(w / 1.5) * 0.06 + 0.25;
+      }
+
+      // --- saludo ---
+      if (this.waveStart != null) {
+        const e = (now - this.waveStart) / 1000, dur = 2.6;
+        if (e > dur) this.waveStart = null;
+        else {
+          const k = e < 0.4 ? smooth(e / 0.4) : e > dur - 0.5 ? smooth((dur - e) / 0.5) : 1;
+          rArmZ = lerp(rArmZ, -(2.55 + Math.sin(e * 11) * 0.32), k);
+          rArmX = lerp(rArmX, -0.15, k);
+        }
+      }
+
+      skin.rightArm.rotation.x = rArmX; skin.rightArm.rotation.z = rArmZ;
+      skin.leftArm.rotation.x = lArmX; skin.leftArm.rotation.z = lArmZ;
+      skin.rightLeg.rotation.x = rLeg; skin.leftLeg.rotation.x = lLeg;
+      player.cape.rotation.x = capeX;
+
+      // --- la cabeza mira al ratón ---
+      let ty = Math.sin(t * 0.6) * 0.08, tp = breathe * 0.015;
+      if (this.opts.follow && mouse.active) {
+        const r = this.canvas.getBoundingClientRect();
+        if (r.width) {
+          const cam = this.viewer.camera.position;
+          const camYaw = Math.atan2(cam.x, cam.z);              // dónde está la cámara
+          const body = this.viewer.playerWrapper.rotation.y;   // hacia dónde mira el cuerpo
+          const dx = (mouse.x - (r.left + r.width / 2)) / Math.max(320, window.innerWidth / 2);
+          const dy = (mouse.y - (r.top + r.height * 0.3)) / Math.max(260, window.innerHeight / 2);
+          ty = clamp(camYaw - body + clamp(dx, -1.2, 1.2) * 0.85, -1.0, 1.0);
+          tp = clamp(dy * 0.7, -0.5, 0.45);
+        }
+      }
+      this.headYaw = lerp(this.headYaw, ty, 0.1);
+      this.headPitch = lerp(this.headPitch, tp, 0.1);
+      skin.head.rotation.y = this.headYaw;
+      skin.head.rotation.x = this.headPitch;
+    }
+
+    async setSkin(url, variant) {
+      const first = !this.loaded;
+      this.skinUrl = url;
+      this.variant = variant === 'slim' ? 'slim' : 'classic';
+      const token = (this._token = Symbol());
+      const src = await resolveTexture(url);
+      if (token !== this._token) return;
+      try { await this.viewer.loadSkin(src, { model: this.variant === 'slim' ? 'slim' : 'default' }); }
+      catch { await this.viewer.loadSkin(DEFAULT_DATA, { model: 'default' }); }
+      this.loaded = true;
+      if (first && this.opts.wave) setTimeout(() => this.wave(), 200);
+    }
+
+    async setCape(url) {
+      if (!url) { this.viewer.loadCape(null); return; }
+      try { await this.viewer.loadCape(await resolveTexture(url)); } catch { /* sin capa */ }
+    }
+
+    setVariant(variant) { this.setSkin(this.skinUrl, variant); }
+    setWalk(on) { this.walk = !!on; }
+    setOuter(on) { this.viewer.playerObject.skin.setOuterLayerVisible(!!on); }
+    setCapeVisible(on) { this.viewer.playerObject.cape.visible = !!on; this.viewer.playerObject.elytra.visible = !!on; }
+
+    destroy() {
+      try { this._ro.disconnect(); } catch { /* nada */ }
+      try { this.viewer.dispose(); } catch { /* nada */ }
+      this.root.remove();
+    }
+  }
+
   // Cabeza 2D (avatar) a partir de la textura de skin
   function head(url, size = 32, radius) {
     const k = size / 8;
@@ -315,5 +456,5 @@
     return `<div class="cape-img" style="width:${10 * k}px;height:${16 * k}px;background-image:url('${url}');background-size:${64 * k}px auto;background-position:${-1 * k}px ${-1 * k}px"></div>`;
   }
 
-  window.Skin3D = { SkinViewer, head, flat, fixLegacy, capePreview, STEVE, loadImage };
+  window.Skin3D = { SkinViewer, CssSkinViewer, DEFAULT_DATA, head, flat, fixLegacy, capePreview, STEVE, loadImage };
 })();

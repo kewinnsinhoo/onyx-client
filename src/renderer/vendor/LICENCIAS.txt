@@ -1,0 +1,11 @@
+Librerías de terceros incluidas en skinview3d.bundle.js (todas con licencia MIT):
+
+- skinview3d 3.4.2 — Copyright (c) 2014-2018 Kent Rasmussen, (c) 2017-2022 Haowei Wen, Sean Boult y colaboradores
+  https://github.com/bs-community/skinview3d
+- skinview-utils 0.7.1 — Copyright (c) Haowei Wen y colaboradores
+  https://github.com/bs-community/skinview-utils
+- three.js r156 — Copyright (c) 2010-2023 three.js authors
+  https://github.com/mrdoob/three.js
+
+Se permite usar, copiar, modificar y distribuir el software siempre que se incluya
+el aviso de copyright y esta licencia (texto completo: https://opensource.org/license/mit).

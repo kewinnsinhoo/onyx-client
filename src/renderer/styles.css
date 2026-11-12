@@ -331,6 +331,8 @@ textarea.input { height: 86px; padding: 12px 14px; resize: none; }
 .skin3d .scene { position: relative; transform-style: preserve-3d; width: 0; height: 0; }
 .skin3d .part, .skin3d .cube, .skin3d .layer { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
 .skin3d .face { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; backface-visibility: hidden; }
+.skin3d.webgl { display: block; perspective: none; }
+.skin3d.webgl canvas { display: block; width: 100% !important; height: 100% !important; outline: none; }
 .skin3d.no-outer .layer { display: none; }
 .skin3d.no-cape .cape { display: none; }
 
@@ -348,8 +350,8 @@ textarea.input { height: 86px; padding: 12px 14px; resize: none; }
 
 /* ============ Creadores ============ */
 .creators { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px 70px; padding-top: 6px; }
-.creator { width: 220px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.creator .stage { width: 220px; height: 300px; position: relative; }
+.creator { width: 270px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.creator .stage { width: 270px; height: 320px; position: relative; }
 .creator .stage::after { content: ""; position: absolute; left: 30px; right: 30px; top: 30px; bottom: 40px; background: radial-gradient(rgba(255,255,255,.05), transparent 65%); pointer-events: none; }
 .creator .n { font-weight: 700; font-size: 18px; margin-top: 8px; }
 .creator .h { color: var(--muted); font-size: 11.5px; margin-top: 4px; font-family: "Cascadia Mono", Consolas, Menlo, monospace; }
