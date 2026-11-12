@@ -302,6 +302,7 @@
     if (cleanup) { try { cleanup(); } catch { /* nada */ } cleanup = null; }
     S.route = { name, params };
     renderChrome();
+    if (onyx.discord && onyx.discord.presence) onyx.discord.presence(name, params.id || null).catch(() => {});
     const view = $('#view');
     view.scrollTop = 0;
     view.innerHTML = '';

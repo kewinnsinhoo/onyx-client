@@ -92,6 +92,17 @@
         <div class="setting-row"><div class="lbl"><div>${t('Aceleración por hardware')}<div class="desc">${t('Desactívala si ves fallos gráficos en el launcher. Requiere reiniciar.')}</div></div></div>${toggle('hardwareAcceleration', s.hardwareAcceleration !== false)}</div>
         <div class="setting-row"><div class="lbl"><div>${t('Reducir animaciones')}</div></div>${toggle('reduceMotion', s.reduceMotion)}</div>
       </div>
+      <div class="card"><h3>${t('Estado en Discord')}</h3>
+        <div class="setting-row"><div class="lbl"><div>${t('Mostrar mi actividad en Discord')}<div class="desc">${t('Tus amigos verán «Jugando a Onyx Client», la instancia a la que juegas y el tiempo. Necesitas tener Discord abierto en este PC.')}</div></div></div>${toggle('discordPresence', s.discordPresence !== false)}</div>
+        <div class="dc-preview ${s.discordPresence !== false ? '' : 'off'}" id="dc-preview">
+          <div class="dc-k">${t('Jugando')}</div>
+          <div class="dc-row"><img src="assets/icon.png" alt=""><div>
+            <div class="dc-n">Onyx Client</div>
+            <div class="dc-l">${t('En el menú')}</div>
+            <div class="dc-l">Onyx Client · v${esc(S.info.version || '')}</div>
+            <div class="dc-t">${icon('gamepad')}0:14</div></div></div>
+        </div>
+      </div>
       <div class="card"><h3>${t('Al iniciar el juego')}</h3>
         <div class="segmented" id="after">
           ${[['keep', 'Mantener abierto'], ['minimize', 'Minimizar'], ['hide', 'Ocultar'], ['close', 'Cerrar launcher']].map(([v, l]) =>
@@ -109,6 +120,7 @@
       const key = b.dataset.tg; const val = !b.classList.contains('on');
       b.classList.toggle('on', val);
       await App.saveSettings({ [key]: val });
+      if (key === 'discordPresence') body.querySelector('#dc-preview').classList.toggle('off', !val);
       if (key === 'hardwareAcceleration') {
         if (await UI.confirmModal({ title: t('Reiniciar ahora'), text: t('El cambio se aplica al reiniciar el launcher.'), confirm: t('Reiniciar'), ico: 'refresh' })) onyx.app.relaunch();
       }

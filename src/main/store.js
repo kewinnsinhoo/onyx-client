@@ -82,6 +82,7 @@ const DEFAULT_SETTINGS = {
   updateChannel: 'stable',
   referral: null,
   discord: null,
+  discordPresence: true, // mostrar "Jugando a Onyx Client" en Discord
   activeAccount: null,
   termsAccepted: false
 };

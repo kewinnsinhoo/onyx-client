@@ -10,6 +10,7 @@ const log = require('./logger');
 const accounts = require('./accounts');
 const skins = require('./skins');
 const discord = require('./discord');
+const presence = require('./presence');
 const data = require('./data');
 const instances = require('./instances');
 const referrals = require('./referrals');
@@ -73,7 +74,19 @@ app.whenReady().then(() => {
   instances.init(ROOT);
   log.info(`Onyx Client ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}`);
   createWindow();
+  const st = settingsStore.get();
+  presence.init({
+    clientId: isPlaceholder(config.discordClientId) ? null : config.discordClientId,
+    version: app.getVersion(),
+    githubRepo: isPlaceholder(config.githubRepo) ? null : config.githubRepo,
+    discordInvite: isPlaceholder(config.discordInvite) ? null : config.discordInvite,
+    lang: st.language,
+    enabled: st.discordPresence !== false,
+    log
+  });
 });
+
+app.on('before-quit', () => presence.shutdown());
 
 app.on('window-all-closed', () => { app.quit(); });
 
@@ -133,7 +146,11 @@ handle('app:clearCache', async () => {
 
 // ---------- ajustes ----------
 handle('settings:get', () => settingsStore.get());
-handle('settings:set', (patch) => settingsStore.set(patch));
+handle('settings:set', (patch) => {
+  const s = settingsStore.set(patch);
+  presence.configure({ lang: s.language, enabled: s.discordPresence !== false });
+  return s;
+});
 
 // ---------- actualizaciones ----------
 const updater = require('./updater');
@@ -155,6 +172,11 @@ handle('discord:link', async () => {
   return d;
 });
 handle('discord:unlink', () => { settingsStore.set({ discord: null }); return true; });
+// La interfaz avisa de la sección en la que estás (para el estado de Discord)
+handle('discord:presence', (section, id) => {
+  const inst = id ? instances.get(id) : null;
+  presence.menu(String(section || 'home'), inst ? inst.name : undefined);
+});
 
 // ---------- skins ----------
 handle('skins:library', () => skins.libraryList());
@@ -240,27 +262,36 @@ handle('instances:play', async (id) => {
   const settings = settingsStore.get();
   const account = await accounts.ensureFresh();
   gameLogBuffer = [];
-  const v = await instances.play(id, {
-    account, settings, launcherVersion: app.getVersion(),
-    progress: (p) => send('instances:progress', { id, ...p }),
-    onLog: (text) => {
-      gameLogBuffer.push(text);
-      if (gameLogBuffer.length > 2000) gameLogBuffer.splice(0, gameLogBuffer.length - 2000);
-      send('game:log', text);
-    },
-    onStart: () => {
-      send('instances:progress', { id, stage: 'running' });
-      const after = settings.afterLaunch;
-      if (after === 'minimize') win.minimize();
-      else if (after === 'hide') win.hide();
-      else if (after === 'close') setTimeout(() => app.quit(), 1500);
-    },
-    onExit: (code) => {
-      send('instances:progress', { id, stage: 'exited', code });
-      if (win && !win.isVisible()) win.show();
-      log.info(`Instancia ${id} cerrada con código ${code}`);
-    }
-  });
+  presence.launching(instances.get(id));
+  let v;
+  try {
+    v = await instances.play(id, {
+      account, settings, launcherVersion: app.getVersion(),
+      progress: (p) => send('instances:progress', { id, ...p }),
+      onLog: (text) => {
+        gameLogBuffer.push(text);
+        if (gameLogBuffer.length > 2000) gameLogBuffer.splice(0, gameLogBuffer.length - 2000);
+        send('game:log', text);
+      },
+      onStart: () => {
+        send('instances:progress', { id, stage: 'running' });
+        presence.playing(instances.get(id));
+        const after = settings.afterLaunch;
+        if (after === 'minimize') win.minimize();
+        else if (after === 'hide') win.hide();
+        else if (after === 'close') setTimeout(() => app.quit(), 1500);
+      },
+      onExit: (code) => {
+        send('instances:progress', { id, stage: 'exited', code });
+        presence.stopped();
+        if (win && !win.isVisible()) win.show();
+        log.info(`Instancia ${id} cerrada con código ${code}`);
+      }
+    });
+  } catch (e) {
+    presence.stopped();
+    throw e;
+  }
   return v;
 });
 handle('game:log', () => gameLogBuffer.join(''));

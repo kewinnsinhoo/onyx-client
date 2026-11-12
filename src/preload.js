@@ -48,7 +48,8 @@ contextBridge.exposeInMainWorld('onyx', {
   },
   discord: {
     link: () => call('discord:link'),
-    unlink: () => call('discord:unlink')
+    unlink: () => call('discord:unlink'),
+    presence: (section, id) => call('discord:presence', section, id)
   },
   skins: {
     library: () => call('skins:library'),

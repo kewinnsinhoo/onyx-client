@@ -217,6 +217,33 @@ function makeZip(files) {
   return Buffer.concat([...locals, cd, end]);
 }
 
+test('estado de Discord: textos y botones', () => {
+  const P = require('../src/main/presence');
+  const ctx = { lang: 'es', version: '1.1.2', githubRepo: 'kewinnsinhoo/onyx-client', discordInvite: 'https://discord.gg/abc', openedAt: 1000 };
+  const menu = P.buildActivity({ kind: 'menu', section: 'home' }, ctx);
+  assert.strictEqual(menu.details, 'En el menú');
+  assert.strictEqual(menu.state, 'Onyx Client · v1.1.2');
+  assert.strictEqual(menu.timestamps.start, 1000);
+  assert.strictEqual(menu.assets.large_image, P.LOGO_URL);
+  assert.strictEqual(menu.buttons.length, 2);
+  assert.ok(menu.buttons.every(b => b.label.length <= 32 && /^https:/.test(b.url)));
+  assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'skins' }, { ...ctx, lang: 'en' }).details, 'Changing skin');
+  assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'instance', name: 'Survival' }, { ...ctx, lang: 'fr' }).details, 'Regarde Survival');
+  assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'console' }, ctx).details, 'En el menú');
+  const inst = { id: 'sv', name: 'Survival Onyx', minecraft: '1.21.1', loader: { type: 'fabric' }, icon: 'https://x.y/i.png' };
+  const play = P.buildActivity({ kind: 'playing', instance: inst, startedAt: 5000 }, ctx);
+  assert.strictEqual(play.details, 'Survival Onyx');
+  assert.strictEqual(play.state, 'Minecraft 1.21.1 · Fabric');
+  assert.strictEqual(play.assets.large_image, 'https://x.y/i.png');
+  assert.strictEqual(play.assets.small_image, P.LOGO_URL);
+  assert.strictEqual(play.timestamps.start, 5000);
+  const noIcon = P.buildActivity({ kind: 'launching', instance: { ...inst, icon: 'img/local.png', loader: { type: 'vanilla' } } }, { lang: 'ca' });
+  assert.strictEqual(noIcon.details, 'Iniciant Survival Onyx');
+  assert.strictEqual(noIcon.state, 'Minecraft 1.21.1');
+  assert.strictEqual(noIcon.assets.large_image, P.LOGO_URL);
+  assert.strictEqual(noIcon.buttons, undefined);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);
 
 // ---- Ping a un servidor de Minecraft falso (protocolo Server List Ping) ----
@@ -238,4 +265,45 @@ console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' :
     passed++; console.log('  ✓ ping de servidor (jugadores conectados)');
   } catch (e) { console.error('  ✗ ping de servidor\n    ' + e.message); process.exitCode = 1; }
   server.close();
+})();
+
+// ---- Discord falso: el launcher se conecta y envía el estado ----
+(async () => {
+  const net = require('net');
+  const { DiscordRPC, encode, decoder, OP } = require('../src/main/discord-rpc');
+  const sockPath = process.platform === 'win32' ? '\\\\?\\pipe\\onyx-test-ipc-' + process.pid : path.join(os.tmpdir(), `onyx-test-ipc-${process.pid}`);
+  try { fs.unlinkSync(sockPath); } catch { /* nada */ }
+  const got = [];
+  const server = net.createServer((sock) => {
+    sock.on('data', decoder((op, d) => {
+      got.push({ op, d });
+      if (op === OP.HANDSHAKE) {
+        sock.write(encode(OP.FRAME, { cmd: 'DISPATCH', evt: 'READY', data: { v: 1, user: { username: 'tester' } } }));
+        sock.write(encode(OP.PING, { n: 1 }));
+      }
+    }));
+  });
+  await new Promise(r => server.listen(sockPath, r));
+  const rpc = new DiscordRPC('123456789', { paths: ['/no/existe/discord-ipc-0', sockPath], retryMs: 50 });
+  try {
+    rpc.setActivity({ details: 'En el menú' }); // antes de conectar: se guarda y se envía al estar listo
+    rpc.start();
+    const until = Date.now() + 3000;
+    while (got.filter(g => g.op === OP.FRAME).length < 1 && Date.now() < until) await new Promise(r => setTimeout(r, 20));
+    rpc.setActivity({ details: 'Survival Onyx' });
+    while (got.filter(g => g.op === OP.FRAME).length < 2 && Date.now() < until) await new Promise(r => setTimeout(r, 20));
+    const hs = got.find(g => g.op === OP.HANDSHAKE);
+    assert.ok(hs && hs.d.client_id === '123456789' && hs.d.v === 1, 'handshake');
+    assert.ok(got.some(g => g.op === OP.PONG && g.d.n === 1), 'responde al ping');
+    const frames = got.filter(g => g.op === OP.FRAME).map(g => g.d);
+    assert.strictEqual(frames[0].cmd, 'SET_ACTIVITY');
+    assert.strictEqual(frames[0].args.activity.details, 'En el menú');
+    assert.strictEqual(frames[1].args.activity.details, 'Survival Onyx');
+    assert.strictEqual(frames[0].args.pid, process.pid);
+    assert.strictEqual(rpc.user.username, 'tester');
+    passed++; console.log('  ✓ estado de Discord (conexión con Discord falso)');
+  } catch (e) { console.error('  ✗ estado de Discord (conexión)\n    ' + e.message); process.exitCode = 1; }
+  rpc.stop();
+  server.close();
+  try { fs.unlinkSync(sockPath); } catch { /* nada */ }
 })();

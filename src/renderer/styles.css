@@ -502,3 +502,14 @@ textarea.input { height: 90px; padding: 12px 14px; resize: none; }
 /* Consola */
 .console { background: rgba(0,0,0,.45); border: 1px solid var(--border); border-radius: 16px; height: calc(100vh - 230px); overflow: auto; padding: 14px 16px; font-family: "Cascadia Mono", Consolas, Menlo, monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; color: #c6cbe8; user-select: text; }
 .console .w { color: var(--warn); } .console .e { color: var(--danger); }
+
+/* Vista previa del estado de Discord (Ajustes → Cliente) */
+.dc-preview { margin-top: 10px; padding: 14px 16px; border-radius: 14px; background: linear-gradient(180deg, #23263f 0%, #1a1c2e 100%); border: 1px solid rgba(160, 172, 255, .14); max-width: 360px; box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .8); transition: opacity .25s, filter .25s; }
+.dc-preview.off { opacity: .35; filter: grayscale(1); }
+.dc-preview .dc-k { font-size: 12px; font-weight: 700; color: #dfe2f5; margin-bottom: 10px; }
+.dc-preview .dc-row { display: flex; gap: 14px; align-items: center; }
+.dc-preview img { width: 64px; height: 64px; border-radius: 12px; flex: none; }
+.dc-preview .dc-n { font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 2px; }
+.dc-preview .dc-l { font-size: 13px; color: #c9cce0; line-height: 1.35; }
+.dc-preview .dc-t { display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: #4ade9b; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.dc-preview .dc-t svg { width: 15px; height: 15px; }

@@ -24,7 +24,7 @@
     platform: q.get('platform') || 'win32',
     win: { minimize: wait, maximize: wait, close: wait, onState: () => () => {} },
     app: {
-      info: () => wait({ name: 'Onyx Client', studio: 'Onyx Studios', version: '1.0.0', core: '1.0.0', build: 2026, platform: q.get('platform') || 'win32', totalMemMb: 15 * 1024, discordInvite: 'https://discord.gg/x', githubRepo: 'onyx/onyx-client', gameDir: 'C:\\Users\\Kewin\\AppData\\Roaming\\.onyxclient' }),
+      info: () => wait({ name: 'Onyx Client', studio: 'Onyx Studios', version: '1.1.2', core: '1.0.0', build: 2026, platform: q.get('platform') || 'win32', totalMemMb: 15 * 1024, discordInvite: 'https://discord.gg/x', githubRepo: 'onyx/onyx-client', gameDir: 'C:\\Users\\Kewin\\AppData\\Roaming\\.onyxclient' }),
       quit: wait, openExternal: wait, openPath: wait, showItem: wait, relaunch: wait, clearCache: wait
     },
     settings: { get: () => wait({ ...settings }), set: (p) => { settings = { ...settings, ...p }; return wait({ ...settings }); } },
@@ -33,7 +33,7 @@
       list: () => wait({ accounts: [...accounts], active: accounts[0] ? accounts[0].id : null }),
       loginMicrosoft: () => wait(null, 300), addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
     },
-    discord: { link: () => wait({ username: 'kewin' }), unlink: wait },
+    discord: { link: () => wait({ username: 'kewin' }), unlink: wait, presence: wait },
     skins: {
       library: () => wait([{ id: 'a', name: 'Hoodie blanco', variant: 'classic', data: ALT }, { id: 'b', name: 'Onyx', variant: 'slim', data: SK }]),
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
