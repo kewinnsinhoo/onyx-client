@@ -20,6 +20,7 @@
   }
 
   // Crea un cubo con las 6 caras usando el layout UV de Minecraft.
+  // Cada cara lleva su "lado" para poder iluminarla (variables --l-*).
   function cuboid(w, h, d, u, v, tex, s, opts = {}) {
     const cube = el('cube');
     const faces = {
@@ -37,25 +38,17 @@
       right: `rotateY(-90deg) translateZ(${w * s / 2}px)`,
       left: `rotateY(90deg) translateZ(${w * s / 2}px)`,
       top: `rotateX(90deg) translateZ(${h * s / 2}px)`,
-      bottom: `rotateX(-90deg) translateZ(${h * s / 2}px) scaleY(-1)`
+      bottom: `rotateX(-90deg) translateZ(${h * s / 2}px)`
     };
     for (const [name, [fx, fy, fw, fh]] of Object.entries(faces)) {
       const f = el('face ' + name);
       const W = fw * s, H = fh * s;
-      f.style.cssText = `width:${W + 0.4}px;height:${H + 0.4}px;left:${-W / 2}px;top:${-H / 2}px;` +
+      f.style.cssText = `width:${W + 0.5}px;height:${H + 0.5}px;left:${-W / 2}px;top:${-H / 2}px;` +
         `background-image:url("${tex.url}");background-size:${tex.w * s}px ${tex.h * s}px;` +
-        `background-position:${-fx * s}px ${-fy * s}px;transform:${tf[name]};`;
+        `background-position:${-fx * s}px ${-fy * s}px;transform:${tf[name]};filter:brightness(var(--l-${name},1));`;
       cube.appendChild(f);
     }
     return cube;
-  }
-
-  function part(cls, x, y, z, s) {
-    const p = el('part ' + cls);
-    const pos = `translate3d(${x * s}px, ${y * s}px, ${z * s}px)`;
-    p.style.setProperty('--pos', pos);
-    p.style.transform = pos;
-    return p;
   }
 
   function placeCube(cube, ox, oy, oz, s, scale) {
@@ -63,10 +56,19 @@
     return cube;
   }
 
+  const DEG = Math.PI / 180;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const smooth = (x) => x * x * (3 - 2 * x);
+
+  // Ratón global (la cabeza lo sigue esté donde esté)
+  const mouse = { x: window.innerWidth / 2, y: window.innerHeight * 0.3, active: false };
+  window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }, { passive: true });
+
   class SkinViewer {
     constructor(container, opts = {}) {
       this.container = container;
-      this.opts = Object.assign({ scale: 7, rotY: -28, rotX: -8, interactive: true, spin: 'none', walk: false }, opts);
+      this.opts = Object.assign({ scale: 7, rotY: -24, rotX: -6, interactive: true, spin: 'none', walk: false, wave: true, follow: true }, opts);
       this.root = el('skin3d');
       this.shadow = el('shadow');
       this.scene = el('scene');
@@ -75,12 +77,15 @@
       container.appendChild(this.root);
       this.ry = this.opts.rotY; this.rx = this.opts.rotX;
       this.skinUrl = null; this.variant = 'classic'; this.capeUrl = null;
-      this.walk = this.opts.walk; this.root.classList.toggle('walking', this.walk);
+      this.walk = !!this.opts.walk;
+      this.parts = {};
+      this.head = { yaw: 0, pitch: 0 };
+      this.waveStart = null;
+      this.phase = Math.random() * 10;
       if (this.opts.interactive) this._bindDrag();
       this._tick = this._tick.bind(this);
       this._t0 = performance.now();
-      if (this.opts.spin !== 'none') this._raf = requestAnimationFrame(this._tick);
-      this._apply();
+      this._raf = requestAnimationFrame(this._tick);
     }
 
     _bindDrag() {
@@ -89,31 +94,104 @@
       this._onMove = (e) => {
         if (!down) return;
         this.ry = down.ry + (e.clientX - down.x) * 0.6;
-        this.rx = Math.max(-35, Math.min(35, down.rx - (e.clientY - down.y) * 0.4));
-        this._apply();
+        this.rx = clamp(down.rx - (e.clientY - down.y) * 0.4, -35, 35);
       };
       this._onUp = () => { down = null; this.dragging = false; };
       this.root.addEventListener('pointerdown', this._onDown);
       window.addEventListener('pointermove', this._onMove);
       window.addEventListener('pointerup', this._onUp);
+      // Doble clic: volver a saludar
+      this.root.addEventListener('dblclick', () => this.wave());
     }
 
-    _tick(t) {
-      if (!this.dragging) {
-        if (this.opts.spin === 'rotate') this.ry += 0.35;
-        if (this.opts.spin === 'sway') this.ry = this.opts.rotY + Math.sin((t - this._t0) / 1400) * 18;
-        this._apply();
-      }
+    wave() { this.waveStart = performance.now(); }
+
+    // Ilumina cada cara según hacia dónde mira (luz fija desde la cámara, arriba a la izquierda).
+    _light(partEl, yaw) {
+      const LIGHT = -35;
+      const side = (faceYaw) => {
+        const c = Math.cos((faceYaw + yaw - LIGHT) * DEG);
+        return (0.58 + 0.44 * Math.max(0, c)).toFixed(3);
+      };
+      const st = partEl.style;
+      st.setProperty('--l-front', side(0));
+      st.setProperty('--l-left', side(90));
+      st.setProperty('--l-back', side(180));
+      st.setProperty('--l-right', side(-90));
+      st.setProperty('--l-top', '1.08');
+      st.setProperty('--l-bottom', '0.5');
+    }
+
+    _pose(name, extra) {
+      const p = this.parts[name];
+      if (!p) return;
+      p.el.style.transform = p.base + extra;
+    }
+
+    _tick(now) {
       this._raf = requestAnimationFrame(this._tick);
-    }
+      if (!this.skinImg || !this.root.isConnected) return;
+      const t = (now - this._t0) / 1000 + this.phase;
 
-    _apply() {
+      if (this.opts.spin === 'rotate' && !this.dragging) this.ry += 0.35;
+      if (this.opts.spin === 'sway' && !this.dragging) this.ry = this.opts.rotY + Math.sin(t / 1.6) * 10;
       const s = this.opts.scale;
       this.scene.style.transform = `translateY(${4 * s}px) rotateX(${this.rx}deg) rotateY(${this.ry}deg)`;
       this.shadow.style.transform = `translateY(${16.5 * s}px) scale(${s / 7})`;
+
+      // Cabeza: sigue al ratón
+      let ty = 0, tp = 0;
+      if (this.opts.follow && mouse.active) {
+        const r = this.root.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height * 0.32;
+        const dx = (mouse.x - cx) / Math.max(300, window.innerWidth / 2);
+        const dy = (mouse.y - cy) / Math.max(250, window.innerHeight / 2);
+        ty = clamp(dx * 55 - this.ry, -50, 50);
+        tp = clamp(-dy * 32, -22, 26);
+      } else {
+        ty = Math.sin(t * 0.5) * 6;
+      }
+      this.head.yaw = lerp(this.head.yaw, ty, 0.12);
+      this.head.pitch = lerp(this.head.pitch, tp, 0.12);
+
+      // Saludo (al abrir y con doble clic)
+      let w = 0;
+      if (this.waveStart != null) {
+        const e = (now - this.waveStart) / 1000;
+        const dur = 2.6;
+        if (e > dur) this.waveStart = null;
+        else w = e < 0.45 ? smooth(e / 0.45) : e > dur - 0.55 ? smooth((dur - e) / 0.55) : 1;
+      }
+
+      // Respiración / caminar
+      const breathe = Math.sin(t * 1.7);
+      let armR = { x: Math.sin(t * 1.1) * 2.2, z: 3.5 + breathe * 2.2 };
+      let armL = { x: -Math.sin(t * 1.1) * 2.2, z: -(3.5 + breathe * 2.2) };
+      let legR = 0, legL = 0, cape = 8 + breathe * 2;
+      if (this.walk) {
+        const sw = Math.sin(t * 6.2) * 34;
+        armR = { x: sw, z: 3 }; armL = { x: -sw, z: -3 };
+        legR = -sw; legL = sw; cape = 18 + Math.abs(Math.sin(t * 6.2)) * 10;
+      }
+      if (w > 0) {
+        armR = { x: lerp(armR.x, -12, w), z: lerp(armR.z, 152 + Math.sin(t * 10) * 20, w) };
+      }
+
+      this._pose('p-head', ` rotateY(${this.head.yaw}deg) rotateX(${this.head.pitch + (this.walk ? 0 : breathe * 0.8)}deg)`);
+      this._pose('arm-r', ` rotateX(${armR.x}deg) rotateZ(${armR.z}deg)`);
+      this._pose('arm-l', ` rotateX(${armL.x}deg) rotateZ(${armL.z}deg)`);
+      this._pose('leg-r', ` rotateX(${legR}deg)`);
+      this._pose('leg-l', ` rotateX(${legL}deg)`);
+      this._pose('cape', ` rotateX(${cape}deg)`);
+
+      for (const [name, p] of Object.entries(this.parts)) {
+        const yaw = this.ry + (name === 'p-head' ? this.head.yaw : name === 'cape' ? 180 : 0);
+        this._light(p.el, yaw);
+      }
     }
 
     async setSkin(url, variant) {
+      const first = !this.skinImg;
       this.skinUrl = url || STEVE;
       this.variant = variant === 'slim' ? 'slim' : 'classic';
       const token = (this._token = Symbol());
@@ -121,6 +199,7 @@
       if (token !== this._token) return;
       this.skinImg = img;
       this._build();
+      if (first && this.opts.wave) setTimeout(() => this.wave(), 250);
     }
 
     async setCape(url) {
@@ -130,7 +209,7 @@
     }
 
     setVariant(variant) { this.variant = variant === 'slim' ? 'slim' : 'classic'; this._build(); }
-    setWalk(on) { this.walk = !!on; this.root.classList.toggle('walking', this.walk); }
+    setWalk(on) { this.walk = !!on; }
     setOuter(on) { this.root.classList.toggle('no-outer', !on); }
     setCapeVisible(on) { this.root.classList.toggle('no-cape', !on); }
 
@@ -142,7 +221,15 @@
       const tex = { url: this.skinUrl, w: 64, h: legacy ? 32 : 64 };
       const aw = this.variant === 'slim' ? 3 : 4;
       this.scene.innerHTML = '';
+      this.parts = {};
 
+      const part = (name, x, y, z, extraBase = '') => {
+        const el2 = el('part ' + name);
+        const base = `translate3d(${x * s}px, ${y * s}px, ${z * s}px)${extraBase}`;
+        el2.style.transform = base;
+        this.parts[name] = { el: el2, base };
+        return el2;
+      };
       const add = (p, base, over, offset, scale) => {
         p.appendChild(placeCube(cuboid(...base, tex, s), ...offset, s));
         if (over) {
@@ -154,25 +241,18 @@
       };
       const limbScale = (w) => [(w + 0.5) / w, 12.5 / 12, 4.5 / 4];
 
-      // Cabeza
-      add(part('p-head', 0, -12, 0, s), [8, 8, 8, 0, 0], [8, 8, 8, 32, 0], [0, -4, 0], [1.125, 1.125, 1.125]);
-      // Cuerpo
-      add(part('p-body', 0, -6, 0, s), [8, 12, 4, 16, 16], legacy ? null : [8, 12, 4, 16, 32], [0, 0, 0], [8.5 / 8, 12.5 / 12, 4.5 / 4]);
-      // Brazos
-      add(part('arm-r', -(4 + aw / 2), -10, 0, s), [aw, 12, 4, 40, 16], legacy ? null : [aw, 12, 4, 40, 32], [0, 4, 0], limbScale(aw));
-      add(part('arm-l', 4 + aw / 2, -10, 0, s), legacy ? [aw, 12, 4, 40, 16] : [aw, 12, 4, 32, 48], legacy ? null : [aw, 12, 4, 48, 48], [0, 4, 0], limbScale(aw));
-      // Piernas
-      add(part('leg-r', -2, 0, 0, s), [4, 12, 4, 0, 16], legacy ? null : [4, 12, 4, 0, 32], [0, 6, 0], limbScale(4));
-      add(part('leg-l', 2, 0, 0, s), legacy ? [4, 12, 4, 0, 16] : [4, 12, 4, 16, 48], legacy ? null : [4, 12, 4, 0, 48], [0, 6, 0], limbScale(4));
+      add(part('p-head', 0, -12, 0), [8, 8, 8, 0, 0], [8, 8, 8, 32, 0], [0, -4, 0], [1.125, 1.125, 1.125]);
+      add(part('p-body', 0, -6, 0), [8, 12, 4, 16, 16], legacy ? null : [8, 12, 4, 16, 32], [0, 0, 0], [8.5 / 8, 12.5 / 12, 4.5 / 4]);
+      add(part('arm-r', -(4 + aw / 2), -10, 0), [aw, 12, 4, 40, 16], legacy ? null : [aw, 12, 4, 40, 32], [0, 4, 0], limbScale(aw));
+      add(part('arm-l', 4 + aw / 2, -10, 0), legacy ? [aw, 12, 4, 40, 16] : [aw, 12, 4, 32, 48], legacy ? null : [aw, 12, 4, 48, 48], [0, 4, 0], limbScale(aw));
+      add(part('leg-r', -2, 0, 0), [4, 12, 4, 0, 16], legacy ? null : [4, 12, 4, 0, 32], [0, 6, 0], limbScale(4));
+      add(part('leg-l', 2, 0, 0), legacy ? [4, 12, 4, 0, 16] : [4, 12, 4, 16, 48], legacy ? null : [4, 12, 4, 0, 48], [0, 6, 0], limbScale(4));
 
-      // Capa
       if (this.capeImg) {
         const ci = this.capeImg;
         const ratio = ci.naturalWidth % 64 === 0 ? ci.naturalWidth / 64 : 1;
         const ctex = { url: this.capeUrl, w: ci.naturalWidth / ratio, h: ci.naturalHeight / ratio };
-        const p = part('cape', 0, -12, -2.6, s);
-        p.style.setProperty('--pos', `translate3d(0px, ${-12 * s}px, ${-2.6 * s}px) rotateY(180deg)`);
-        p.style.transform = `var(--pos) rotateX(12deg)`;
+        const p = part('cape', 0, -12, -2.6, ' rotateY(180deg)');
         p.appendChild(placeCube(cuboid(10, 16, 1, 0, 0, ctex, s), 0, 8, 0, s));
         this.scene.appendChild(p);
       }

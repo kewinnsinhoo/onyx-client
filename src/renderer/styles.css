@@ -330,13 +330,7 @@ textarea.input { height: 86px; padding: 12px 14px; resize: none; }
 .skin3d .shadow { position: absolute; left: 50%; top: 50%; width: 120px; height: 26px; margin-left: -60px; border-radius: 50%; background: radial-gradient(rgba(0,0,0,.65), transparent 70%); }
 .skin3d .scene { position: relative; transform-style: preserve-3d; width: 0; height: 0; }
 .skin3d .part, .skin3d .cube, .skin3d .layer { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
-.skin3d .face { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; backface-visibility: visible; }
-.skin3d.walking .arm-r, .skin3d.walking .leg-l { animation: swingA 1.05s ease-in-out infinite; }
-.skin3d.walking .arm-l, .skin3d.walking .leg-r { animation: swingB 1.05s ease-in-out infinite; }
-.skin3d.walking .cape { animation: capeSwing 1.05s ease-in-out infinite; }
-@keyframes swingA { 0%,100% { transform: var(--pos) rotateX(32deg); } 50% { transform: var(--pos) rotateX(-32deg); } }
-@keyframes swingB { 0%,100% { transform: var(--pos) rotateX(-32deg); } 50% { transform: var(--pos) rotateX(32deg); } }
-@keyframes capeSwing { 0%,100% { transform: var(--pos) rotateX(14deg); } 50% { transform: var(--pos) rotateX(26deg); } }
+.skin3d .face { position: absolute; background-repeat: no-repeat; image-rendering: pixelated; backface-visibility: hidden; }
 .skin3d.no-outer .layer { display: none; }
 .skin3d.no-cape .cape { display: none; }
 
