@@ -109,10 +109,14 @@ function kickPanelSync(force = false) {
   if (panelSyncing || !panel.enabled()) return;
   const acc = panelAccount();
   if (!acc) return;
-  const before = JSON.stringify(instances.list().map(i => [i.id, i.name, i.state, i.banner, i.icon]));
+  const prev = instances.list();
+  const before = JSON.stringify(prev.map(i => [i.id, i.name, i.state, i.banner, i.icon]));
   panelSyncing = instances.syncPanel(acc, { force })
     .then((list) => {
-      if (JSON.stringify(list.map(i => [i.id, i.name, i.state, i.banner, i.icon])) !== before) send('instances:changed', list);
+      if (JSON.stringify(list.map(i => [i.id, i.name, i.state, i.banner, i.icon])) !== before) {
+        const removed = prev.filter(p => !list.some(i => i.id === p.id)).map(p => p.name);
+        send('instances:changed', { list, removed });
+      }
       return sendPendingReferral(acc);
     })
     .catch((e) => log.warn('[panel]', e.message))
@@ -134,7 +138,7 @@ function handle(channel, fn) {
       return { ok: true, data: await fn(...args) };
     } catch (e) {
       log.error(`[${channel}]`, e);
-      return { ok: false, error: e.message || String(e), code: e.code, vars: e.vars };
+      return { ok: false, error: e.message || String(e), code: e.code, vars: e.vars, removed: !!e.removed };
     }
   });
 }

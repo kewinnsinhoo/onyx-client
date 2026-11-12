@@ -133,15 +133,29 @@ async function syncPanel(account, { force = false } = {}) {
       if (ex) ex.manifest = m;
       else if (!dismissed.has(m.id)) d.instances.push({ id: m.id, manifest: m, addedAt: Date.now(), managedFiles: [] });
     }
+    // Si el studio te quitó el acceso (o borró/ocultó la instancia), desaparece de la lista.
+    // Los archivos se quedan en el equipo por si te vuelven a dar acceso.
+    const ids = new Set(remote.map(m => m.id));
+    d.instances = d.instances.filter(i => !isPanel(i) || ids.has(i.id) || running.has(i.id));
     store.replace(d);
   } catch (e) { lastPanelSync = 0; log.warn('[panel] No se pudo sincronizar la lista:', e.message); }
   return list();
 }
 
+// Errores del panel que significan "esta instancia ya no es tuya"
+const GONE = ['no_access', 'banned', 'instance'];
+function forget(id) {
+  const d = store.get();
+  d.instances = d.instances.filter(x => x.id !== id);
+  store.replace(d);
+}
+
 async function refreshManifest(inst, account) {
   if (isPanel(inst)) {
     if (!account) return inst;
-    const m = await panel.getInstance(account, inst.id);
+    let m;
+    try { m = await panel.getInstance(account, inst.id); }
+    catch (e) { if (GONE.includes(e.code)) { forget(inst.id); e.removed = true; } throw e; }
     if (m) inst.manifest = m;
     return inst;
   }

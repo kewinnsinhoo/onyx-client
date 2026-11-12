@@ -573,6 +573,16 @@ test('panel: errores legibles', () => {
     assert.strictEqual(locked.code, 'no_access');
     assert.strictEqual(locked.message, 'Ya no tienes acceso a esta instancia');
 
+    // Si el studio te quita el acceso, desaparece sola de la lista (y al intentar jugar)
+    const raw = JSON.parse(fs.readFileSync(path.join(tmp, 'instances.json'), 'utf8'));
+    raw.instances.push({ id: 'ya-no-es-mia', manifest: { id: 'ya-no-es-mia', source: 'panel', name: 'Vieja' }, addedAt: 1 });
+    raw.instances.push({ id: 'de-github', manifest: { name: 'Antigua' }, addedAt: 1 });
+    instances.init(tmp); fs.writeFileSync(path.join(tmp, 'instances.json'), JSON.stringify(raw)); instances.init(tmp);
+    await instances.syncPanel(acc, { force: true });
+    assert.ok(!instances.list().some(i => i.id === 'ya-no-es-mia'), 'la del panel sin acceso se quita');
+    assert.ok(instances.list().some(i => i.id === 'de-github'), 'las antiguas de GitHub no se tocan');
+    assert.ok(instances.list().some(i => i.id === 'ignite-extremo-3'));
+
     // Quitar a mano una instancia del panel: no vuelve sola
     instances.remove('ignite-extremo-3', true);
     await instances.syncPanel(acc, { force: true });

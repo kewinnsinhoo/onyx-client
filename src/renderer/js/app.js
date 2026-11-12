@@ -368,6 +368,8 @@
       const vars = { ...(e.vars || {}) };
       if (vars.at) vars.date = new Date(vars.at).toLocaleString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
       toast(t(e.message, vars), e.code === 'predownloaded' ? 'success' : 'error', 8000);
+      // La instancia ya no es tuya: se quita de la lista
+      if (e.removed) { await loadInstances(); renderChrome(); if (S.route && S.route.name === 'instance' && S.route.params.id === id) go('home'); }
     }
   }
 
@@ -393,9 +395,14 @@
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: p }));
     });
     // El panel añadió o cambió instancias (lista manual, instancia pública, nueva portada...)
-    if (onyx.instances.onChanged) onyx.instances.onChanged((list) => {
+    if (onyx.instances.onChanged) onyx.instances.onChanged((payload) => {
+      const list = Array.isArray(payload) ? payload : payload.list;
+      const removed = (payload && payload.removed) || [];
       S.instances = list;
       renderChrome();
+      for (const name of removed) toast(t('Ya no tienes acceso a {name}', { name }), 'info', 7000);
+      // Si estabas mirando una instancia que ya no tienes, vuelve al inicio
+      if (S.route && S.route.name === 'instance' && !list.some(i => i.id === S.route.params.id)) return go('home');
       if (S.route && ['home', 'instances', 'instance'].includes(S.route.name)) { const v = document.getElementById('view'); if (v) v.dataset.still = '1'; rerender(); }
     });
     onyx.win.onState(({ maximized }) => { const b = $('#tb-max'); if (b) b.innerHTML = icon(maximized ? 'restore' : 'maximize'); });

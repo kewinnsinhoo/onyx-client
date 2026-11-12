@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 async function call(channel, ...args) {
   const r = await ipcRenderer.invoke(channel, ...args);
-  if (!r.ok) { const e = new Error(r.error); e.code = r.code; e.vars = r.vars; throw e; }
+  if (!r.ok) { const e = new Error(r.error); e.code = r.code; e.vars = r.vars; e.removed = r.removed; throw e; }
   return r.data;
 }
 function on(channel, cb) {

@@ -280,6 +280,7 @@
     ['Patrocinado por', 'Sponsored by', 'Patrocinat per', 'Sponsorisé par'],
     ['El studio ha cerrado la instancia', 'The studio has closed the instance', 'El studio ha tancat la instància', 'Le studio a fermé l’instance'],
     ['No puedes entrar a esta instancia', 'You can’t join this instance', 'No pots entrar a aquesta instància', 'Tu ne peux pas rejoindre cette instance'],
+    ['Ya no tienes acceso a {name}', 'You no longer have access to {name}', 'Ja no tens accés a {name}', 'Tu n’as plus accès à {name}'],
     ['Ya no tienes acceso a esta instancia', 'You no longer have access to this instance', 'Ja no tens accés a aquesta instància', 'Tu n’as plus accès à cette instance'],
     ['Esta instancia es Premium: inicia sesión con una cuenta de Microsoft que tenga Minecraft.', 'This instance is Premium: sign in with a Microsoft account that owns Minecraft.', 'Aquesta instància és Premium: inicia la sessió amb un compte de Microsoft que tingui Minecraft.', 'Cette instance est Premium : connecte-toi avec un compte Microsoft qui possède Minecraft.'],
     ['La instancia está bloqueada por el studio', 'The studio has locked this instance', 'El studio ha bloquejat la instància', 'Le studio a verrouillé cette instance'],
