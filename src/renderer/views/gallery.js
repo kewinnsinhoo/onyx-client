@@ -78,7 +78,7 @@
     const viewers = [];
     for (const [i, c] of list.entries()) {
       const stage = body.querySelector(`.stage[data-i="${i}"]`);
-      const v = new Skin3D.SkinViewer(stage, { rotY: i % 2 ? 22 : -22, zoom: 0.68 });
+      const v = new Skin3D.SkinViewer(stage, { rotY: i % 2 ? 22 : -22, zoom: 0.62 });
       viewers.push(v);
       let skin = c.skin, variant = c.model || 'classic';
       if (!skin && c.username) {

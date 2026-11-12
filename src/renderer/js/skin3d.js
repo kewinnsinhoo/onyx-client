@@ -288,7 +288,7 @@
   class SkinViewer {
     constructor(container, opts = {}) {
       if (!webglOk()) return new CssSkinViewer(container, opts);
-      this.opts = Object.assign({ rotY: -26, interactive: true, wave: true, follow: true, walk: false, zoom: 0.86 }, opts);
+      this.opts = Object.assign({ rotY: -26, interactive: true, wave: true, follow: true, walk: false, zoom: 0.74, fov: 28 }, opts);
       this.container = container;
       this.root = el('skin3d webgl');
       this.canvas = document.createElement('canvas');
@@ -297,7 +297,7 @@
       const r = container.getBoundingClientRect();
       const v = this.viewer = new skinview3d.SkinViewer({
         canvas: this.canvas, width: Math.max(50, r.width), height: Math.max(50, r.height),
-        pixelRatio: 'match-device', preserveDrawingBuffer: true, zoom: this.opts.zoom, fov: 40
+        pixelRatio: 'match-device', preserveDrawingBuffer: true, zoom: this.opts.zoom, fov: this.opts.fov
       });
       v.background = null;
       // Igual que Minecraft: píxeles nítidos (sin suavizado) y luz como en el juego.
