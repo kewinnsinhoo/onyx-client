@@ -117,6 +117,32 @@
     });
   }
 
+  // Login de Microsoft: se abre el navegador del sistema y aquí se muestra una espera.
+  async function microsoftLogin() {
+    let closeWait = null, cancelled = false;
+    const waitModal = () => modal((m, close) => {
+      closeWait = close;
+      m.classList.add('ms-wait');
+      m.innerHTML = html`<div class="m-ico ms-ico"><span class="ms-logo"><i></i><i></i><i></i><i></i></span></div>
+        <h2>${t('Continúa en tu navegador')}</h2>
+        <p class="sub">${t('Hemos abierto la página de Microsoft en tu navegador. Inicia sesión ahí y vuelve: se completará solo.')}</p>
+        <div class="ms-wait-row"><span class="ms-dots"><i></i><i></i><i></i></span>${t('Esperando a Microsoft…')}</div>
+        <div class="actions"><button class="btn btn-ghost" data-a="cancel">${t('Cancelar')}</button>
+          <button class="btn btn-outline" data-a="reopen">${icon('external')}${t('Abrir de nuevo')}</button></div>
+        <button class="ms-alt" data-a="window">${t('¿No se abre? Iniciar sesión en una ventana del launcher')}</button>`;
+      m.querySelector('[data-a=cancel]').onclick = () => { cancelled = true; onyx.accounts.cancelLogin(); };
+      m.querySelector('[data-a=reopen]').onclick = () => onyx.accounts.reopenLogin();
+      m.querySelector('[data-a=window]').onclick = () => { cancelled = 'window'; onyx.accounts.cancelLogin(); };
+    }, { dismissable: false });
+    waitModal();
+    try {
+      return await onyx.accounts.loginMicrosoft('browser');
+    } catch (e) {
+      if (cancelled === 'window') { if (closeWait) closeWait(); closeWait = null; return onyx.accounts.loginMicrosoft('window'); }
+      throw e;
+    } finally { if (closeWait) closeWait(); }
+  }
+
   function addAccountModal() {
     modal((m, close) => {
       m.innerHTML = html`<div class="m-ico">${icon('users')}</div><h2>${t('Añadir cuenta')}</h2>
@@ -127,7 +153,7 @@
           <span><div class="t">${t('Offline')}</div><div class="s">${t('Sin licencia')}</div></span></button>`;
       m.querySelector('[data-l=ms]').onclick = async (e) => {
         e.currentTarget.classList.add('busy');
-        try { await onyx.accounts.loginMicrosoft(); close(); await refreshAccountUi(); toast(t('Cuenta añadida'), 'success'); }
+        try { await microsoftLogin(); close(); await refreshAccountUi(); toast(t('Cuenta añadida'), 'success'); }
         catch (err) { if (err.code !== 'cancelled') toast(err.message, 'error', 6000); e.currentTarget && e.currentTarget.classList.remove('busy'); }
       };
       m.querySelector('[data-l=off]').onclick = () => { close(); offlineModal(async () => { await refreshAccountUi(); toast(t('Cuenta añadida'), 'success'); }); };
@@ -317,7 +343,7 @@
   // ---------- jugar ----------
   const STAGES = {
     version: 'Preparando versión', libraries: 'Descargando librerías', assets: 'Descargando recursos',
-    java: 'Preparando Java', files: 'Sincronizando archivos', launching: 'Iniciando Minecraft', running: 'Jugando', exited: 'Cerrado'
+    java: 'Preparando Java', loader: 'Instalando el loader', files: 'Sincronizando archivos', launching: 'Iniciando Minecraft', running: 'Jugando', exited: 'Cerrado'
   };
   function stageText(p) {
     if (!p) return '';
@@ -379,7 +405,7 @@
 
   window.App = {
     go, rerender, play, stageText, addInstanceModal, addAccountModal, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
-    loadAccounts, loadInstances, refreshAccountUi, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
+    loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);
 })();

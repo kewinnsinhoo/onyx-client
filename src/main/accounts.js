@@ -62,12 +62,15 @@ function formatUuid(id) {
   return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
 }
 
-async function loginMicrosoft(BrowserWindow, parent) {
+// mode 'browser' (por defecto): navegador del sistema. mode 'window': ventana dentro del launcher.
+async function loginMicrosoft(BrowserWindow, parent, { mode = 'browser', openExternal, lang, onCode } = {}) {
   if (isPlaceholder(config.microsoftClientId)) {
     throw new MS.AuthError('no_client', 'Falta el Client ID de Azure en onyx.config.json (mira la GUIA.md, paso 3).');
   }
-  const { code, verifier } = await MS.interactiveLogin(BrowserWindow, parent, config.microsoftClientId);
-  const ms = await MS.exchangeCode(config.microsoftClientId, code, verifier);
+  const r = mode === 'browser' && openExternal
+    ? await MS.browserLogin(openExternal, config.microsoftClientId, { lang, onCode })
+    : await MS.interactiveLogin(BrowserWindow, parent, config.microsoftClientId);
+  const ms = await MS.exchangeCode(config.microsoftClientId, r.code, r.verifier, r.redirectUri);
   const mc = await MS.minecraftFromMs(ms.access_token);
   const acc = {
     id: 'msa-' + mc.profile.id,

@@ -86,9 +86,124 @@ function interactiveLogin(BrowserWindow, parent, clientId) {
   });
 }
 
-async function exchangeCode(clientId, code, verifier) {
+// ---------- Inicio de sesión en el navegador del sistema ----------
+// El launcher abre un mini servidor en este PC (http://localhost:PUERTO) y abre el navegador.
+// Microsoft devuelve al jugador a ese servidor con el "code" y el launcher lo recoge.
+// En Azure hay que tener registrada la URI "http://localhost" (cliente público / escritorio).
+const http = require('http');
+
+const PAGE_TXT = {
+  es: ['Sesión iniciada', 'Ya puedes cerrar esta pestaña y volver a Onyx Client.', 'No se pudo iniciar sesión', 'Vuelve a Onyx Client e inténtalo otra vez.'],
+  en: ['Signed in', 'You can close this tab and go back to Onyx Client.', 'Could not sign in', 'Go back to Onyx Client and try again.'],
+  ca: ['Sessió iniciada', 'Ja pots tancar aquesta pestanya i tornar a Onyx Client.', 'No s’ha pogut iniciar la sessió', 'Torna a Onyx Client i torna-ho a provar.'],
+  fr: ['Connecté', 'Tu peux fermer cet onglet et revenir sur Onyx Client.', 'Connexion impossible', 'Reviens sur Onyx Client et réessaie.']
+};
+const escHtml = (s) => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function resultPage(ok, lang, detail) {
+  const T = PAGE_TXT[lang] || PAGE_TXT.es;
+  const title = ok ? T[0] : T[2];
+  const text = ok ? T[1] : T[3];
+  const mark = ok
+    ? '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
+    : '<path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>';
+  return `<!DOCTYPE html><html lang="${escHtml(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHtml(title)} · Onyx Client</title><style>
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#eef0ff;
+background-color:#070912;background-image:radial-gradient(900px 520px at 20% -10%,rgba(91,103,232,.35),transparent 60%),radial-gradient(700px 500px at 110% 110%,rgba(142,155,255,.14),transparent 60%);background-repeat:no-repeat;color-scheme:dark}
+.card{width:min(420px,92vw);padding:40px 34px 34px;border-radius:24px;text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(160,172,255,.14);
+box-shadow:0 30px 80px -20px rgba(0,0,0,.8);backdrop-filter:blur(14px);animation:in .5s cubic-bezier(.2,.8,.2,1)}
+.brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:#a5adff;margin-bottom:26px}
+.ico{width:68px;height:68px;margin:0 auto 20px;border-radius:22px;display:flex;align-items:center;justify-content:center;
+color:${ok ? '#fff' : '#ff7a8a'};background:${ok ? 'linear-gradient(135deg,#9aa6ff,#6b77f2 55%,#5260dc)' : 'rgba(255,122,138,.12)'};
+box-shadow:${ok ? '0 14px 34px -10px rgba(91,103,232,.8)' : 'none'}}
+.ico svg{width:34px;height:34px}h1{margin:0 0 10px;font-size:24px}p{margin:0;color:#c4c8e6;line-height:1.5;font-size:15px}
+small{display:block;margin-top:16px;color:#8a90b2;font-size:12.5px;word-break:break-word}
+@keyframes in{from{opacity:0;transform:translateY(12px) scale(.98)}}
+</style></head><body><div class="card"><div class="brand">ONYX CLIENT</div>
+<div class="ico"><svg viewBox="0 0 24 24">${mark}</svg></div><h1>${escHtml(title)}</h1><p>${escHtml(text)}</p>
+${!ok && detail ? `<small>${escHtml(detail)}</small>` : ''}</div>
+<script>${ok ? 'setTimeout(function(){try{window.close()}catch(e){}},2500)' : ''}</script></body></html>`;
+}
+
+function listenLoopback(handler) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(handler);
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port;
+      // El navegador puede ir a localhost por IPv6 (::1): escuchar también ahí, si se puede.
+      const v6 = http.createServer(handler);
+      v6.on('error', () => {});
+      try { v6.listen(port, '::1'); } catch { /* sin IPv6 */ }
+      resolve({ port, close: () => { try { server.close(); } catch { /* nada */ } try { v6.close(); } catch { /* nada */ } } });
+    });
+  });
+}
+
+let pendingBrowser = null;
+
+// Abre el navegador del sistema y espera el "code". openExternal(url) abre el navegador.
+async function browserLogin(openExternal, clientId, { lang = 'es', timeoutMs = 10 * 60e3, onCode } = {}) {
+  if (pendingBrowser) pendingBrowser.cancel();
+  const { verifier, challenge } = pkce();
+  const state = b64url(crypto.randomBytes(16));
+  let finish;
+  const done = new Promise((resolve, reject) => { finish = (err, val) => (err ? reject(err) : resolve(val)); });
+  done.catch(() => {}); // evita avisos si se cancela antes de esperar
+
+  const srv = await listenLoopback((req, res) => {
+    const u = new URL(req.url, 'http://localhost');
+    if (u.pathname !== '/') { res.writeHead(404); res.end(); return; }
+    const code = u.searchParams.get('code');
+    const error = u.searchParams.get('error');
+    if (!code && !error) { res.writeHead(400); res.end(); return; }
+    const okState = u.searchParams.get('state') === state;
+    const ok = !!code && okState;
+    const detail = !okState ? 'state' : (u.searchParams.get('error_description') || error || '');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(resultPage(ok, lang, detail));
+    if (ok) finish(null, code);
+    else finish(new AuthError(error === 'access_denied' ? 'cancelled' : 'ms_auth', u.searchParams.get('error_description') || error || 'Inicio de sesión no válido'));
+  });
+
+  const redirectUri = `http://localhost:${srv.port}`;
+  const url = `${AUTH_URL}?` + new URLSearchParams({
+    client_id: clientId,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    scope: SCOPE,
+    prompt: 'select_account',
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256'
+  }).toString();
+
+  const timer = setTimeout(() => finish(new AuthError('timeout', 'Se acabó el tiempo para iniciar sesión. Inténtalo de nuevo.')), timeoutMs);
+  const me = {
+    cancel: () => finish(new AuthError('cancelled', 'Inicio de sesión cancelado')),
+    reopen: () => openExternal(url)
+  };
+  pendingBrowser = me;
+  try {
+    await openExternal(url);
+    const code = await done;
+    if (onCode) onCode();
+    return { code, verifier, redirectUri };
+  } finally {
+    clearTimeout(timer);
+    if (pendingBrowser === me) pendingBrowser = null;
+    setTimeout(() => srv.close(), 1500); // deja tiempo a que la página termine de cargar
+  }
+}
+
+function cancelBrowserLogin() { if (pendingBrowser) pendingBrowser.cancel(); }
+function reopenBrowserLogin() { if (pendingBrowser) pendingBrowser.reopen(); }
+
+async function exchangeCode(clientId, code, verifier, redirectUri = REDIRECT_URI) {
   return postForm(TOKEN_URL, {
-    client_id: clientId, scope: SCOPE, code, redirect_uri: REDIRECT_URI,
+    client_id: clientId, scope: SCOPE, code, redirect_uri: redirectUri,
     grant_type: 'authorization_code', code_verifier: verifier
   });
 }
@@ -149,4 +264,4 @@ async function getProfile(accessToken) {
   return res.json();
 }
 
-module.exports = { interactiveLogin, exchangeCode, refreshMs, minecraftFromMs, getProfile, AuthError, REDIRECT_URI };
+module.exports = { interactiveLogin, browserLogin, cancelBrowserLogin, reopenBrowserLogin, resultPage, exchangeCode, refreshMs, minecraftFromMs, getProfile, AuthError, REDIRECT_URI };

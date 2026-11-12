@@ -159,7 +159,15 @@ handle('updater:install', () => updater.install());
 
 // ---------- cuentas ----------
 handle('accounts:list', () => accounts.list());
-handle('accounts:loginMicrosoft', () => accounts.loginMicrosoft(BrowserWindow, win));
+handle('accounts:loginMicrosoft', (mode) => accounts.loginMicrosoft(BrowserWindow, win, {
+  mode: mode === 'window' ? 'window' : 'browser',
+  openExternal: (url) => shell.openExternal(url),
+  lang: settingsStore.get().language,
+  // Al volver del navegador, traer el launcher al frente
+  onCode: () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
+}));
+handle('accounts:cancelLogin', () => require('./auth/microsoft').cancelBrowserLogin());
+handle('accounts:reopenLogin', () => require('./auth/microsoft').reopenBrowserLogin());
 handle('accounts:addOffline', (name) => accounts.addOffline(name));
 handle('accounts:setActive', (id) => accounts.setActive(id));
 handle('accounts:remove', (id) => accounts.remove(id));

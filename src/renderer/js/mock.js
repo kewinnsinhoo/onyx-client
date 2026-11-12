@@ -31,7 +31,7 @@
     updater: { check: () => wait({ status: 'latest' }, Number(q.get('splash') || 400)), install: wait, onEvent: () => () => {} },
     accounts: {
       list: () => wait({ accounts: [...accounts], active: accounts[0] ? accounts[0].id : null }),
-      loginMicrosoft: () => wait(null, 300), addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
+      loginMicrosoft: () => wait(null, q.get('mswait') ? 600000 : 300), cancelLogin: wait, reopenLogin: wait, addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
     },
     discord: { link: () => wait({ username: 'kewin' }), unlink: wait, presence: wait },
     skins: {

@@ -118,7 +118,7 @@
       });
       left.querySelector('[data-l=ms]').onclick = async (e) => {
         const b = e.currentTarget; b.classList.add('busy');
-        try { await onyx.accounts.loginMicrosoft(); await App.loadAccounts(); toast(t('Sesión iniciada como {name}', { name: S.account.name }), 'success'); render(); }
+        try { await App.microsoftLogin(); await App.loadAccounts(); toast(t('Sesión iniciada como {name}', { name: S.account.name }), 'success'); render(); }
         catch (err) { if (err.code !== 'cancelled') toast(err.message, 'error', 7000); }
         finally { b.classList.remove('busy'); }
       };

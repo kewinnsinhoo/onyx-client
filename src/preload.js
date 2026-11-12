@@ -40,7 +40,9 @@ contextBridge.exposeInMainWorld('onyx', {
   },
   accounts: {
     list: () => call('accounts:list'),
-    loginMicrosoft: () => call('accounts:loginMicrosoft'),
+    loginMicrosoft: (mode) => call('accounts:loginMicrosoft', mode),
+    cancelLogin: () => call('accounts:cancelLogin'),
+    reopenLogin: () => call('accounts:reopenLogin'),
     addOffline: (name) => call('accounts:addOffline', name),
     setActive: (id) => call('accounts:setActive', id),
     remove: (id) => call('accounts:remove', id),

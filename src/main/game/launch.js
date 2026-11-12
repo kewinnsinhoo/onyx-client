@@ -6,6 +6,7 @@ const V = require('./versions');
 const { downloadAll, fetchRetry } = require('./download');
 const { ensureJava } = require('./java');
 const { extract } = require('./zip');
+const Forge = require('./forge');
 
 const LAUNCHER_NAME = 'onyx-client';
 
@@ -85,7 +86,7 @@ function buildArguments(version, o, env = {}) {
 }
 
 // Descarga todo lo necesario para una instancia. progress({stage, done, total})
-async function prepare(root, { mc, loader }, { concurrency, progress, verify = false }) {
+async function prepare(root, { mc, loader }, { concurrency, progress, verify = false, javaPath = '', onLog }) {
   const step = (stage, done = 0, total = 1) => progress && progress({ stage, done, total });
 
   step('version');
@@ -97,10 +98,11 @@ async function prepare(root, { mc, loader }, { concurrency, progress, verify = f
   const client = version.downloads && version.downloads.client;
   if (client) jarTasks.push({ url: client.url, dest: V.clientJarPath(root, version), sha1: client.sha1, size: client.size, verify: true });
 
-  // Librerías
+  // Librerías (+ las que necesita el instalador de Forge/NeoForge la primera vez)
   const libs = V.collectLibraries(root, version);
-  step('libraries', 0, libs.downloads.length + jarTasks.length);
-  await downloadAll([...jarTasks, ...libs.downloads.map(t => ({ ...t, verify }))], {
+  const extra = Forge.processorLibraries(root, versionId).filter(t => !libs.downloads.some(d => d.dest === t.dest));
+  step('libraries', 0, libs.downloads.length + jarTasks.length + extra.length);
+  await downloadAll([...jarTasks, ...libs.downloads.map(t => ({ ...t, verify })), ...extra], {
     concurrency, onProgress: (d, t) => step('libraries', d, t)
   });
 
@@ -120,23 +122,32 @@ async function prepare(root, { mc, loader }, { concurrency, progress, verify = f
 
   // Java
   step('java');
-  return { version, libs, index, loggingArg };
+  let java = javaPath && fs.existsSync(javaPath) ? javaPath : null;
+  if (!java) {
+    const component = (version.javaVersion && version.javaVersion.component) || 'jre-legacy';
+    java = await ensureJava(root, component, {
+      concurrency, onProgress: (d, t) => step('java', d, t)
+    });
+  }
+
+  // Forge / NeoForge: parchear Minecraft la primera vez y usar el jar con el nombre de la versión
+  if (version.onyxCopyJar) {
+    const vanillaJar = V.clientJarPath(root, version);
+    await Forge.runProcessors(root, versionId, { mc, java, minecraftJar: vanillaJar, progress, onLog });
+    Forge.copyClientJar(root, version, vanillaJar);
+    version.jarId = version.id;
+  }
+  return { version, libs, index, loggingArg, java };
 }
 
 async function launch(root, opts) {
   const { instance, account, settings, progress, onLog, onExit, launcherVersion } = opts;
   const concurrency = settings.fastDownload ? 16 : 4;
 
-  const prep = await prepare(root, { mc: instance.minecraft, loader: instance.loader }, { concurrency, progress });
-  const { version, libs, index, loggingArg } = prep;
-
-  let java = settings.javaPath && fs.existsSync(settings.javaPath) ? settings.javaPath : null;
-  if (!java) {
-    const component = (version.javaVersion && version.javaVersion.component) || 'jre-legacy';
-    java = await ensureJava(root, component, {
-      concurrency, onProgress: (d, t) => progress && progress({ stage: 'java', done: d, total: t })
-    });
-  }
+  const prep = await prepare(root, { mc: instance.minecraft, loader: instance.loader }, {
+    concurrency, progress, javaPath: settings.javaPath, onLog
+  });
+  const { version, libs, index, loggingArg, java } = prep;
 
   // Carpeta de la instancia + natives
   const gameDir = path.join(root, 'instances', instance.id);

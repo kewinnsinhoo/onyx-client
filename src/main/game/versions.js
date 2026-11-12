@@ -3,10 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { fetchJson } = require('./download');
+const Forge = require('./forge');
 
 const MANIFEST_URL = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
 const LIBRARIES_URL = 'https://libraries.minecraft.net/';
 const RESOURCES_URL = 'https://resources.download.minecraft.net/';
+// Servidores de reserva para librerías antiguas de loaders (Forge 1.7/1.12 usa varias de Maven Central)
+const MIRRORS = [LIBRARIES_URL, 'https://maven.minecraftforge.net/', 'https://maven.neoforged.net/releases/', 'https://repo1.maven.org/maven2/'];
 
 function osName(platform = process.platform) {
   return platform === 'win32' ? 'windows' : platform === 'darwin' ? 'osx' : 'linux';
@@ -78,17 +81,21 @@ async function ensureVanillaJson(root, id) {
   return json;
 }
 
-// Instala el perfil de un loader (Fabric/Quilt) y devuelve el id de versión resultante.
+// Instala el perfil de un loader (Fabric/Quilt/Forge/NeoForge) y devuelve el id de versión resultante.
 async function ensureLoaderProfile(root, mc, loader) {
   const type = (loader && loader.type) || 'vanilla';
   if (type === 'vanilla') { await ensureVanillaJson(root, mc); return mc; }
+  if (Forge.isForgeLike(type)) {
+    await ensureVanillaJson(root, mc);
+    return Forge.ensureProfile(root, mc, loader);
+  }
 
   const metas = {
     fabric: 'https://meta.fabricmc.net/v2/versions/loader',
     quilt: 'https://meta.quiltmc.org/v3/versions/loader'
   };
   const base = metas[type];
-  if (!base) throw new Error(`El loader "${type}" todavía no está soportado (usa vanilla, fabric o quilt)`);
+  if (!base) throw new Error(`El loader "${type}" no existe (usa vanilla, fabric, quilt, forge o neoforge)`);
 
   let lv = loader.version;
   if (!lv || lv === 'latest') {
@@ -165,12 +172,27 @@ function collectLibraries(root, version, env = {}) {
       downloads.push({ url: art.url, dest, sha1: art.sha1, size: art.size });
       classpath.push(dest);
       if (/:natives-/.test(lib.name || '')) natives.push({ file: dest, exclude: ['META-INF/'] });
+    } else if (art && lib.name) {
+      // Sin URL: lo crea el instalador del loader (p. ej. el jar parcheado de Forge). Solo va al classpath.
+      classpath.push(path.join(libDir, art.path || mavenPath(lib.name)));
     } else if (!lib.downloads && lib.name) {
-      const rel = mavenPath(lib.name);
+      // Formato antiguo (JSON de Forge viejo): sin "downloads", solo nombre maven + url opcional
       const base = (lib.url || LIBRARIES_URL).replace(/\/?$/, '/');
-      const dest = path.join(libDir, rel);
-      downloads.push({ url: base + rel, dest, sha1: lib.sha1, size: lib.size });
-      classpath.push(dest);
+      if (lib.natives) {
+        const cls = lib.natives[name] && lib.natives[name].replace('${arch}', (env.arch || osArch()) === 'x86' ? '32' : '64');
+        if (cls) {
+          const rel = mavenPath(`${lib.name}:${cls}`);
+          const dest = path.join(libDir, rel);
+          downloads.push({ url: base + rel, urls: MIRRORS.map(m => m + rel), dest });
+          natives.push({ file: dest, exclude: (lib.extract && lib.extract.exclude) || ['META-INF/'] });
+        }
+      } else {
+        const rel = mavenPath(lib.name);
+        const dest = path.join(libDir, rel);
+        const sha1 = lib.sha1 || (Array.isArray(lib.checksums) && lib.checksums.length === 1 ? lib.checksums[0] : undefined);
+        downloads.push({ url: base + rel, urls: MIRRORS.map(m => m + rel), dest, sha1, size: lib.size });
+        classpath.push(dest);
+      }
     }
     if (lib.natives && lib.natives[name]) {
       const cls = lib.natives[name].replace('${arch}', (env.arch || osArch()) === 'x86' ? '32' : '64');
@@ -182,7 +204,11 @@ function collectLibraries(root, version, env = {}) {
       }
     }
   }
-  return { downloads, classpath: [...new Set(classpath)], natives };
+  // Sin duplicados (dos descargas del mismo archivo a la vez se pisarían)
+  const seen = new Set();
+  const unique = downloads.filter(d => (seen.has(d.dest) ? false : seen.add(d.dest)));
+  const seenN = new Set();
+  return { downloads: unique, classpath: [...new Set(classpath)], natives: natives.filter(n => (seenN.has(n.file) ? false : seenN.add(n.file))) };
 }
 
 function clientJarPath(root, version) {

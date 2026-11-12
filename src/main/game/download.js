@@ -50,10 +50,16 @@ async function isValid(file, { sha1, size, verify }) {
 }
 
 async function downloadFile(task) {
-  const { url, dest, sha1, size } = task;
+  const { dest, sha1 } = task;
   if (await isValid(dest, task)) return false;
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const res = await fetchRetry(url);
+  // task.urls = servidores de reserva (se prueban en orden si el primero no tiene el archivo)
+  const urls = [task.url, ...(task.urls || [])].filter(Boolean);
+  let res, lastErr;
+  for (const u of [...new Set(urls)]) {
+    try { res = await fetchRetry(u, {}, u === urls[urls.length - 1] ? 3 : 1); break; } catch (e) { lastErr = e; }
+  }
+  if (!res) throw lastErr || new Error(`Sin dirección para ${path.basename(dest)}`);
   const buf = Buffer.from(await res.arrayBuffer());
   if (sha1) {
     const got = crypto.createHash('sha1').update(buf).digest('hex');

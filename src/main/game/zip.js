@@ -61,4 +61,4 @@ function extract(zipFile, destDir, { exclude = [], filter, strip } = {}) {
 // Lista los nombres de un zip
 function list(zipFile) { return readEntries(fs.readFileSync(zipFile)).map(e => e.name); }
 
-module.exports = { extract, readEntries, list };
+module.exports = { extract, readEntries, entryData, list };

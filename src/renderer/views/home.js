@@ -10,7 +10,7 @@
   function loaderLabel(l, withVersion) {
     const type = (l && l.type) || 'vanilla';
     const name = { vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' }[type] || type;
-    return withVersion && l && l.version && l.version !== 'latest' ? `${name} ${l.version}` : name;
+    return withVersion && l && l.version && !['latest', 'recommended'].includes(l.version) ? `${name} ${l.version}` : name;
   }
   function initials(name) { return esc(String(name || '?').trim().slice(0, 2).toUpperCase()); }
 

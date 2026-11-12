@@ -244,6 +244,69 @@ test('estado de Discord: textos y botones', () => {
   assert.strictEqual(noIcon.buttons, undefined);
 });
 
+test('Forge/NeoForge: elegir versión', () => {
+  const F = require('../src/main/game/forge');
+  assert.ok(F.cmpVersion('47.3.10', '47.3.9') > 0);
+  assert.ok(F.cmpVersion('21.1.77', '21.1.77-beta') > 0);
+  assert.strictEqual(F.neoPrefix('1.21.1'), '21.1.');
+  assert.strictEqual(F.neoPrefix('1.21'), '21.0.');
+  assert.strictEqual(F.neoPrefix('26.1'), '26.1.0.');
+  const neo = ['21.0.167', '21.1.5-beta', '21.1.9', '21.1.77', '21.1.100-beta', '21.10.3', '1.20.1-47.1.106'];
+  assert.deepStrictEqual(F.pickNeoForge('1.21.1', 'latest', neo), { artifact: 'neoforge', version: '21.1.77' });
+  assert.deepStrictEqual(F.pickNeoForge('1.21.1', '21.1.5-beta', neo), { artifact: 'neoforge', version: '21.1.5-beta' });
+  assert.deepStrictEqual(F.pickNeoForge('1.20.1', '47.1.106', []), { artifact: 'forge', version: '1.20.1-47.1.106' });
+  assert.throws(() => F.pickNeoForge('1.8.9', 'latest', neo), /no tiene versiones/);
+  const maven = ['1.7.10-10.13.4.1614-1.7.10', '1.20.1-47.2.0', '1.20.1-47.3.0', '1.20.1-47.3.12'];
+  const promos = { promos: { '1.20.1-recommended': '47.3.0', '1.20.1-latest': '47.3.12', '1.7.10-recommended': '10.13.4.1614' } };
+  assert.strictEqual(F.pickForge('1.20.1', 'recommended', promos, maven), '1.20.1-47.3.0');
+  assert.strictEqual(F.pickForge('1.20.1', 'latest', promos, maven), '1.20.1-47.3.12');
+  assert.strictEqual(F.pickForge('1.7.10', 'recommended', promos, maven), '1.7.10-10.13.4.1614-1.7.10');
+  assert.strictEqual(F.pickForge('1.20.1', '47.2.0', null, []), '1.20.1-47.2.0');
+  assert.strictEqual(F.pickForge('1.20.1', 'latest', null, maven), '1.20.1-47.3.12');
+  assert.strictEqual(F.fixUrl('http://files.minecraftforge.net/maven/'), 'https://maven.minecraftforge.net/');
+  assert.strictEqual(F.resolveArg('{MINECRAFT_JAR}', { MINECRAFT_JAR: '/x/mc.jar' }, '/lib'), '/x/mc.jar');
+  assert.strictEqual(F.resolveArg('[a.b:c:1:d@txt]', {}, '/lib'), path.join('/lib', 'a/b/c/1/c-1-d.txt'));
+});
+
+test('Forge antiguo (1.7.10): instalar perfil', () => {
+  const F = require('../src/main/game/forge');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'onyx-forge-old-'));
+  const universal = Buffer.from('jar-de-forge');
+  const profile = {
+    install: { path: 'net.minecraftforge:forge:1.7.10-10.13.4.1614-1.7.10', filePath: 'forge-1.7.10-10.13.4.1614-1.7.10-universal.jar' },
+    versionInfo: {
+      id: '1.7.10-Forge10.13.4.1614-1.7.10', mainClass: 'net.minecraft.launchwrapper.Launch',
+      minecraftArguments: '--username ${auth_player_name} --tweakClass cpw.mods.fml.common.launcher.FMLTweaker',
+      libraries: [
+        { name: 'net.minecraftforge:forge:1.7.10-10.13.4.1614-1.7.10', url: 'http://files.minecraftforge.net/maven/' },
+        { name: 'com.typesafe.akka:akka-actor_2.11:2.3.3', url: 'http://files.minecraftforge.net/maven/', checksums: ['a', 'b'], clientreq: true },
+        { name: 'net.minecraft:launchwrapper:1.12' },
+        { name: 'org.lwjgl.lwjgl:lwjgl-platform:2.9.1', natives: { windows: 'natives-windows', linux: 'natives-linux', osx: 'natives-osx' } }
+      ]
+    }
+  };
+  const inst = path.join(root, 'installer.jar');
+  fs.writeFileSync(inst, makeZip({ 'install_profile.json': Buffer.from(JSON.stringify(profile)), [profile.install.filePath]: universal }));
+  const id = F.installFromJar(root, '1.7.10', inst);
+  assert.strictEqual(id, '1.7.10-Forge10.13.4.1614-1.7.10');
+  const uni = path.join(root, 'libraries', 'net/minecraftforge/forge/1.7.10-10.13.4.1614-1.7.10/forge-1.7.10-10.13.4.1614-1.7.10.jar');
+  assert.ok(fs.readFileSync(uni).equals(universal), 'jar de Forge extraído');
+  const vj = JSON.parse(fs.readFileSync(path.join(root, 'versions', id, id + '.json'), 'utf8'));
+  assert.strictEqual(vj.inheritsFrom, '1.7.10');
+  assert.strictEqual(vj.jar, '1.7.10');
+  assert.ok(vj.onyxCopyJar);
+  assert.strictEqual(vj.libraries[1].url, 'https://maven.minecraftforge.net/');
+  // Librerías: estilo antiguo, natives sin "downloads" y servidores de reserva
+  const libs = V.collectLibraries(root, vj, { os: 'windows', arch: 'x64' });
+  const akka = libs.downloads.find(d => d.dest.includes('akka-actor'));
+  assert.ok(akka.url.startsWith('https://maven.minecraftforge.net/'));
+  assert.ok(akka.urls.some(u => u.startsWith('https://repo1.maven.org/maven2/')));
+  assert.ok(libs.natives.some(n => n.file.endsWith('lwjgl-platform-2.9.1-natives-windows.jar')));
+  assert.ok(!libs.classpath.some(c => c.endsWith('lwjgl-platform-2.9.1.jar')), 'natives no van al classpath');
+  assert.ok(libs.classpath.includes(uni));
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);
 
 // ---- Ping a un servidor de Minecraft falso (protocolo Server List Ping) ----
@@ -306,4 +369,115 @@ console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' :
   rpc.stop();
   server.close();
   try { fs.unlinkSync(sockPath); } catch { /* nada */ }
+})();
+
+// ---- Forge moderno / NeoForge: instalador de prueba con un procesador real en Java ----
+(async () => {
+  const { execFileSync } = require('child_process');
+  const name = 'Forge moderno (procesadores con Java)';
+  let java = null;
+  try { execFileSync('javac', ['-version'], { stdio: 'ignore' }); execFileSync('jar', ['--version'], { stdio: 'ignore' }); java = 'java'; } catch { /* sin JDK */ }
+  if (!java) { console.log(`  - ${name}: omitida (no hay JDK)`); return; }
+  const F = require('../src/main/game/forge');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'onyx-forge-new-'));
+  try {
+    // Procesador: une el jar de Minecraft + el parche en el jar de salida
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), 'onyx-proc-'));
+    fs.writeFileSync(path.join(src, 'Proc.java'), `import java.nio.file.*; import java.io.*;
+public class Proc { public static void main(String[] a) throws Exception {
+  String in = null, patch = null, out = null, lit = null;
+  for (int i = 0; i < a.length; i++) { if (a[i].equals("--in")) in = a[++i]; else if (a[i].equals("--patch")) patch = a[++i]; else if (a[i].equals("--out")) out = a[++i]; else if (a[i].equals("--lit")) lit = a[++i]; }
+  if (!"hola".equals(lit)) throw new RuntimeException("literal mal: " + lit);
+  ByteArrayOutputStream b = new ByteArrayOutputStream(); b.write(Files.readAllBytes(Paths.get(in))); b.write(Files.readAllBytes(Paths.get(patch)));
+  Path o = Paths.get(out); Files.createDirectories(o.getParent()); Files.write(o, b.toByteArray()); System.out.println("parcheado " + out); } }`);
+    execFileSync('javac', ['--release', '8', '-d', src, path.join(src, 'Proc.java')], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(src, 'm.txt'), 'Main-Class: Proc\n');
+    const procJar = path.join(src, 'proc.jar');
+    execFileSync('jar', ['cfm', procJar, path.join(src, 'm.txt'), '-C', src, 'Proc.class'], { stdio: 'ignore' });
+
+    const mcJar = path.join(root, 'versions', '1.20.1', '1.20.1.jar');
+    fs.mkdirSync(path.dirname(mcJar), { recursive: true });
+    fs.writeFileSync(mcJar, 'MC');
+    const expected = require('crypto').createHash('sha1').update('MCPARCHE').digest('hex');
+    const outCoord = 'net.minecraftforge:forge:1.20.1-47.3.0:client';
+    const profile = {
+      spec: 1, json: '/version.json', minecraft: '1.20.1',
+      data: { BINPATCH: { client: '/data/client.lzma', server: '/data/server.lzma' }, LIT: { client: "'hola'", server: "'x'" }, PATCHED: { client: `[${outCoord}]`, server: '[x:y:1]' }, PATCHED_SHA: { client: `'${expected}'`, server: "''" } },
+      processors: [
+        { sides: ['server'], jar: 'com.example:proc:1.0', args: ['--nunca'] },
+        { jar: 'com.example:proc:1.0', classpath: [], args: ['--in', '{MINECRAFT_JAR}', '--patch', '{BINPATCH}', '--lit', '{LIT}', '--out', '{PATCHED}'], outputs: { '{PATCHED}': '{PATCHED_SHA}' } }
+      ],
+      libraries: [{ name: 'com.example:proc:1.0', downloads: { artifact: { path: 'com/example/proc/1.0/proc-1.0.jar', url: '' } } }]
+    };
+    const vjson = { id: '1.20.1-forge-47.3.0', inheritsFrom: '1.20.1', mainClass: 'cpw.mods.bootstraplauncher.BootstrapLauncher',
+      arguments: { jvm: ['-DignoreList=bootstraplauncher,${version_name}.jar'], game: ['--launchTarget', 'forgeclient'] },
+      libraries: [{ name: outCoord, downloads: { artifact: { path: 'net/minecraftforge/forge/1.20.1-47.3.0/forge-1.20.1-47.3.0-client.jar', url: '' } } }] };
+    const inst = path.join(root, 'cache', 'installers', 'forge.jar');
+    fs.mkdirSync(path.dirname(inst), { recursive: true });
+    fs.writeFileSync(inst, makeZip({
+      'install_profile.json': Buffer.from(JSON.stringify(profile)),
+      'version.json': Buffer.from(JSON.stringify(vjson)),
+      'data/client.lzma': Buffer.from('PARCHE'),
+      'maven/com/example/proc/1.0/proc-1.0.jar': fs.readFileSync(procJar)
+    }));
+
+    const id = F.installFromJar(root, '1.20.1', inst);
+    assert.strictEqual(id, '1.20.1-forge-47.3.0');
+    assert.ok(fs.existsSync(path.join(root, 'libraries/com/example/proc/1.0/proc-1.0.jar')), 'maven/ extraído');
+    assert.deepStrictEqual(F.processorLibraries(root, id), []); // el procesador venía dentro del instalador
+    const logs = [];
+    const ran = await F.runProcessors(root, id, { mc: '1.20.1', java, minecraftJar: mcJar, onLog: (t) => logs.push(t) });
+    assert.strictEqual(ran, true);
+    const out = path.join(root, 'libraries/net/minecraftforge/forge/1.20.1-47.3.0/forge-1.20.1-47.3.0-client.jar');
+    assert.strictEqual(fs.readFileSync(out, 'utf8'), 'MCPARCHE');
+    assert.ok(logs.join('').includes('parcheado'));
+    assert.strictEqual(await F.runProcessors(root, id, { mc: '1.20.1', java, minecraftJar: mcJar }), false, 'la segunda vez no repite');
+
+    // La versión resuelta pone el jar parcheado en el classpath y copia el de Minecraft con el nombre de la versión
+    fs.writeFileSync(path.join(root, 'versions', '1.20.1', '1.20.1.json'), JSON.stringify({ id: '1.20.1', mainClass: 'net.minecraft.client.main.Main', libraries: [], arguments: { game: [], jvm: [] } }));
+    const version = V.loadResolved(root, id);
+    assert.ok(V.collectLibraries(root, version).classpath.includes(out));
+    const copied = F.copyClientJar(root, version, mcJar);
+    assert.strictEqual(path.basename(copied), '1.20.1-forge-47.3.0.jar');
+    passed++; console.log('  ✓ ' + name);
+  } catch (e) { console.error('  ✗ ' + name + '\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+  fs.rmSync(root, { recursive: true, force: true });
+})();
+
+// ---- Login de Microsoft en el navegador: el servidor local recibe el código ----
+(async () => {
+  const MS = require('../src/main/auth/microsoft');
+  const http = require('http');
+  const get = (url) => new Promise((resolve, reject) => http.get(url, (res) => { let b = ''; res.on('data', d => b += d); res.on('end', () => resolve({ status: res.statusCode, body: b })); }).on('error', reject));
+  try {
+    let page = null;
+    const r = await MS.browserLogin(async (url) => {
+      const u = new URL(url);
+      assert.strictEqual(u.searchParams.get('code_challenge_method'), 'S256');
+      const back = new URL(u.searchParams.get('redirect_uri'));
+      assert.strictEqual(back.hostname, 'localhost');
+      back.hostname = '127.0.0.1';
+      setTimeout(async () => {
+        assert.strictEqual((await get(`${back.origin}/?code=MAL&state=otro`)).status, 200); // estado falso: se rechaza
+      }, 10);
+    }, 'cliente-prueba', { lang: 'es', timeoutMs: 3000 }).catch(e => e);
+    assert.ok(r instanceof Error && r.code === 'ms_auth', 'rechaza un state que no es el suyo');
+
+    const ok = await MS.browserLogin(async (url) => {
+      const u = new URL(url);
+      const back = new URL(u.searchParams.get('redirect_uri')); back.hostname = '127.0.0.1';
+      setTimeout(async () => { page = await get(`${back.origin}/?code=CODIGO123&state=${u.searchParams.get('state')}`); }, 10);
+    }, 'cliente-prueba', { lang: 'en', timeoutMs: 3000 });
+    assert.strictEqual(ok.code, 'CODIGO123');
+    assert.ok(/^http:\/\/localhost:\d+$/.test(ok.redirectUri));
+    assert.ok(ok.verifier.length > 30);
+    await new Promise(r2 => setTimeout(r2, 50));
+    assert.ok(page && page.body.includes('Signed in'));
+
+    const p = MS.browserLogin(async () => {}, 'cliente-prueba', { timeoutMs: 3000 });
+    setTimeout(() => MS.cancelBrowserLogin(), 20);
+    const c = await p.catch(e => e);
+    assert.strictEqual(c.code, 'cancelled');
+    passed++; console.log('  ✓ login de Microsoft en el navegador (servidor local)');
+  } catch (e) { console.error('  ✗ login en el navegador\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
