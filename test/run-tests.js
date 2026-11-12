@@ -533,6 +533,8 @@ test('panel: errores legibles', () => {
 
 // El launcher contra el panel de verdad (servidor local con datos de ejemplo)
 (async () => {
+  // El panel local usa la base de datos SQLite que trae Node 22.5+; con un Node más viejo se salta
+  try { require('node:sqlite'); } catch { console.log('  - launcher ↔ panel: se salta (este Node no trae SQLite)'); return; }
   const { spawn } = require('child_process');
   const port = 8797;
   const srv = spawn(process.execPath, ['--no-warnings', path.join(__dirname, '..', 'panel', 'dev', 'server.js'), String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
