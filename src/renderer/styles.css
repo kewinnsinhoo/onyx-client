@@ -295,7 +295,7 @@ textarea.input { height: 86px; padding: 12px 14px; resize: none; }
 .link-btn { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 600; font-size: 13px; }
 .link-btn:hover { color: var(--text); }
 .link-btn svg { width: 15px; height: 15px; }
-.viewer-card { height: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; overflow: hidden; }
+.viewer-card { height: 360px; background: radial-gradient(ellipse 45% 70% at 50% 48%, #24262c 0%, #17181c 55%, var(--surface) 100%); border: 1px solid var(--border); border-radius: var(--radius); position: relative; overflow: hidden; }
 .viewer-tools { position: absolute; right: 14px; top: 14px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
 .viewer-tools button { width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-2); }
 .viewer-tools button:hover, .viewer-tools button.on { color: var(--text); background: var(--surface-3); }
@@ -352,7 +352,7 @@ textarea.input { height: 86px; padding: 12px 14px; resize: none; }
 .creators { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px 70px; padding-top: 6px; }
 .creator { width: 270px; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .creator .stage { width: 270px; height: 320px; position: relative; }
-.creator .stage::after { content: ""; position: absolute; left: 30px; right: 30px; top: 30px; bottom: 40px; background: radial-gradient(rgba(255,255,255,.05), transparent 65%); pointer-events: none; }
+.creator .stage::before { content: ""; position: absolute; left: 20px; right: 20px; top: 10px; bottom: 20px; background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.08), transparent 65%); pointer-events: none; }
 .creator .n { font-weight: 700; font-size: 18px; margin-top: 8px; }
 .creator .h { color: var(--muted); font-size: 11.5px; margin-top: 4px; font-family: "Cascadia Mono", Consolas, Menlo, monospace; }
 .socials { display: flex; gap: 8px; margin-top: 14px; }

@@ -300,8 +300,14 @@
         pixelRatio: 'match-device', preserveDrawingBuffer: true, zoom: this.opts.zoom, fov: 40
       });
       v.background = null;
-      v.globalLight.intensity = 2.6;
-      v.cameraLight.intensity = 0.9;
+      // Igual que Minecraft: píxeles nítidos (sin suavizado) y luz como en el juego.
+      if (v.fxaaPass) v.fxaaPass.enabled = false;
+      // Luz ambiente + luz desde arriba a la izquierda de la cámara (sombras suaves como en NameMC)
+      v.globalLight.intensity = 1.9;
+      v.cameraLight.intensity = 1.8;
+      v.cameraLight.decay = 0;
+      v.cameraLight.position.set(-35, 30, 10);
+      this._cutout();
       v.controls.enableZoom = false;
       v.controls.enablePan = false;
       v.controls.enableRotate = !!this.opts.interactive;
@@ -320,6 +326,26 @@
     }
 
     wave() { this.waveStart = performance.now(); }
+
+    // La capa exterior (pelo, chaqueta, mangas...) se dibuja como en Minecraft:
+    // cada píxel es visible o invisible, sin transparencias "fantasma" ni caras internas raras.
+    _cutout() {
+      // Colores reales de la skin (sin esto three.js los muestra lavados/más claros)
+      for (const tex of [this.viewer.skinTexture, this.viewer.capeTexture, this.viewer.earsTexture]) {
+        if (tex && tex.colorSpace !== 'srgb') { tex.colorSpace = 'srgb'; tex.needsUpdate = true; }
+      }
+      this.viewer.playerObject.traverse((o) => {
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+        for (const m of mats) {
+          if (m.transparent) {
+            m.transparent = false;
+            m.alphaTest = 0.5;
+            m.depthWrite = true;
+            m.needsUpdate = true;
+          }
+        }
+      });
+    }
 
     _animate(player, t) {
       const skin = player.skin;
@@ -385,13 +411,14 @@
       if (token !== this._token) return;
       try { await this.viewer.loadSkin(src, { model: this.variant === 'slim' ? 'slim' : 'default' }); }
       catch { await this.viewer.loadSkin(DEFAULT_DATA, { model: 'default' }); }
+      this._cutout();
       this.loaded = true;
       if (first && this.opts.wave) setTimeout(() => this.wave(), 200);
     }
 
     async setCape(url) {
       if (!url) { this.viewer.loadCape(null); return; }
-      try { await this.viewer.loadCape(await resolveTexture(url)); } catch { /* sin capa */ }
+      try { await this.viewer.loadCape(await resolveTexture(url)); this._cutout(); } catch { /* sin capa */ }
     }
 
     setVariant(variant) { this.setSkin(this.skinUrl, variant); }
