@@ -15,9 +15,9 @@
   },
   "d1_databases": [{ "binding": "DB", "database_name": "onyx-panel-db" }],
   "kv_namespaces": [{ "binding": "MEDIA" }],
+  "keep_vars": true,
   "vars": {
     "DISCORD_CLIENT_ID": "1570540697461989376",
-    "CREATOR_DISCORD_IDS": "",
     "PUBLIC_URL": "https://panel.onyxclient.site"
   },
   "triggers": { "crons": ["*/5 * * * *"] },
