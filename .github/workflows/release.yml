@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -54,8 +54,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+  # Mac va aparte: a veces GitHub tarda mucho en dar un equipo Mac.
+  # La versión de Windows/Linux se publica sin esperarlo y el .dmg se añade cuando termine.
+  compilar-mac:
+    needs: preparar
+    runs-on: macos-latest
+    continue-on-error: true
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/prepare-ci.js
+      - run: npm install
+      - name: Compilar y subir
+        run: npx electron-builder --mac --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
   publicar:
-    # Publica aunque falle Mac (a veces GitHub no tiene equipos Mac libres), siempre que exista el .exe
+    # Publica en cuanto estén Windows y Linux (no espera a Mac), siempre que exista el .exe
     needs: [preparar, compilar]
     if: always() && needs.preparar.result == 'success'
     runs-on: ubuntu-latest
