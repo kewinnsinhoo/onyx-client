@@ -1,0 +1,10 @@
+// Configuración de Cloudflare (Workers con archivos estáticos) para la web de Onyx Client.
+// En Cloudflare: Advanced settings → Path = web
+{
+  "name": "onyx-client",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": ".",
+    "not_found_handling": "404-page"
+  }
+}
