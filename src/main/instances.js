@@ -122,7 +122,7 @@ async function redeem(code, account) {
 let lastPanelSync = 0;
 async function syncPanel(account, { force = false } = {}) {
   if (!panel.enabled() || !account) return list();
-  if (!force && Date.now() - lastPanelSync < 60e3) return list();
+  if (!force && Date.now() - lastPanelSync < 15e3) return list();
   lastPanelSync = Date.now();
   try {
     const remote = await panel.listInstances(account);

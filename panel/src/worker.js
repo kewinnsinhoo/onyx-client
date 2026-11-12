@@ -642,8 +642,10 @@ async function launcherApi(req, env, u, path, m) {
   }
 
   if (parts[0] === 'instances' && m === 'GET') {
-    const rows = (await env.DB.prepare(`SELECT i.* FROM instances i WHERE i.deleted_at IS NULL AND i.hidden = 0 AND
-      (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1)`).bind(P.key).all()).results;
+    // Con acceso (código o lista manual), públicas, o donde es staff (el staff ve también las ocultas)
+    const rows = (await env.DB.prepare(`SELECT i.* FROM instances i WHERE i.deleted_at IS NULL AND (
+      (i.hidden = 0 AND (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1))
+      OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.staff') s WHERE lower(s.value) = ?))`).bind(P.key, P.key).all()).results;
     const out = [];
     for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin));
     return json({ instances: out });

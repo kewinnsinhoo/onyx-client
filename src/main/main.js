@@ -76,6 +76,10 @@ app.whenReady().then(() => {
   instances.init(ROOT);
   log.info(`Onyx Client ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}`);
   createWindow();
+  // Lo que cambie en el panel (lista manual, staff, instancias públicas...) aparece solo:
+  // cada minuto y cada vez que vuelves a la ventana del launcher
+  setInterval(() => kickPanelSync(), 60e3);
+  win.on('focus', () => kickPanelSync());
   const st = settingsStore.get();
   presence.init({
     clientId: isPlaceholder(config.discordClientId) ? null : config.discordClientId,

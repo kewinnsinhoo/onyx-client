@@ -189,6 +189,12 @@ await test('launcher: puerta de juego (lleno, bloqueada, staff, premium, latidos
   assert.strictEqual(p1.status, 200, JSON.stringify(p1.data));
   const p2 = await call('POST', '/api/l/play', { headers: k, body: { instance: iid } });
   assert.strictEqual(p2.data.reason, 'full');
+  const seen = await call('GET', '/api/l/instances', { headers: s });
+  assert.ok(seen.data.instances.some(i => i.id === iid), 'al staff le aparece la instancia sin código');
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { hidden: true } });
+  assert.ok((await call('GET', '/api/l/instances', { headers: s })).data.instances.some(i => i.id === iid), 'el staff ve también las ocultas');
+  assert.ok(!(await call('GET', '/api/l/instances', { headers: k })).data.instances.some(i => i.id === iid), 'oculta para el resto');
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { hidden: false } });
   const ps = await call('POST', '/api/l/play', { headers: s, body: { instance: iid } });
   assert.strictEqual(ps.data.ok, true, 'el staff entra aunque esté lleno');
   assert.strictEqual(ps.data.staff, true);
