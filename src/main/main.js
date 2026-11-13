@@ -17,6 +17,8 @@ const panel = require('./panel');
 const referrals = require('./referrals');
 const report = require('./report');
 
+// Un launcher de marca tiene su propia carpeta de ajustes y cuentas
+if (config.brand) app.setPath('userData', path.join(app.getPath('appData'), config.appName || `onyx-${config.brand.id}`));
 const userData = app.getPath('userData');
 const ROOT = gameRoot();
 log.init(path.join(userData, 'logs'));
@@ -68,13 +70,17 @@ function createWindow() {
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
 
 app.whenReady().then(() => {
-  if (process.platform === 'win32') app.setAppUserModelId('com.onyxstudios.client');
+  if (process.platform === 'win32') app.setAppUserModelId(config.brand ? `site.onyxclient.brand.${config.brand.id}` : 'com.onyxstudios.client');
   accounts.init(userData);
   skins.init(userData);
   data.init(userData);
   panel.init(userData);
   instances.init(ROOT);
-  log.info(`Onyx Client ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}`);
+  log.info(`${config.appName || 'Onyx Client'} ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}${config.brand ? ` (marca ${config.brand.id})` : ''}`);
+  // Un launcher de marca apoya a su studio desde el principio (referido)
+  if (config.brand && config.brand.studio && !settingsStore.get().referral) {
+    settingsStore.set({ referral: { code: config.brand.studio.toUpperCase(), name: config.brand.studioName || config.appName, studio: config.brand.studio, linkedAt: Date.now(), sent: false, auto: true } });
+  }
   createWindow();
   // Lo que cambie en el panel (lista manual, staff, instancias públicas...) aparece solo:
   // cada minuto y cada vez que vuelves a la ventana del launcher
@@ -131,6 +137,29 @@ async function sendPendingReferral(acc) {
   catch (e) { if (e.code !== 'offline') settingsStore.set({ referral: { ...r, sent: true } }); }
 }
 
+// Launcher de marca: lo que viene dentro del programa + lo último que el studio cambió en el panel
+// (colores, logo, fondo y enlaces se actualizan sin tener que reinstalar)
+let brandLive = null;
+async function brandInfo() {
+  const b = config.brand;
+  const file = path.join(userData, 'brand-live.json');
+  if (!brandLive) { try { brandLive = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { brandLive = {}; } }
+  if (panel.enabled() && !brandLive._fresh) {
+    const r = await Promise.race([panel.publicGet(`brands/${b.id}`), new Promise(res => setTimeout(() => res(null), 4000))]);
+    if (r && r.brand) { brandLive = { ...r.brand, _fresh: true }; try { fs.writeFileSync(file, JSON.stringify(r.brand)); } catch { /* nada */ } }
+  }
+  const L = brandLive || {};
+  const pick = (k) => (L[k] !== undefined && L[k] !== null && L[k] !== '' ? L[k] : b[k]);
+  return {
+    id: b.id, name: config.appName, studio: b.studio || null, studioName: pick('studioName'),
+    accent: pick('accent'), accent2: pick('accent2'), tagline: pick('tagline') || '',
+    logo: (/^https:/.test(L.logo || '') ? L.logo : b.logo) || null,
+    background: (/^https:/.test(L.background || '') ? L.background : b.background) || null,
+    discord: pick('discord'), web: pick('web'), store: pick('store'),
+    onlyStudio: b.onlyStudio !== false
+  };
+}
+
 // ---------- utilidades IPC ----------
 function handle(channel, fn) {
   ipcMain.handle(channel, async (event, ...args) => {
@@ -148,9 +177,10 @@ handle('win:minimize', () => win.minimize());
 handle('win:maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
 handle('win:close', () => win.close());
 handle('app:quit', () => app.quit());
-handle('app:info', () => ({
+handle('app:info', async () => ({
   name: config.appName || 'Onyx Client',
   studio: config.studioName || 'Onyx Studios',
+  brand: config.brand ? await brandInfo() : null,
   version: app.getVersion(),
   core: '1.0.0',
   build: new Date().getFullYear(),

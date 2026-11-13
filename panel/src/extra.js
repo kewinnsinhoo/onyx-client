@@ -2,6 +2,7 @@
 import { json, fail, now, randomToken, readJson, str, url as cleanUrl, color, int } from './util.js';
 import { peaksByDay } from './stats.js';
 import { audit, publicNotices } from './onyx.js';
+import { publicBrandsApi } from './brands.js';
 
 export const EVENT_CATS = ['Evento', 'Torneo', 'Serie', 'Squid Game', 'Directo', 'Otro'];
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=60' };
@@ -146,6 +147,7 @@ export async function publicApi(req, env, u, parts, m) {
     return json({ studios: rows.map(r => ({ ...r, code: r.id.toUpperCase(), logo: r.logo && r.logo.startsWith('/m/') ? origin + r.logo : r.logo })) }, 200, CORS);
   }
   if (parts[0] === 'status') return json(await statusSummary(env), 200, CORS);
+  if (parts[0] === 'brands') return publicBrandsApi(env, u, parts);
   if (parts[0] === 'notices') {
     const studios = String(u.searchParams.get('studios') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
     return json({ notices: await publicNotices(env, studios, env.PUBLIC_URL || u.origin) }, 200, { ...CORS, 'Cache-Control': 'public, max-age=30' });
@@ -164,7 +166,7 @@ export async function publicApi(req, env, u, parts, m) {
 export const SERVICES = [
   { id: 'web', name: 'Página web', url: 'https://onyxclient.site/' },
   { id: 'panel', name: 'Panel y API', url: null },
-  { id: 'launcher', name: 'Descargas del launcher', url: 'https://api.github.com/repos/kewinnsinhoo/onyx-client/releases/latest' },
+  { id: 'launcher', name: 'Descargas del launcher', url: 'https://api.github.com/repos/kewinnsinhoo/onyx-client-releases/releases/latest' },
   { id: 'calendar', name: 'Calendario', url: null }
 ];
 

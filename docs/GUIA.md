@@ -1,0 +1,195 @@
+# Guía de Onyx Client (todo gratis con GitHub)
+
+> **Esta guía es privada** (repositorio privado `onyx-client`, carpeta `docs/`).
+> - **Código:** `kewinnsinhoo/onyx-client` (privado). **Descargas:** `kewinnsinhoo/onyx-client-releases` (público, solo instaladores e instrucciones de fabricación).
+> - **Publicar una versión de Onyx:** sube `version` en `package.json`, sube los cambios y en `onyx-client-releases` → Actions → **Onyx Client** → Run workflow (ref `main`). Al terminar recompila solo todos los launchers de marca.
+> - **Launchers de marca:** se crean y compilan desde el panel (Launchers). Se fabrican con **Launcher de marca** en el mismo repo público y se publican en la release `brand-<id>`.
+> - **Secretos:** `SOURCE_TOKEN` en `onyx-client-releases` (leer el código) · `GITHUB_TOKEN` en Cloudflare `onyx-panel` (mandar fabricar).
+> - Notificaciones, creadores, studios y términos del launcher: `web/data/` (se publican en `onyxclient.site/data/`).
+> - Instancias, códigos, eventos y referidos: en Onyx Panel. El sistema antiguo de `onyx-data` ya no se usa.
+
+
+En esta carpeta hay dos proyectos:
+
+| Carpeta | Para qué sirve | ¿Cada cuánto lo tocas? |
+|---|---|---|
+| `onyx-client` | El programa (el launcher). GitHub lo compila solo para Windows, Mac y Linux. | Solo cuando quieras sacar una versión nueva |
+| `onyx-data` | El contenido: códigos, instancias, creadores, avisos, estudios y términos. El launcher lo lee de internet. | Siempre que quieras añadir cosas |
+
+Si cambias algo en `onyx-data`, **todos los launchers lo ven en 1-5 minutos sin reinstalar nada.**
+
+---
+
+## Paso 1 · Cuenta de GitHub y GitHub Desktop
+1. Crea una cuenta gratis en **github.com**.
+2. Instala **GitHub Desktop** (desktop.github.com) e inicia sesión con tu cuenta. Así subes las carpetas sin usar comandos.
+
+## Paso 2 · Subir los dos repositorios (públicos)
+Repite esto con `onyx-client` y después con `onyx-data`:
+1. En GitHub Desktop: **File → Add local repository…** y elige la carpeta.
+2. Te dirá que no es un repositorio: pulsa **"create a repository"** y después **Create repository**.
+3. Pulsa **Publish repository**. **Quita la marca de "Keep this code private"** (tiene que ser público para que las descargas y las actualizaciones sean gratis).
+4. Los nombres tienen que ser exactamente **`onyx-client`** y **`onyx-data`**.
+
+> No tienes que escribir tu usuario de GitHub en ningún archivo: al compilar se rellena solo.
+
+## Paso 3 · Login premium con Microsoft (Azure, gratis)
+1. Entra en **portal.azure.com** con tu cuenta de Microsoft.
+   - Si te deja entrar y ves el buscador de arriba, sigue al punto 2.
+   - Si sale un error (por ejemplo "Interaction required" o algo del inquilino "Microsoft Services"), tu cuenta todavía no tiene "directorio". Crea la **cuenta gratuita de Azure** en **azure.microsoft.com/free** con la misma cuenta de Microsoft. Pide teléfono y una **tarjeta de crédito o débito normal** (no prepago): solo es para verificar que eres una persona. Puede aparecer una retención temporal de 1 USD que luego se devuelve. Registrar la app no cuesta nada.
+2. Busca **"Microsoft Entra ID"** → **Registros de aplicaciones** → **Nuevo registro**.
+   - Nombre: `Onyx Client`
+   - Tipos de cuenta: **"Solo cuentas personales de Microsoft"**
+   - URI de redirección: elige **"Cliente público/nativo (móvil y escritorio)"** y pega:
+     `https://login.microsoftonline.com/common/oauth2/nativeclient`
+   - Después, en **Administrar → Autenticación**, dentro de "Aplicaciones móviles y de escritorio" añade otra URI: `http://localhost` y guarda. Es la que usa el launcher para iniciar sesión **en tu navegador** (la primera sirve para la ventana de reserva).
+3. Pulsa **Registrar**. En la página que se abre copia dos datos:
+   - **"Id. de aplicación (cliente)"** → es el Client ID que va en el launcher.
+   - **"Id. de directorio (inquilino)"** → lo pide el formulario de Mojang.
+4. En **Autenticación**, activa **"Permitir flujos de clientes públicos" = Sí** y guarda. No hace falta crear ningún "secreto".
+5. **Pide permiso a Mojang** en este formulario: **https://aka.ms/mce-reviewappid**. Acepta las condiciones y pon tu correo, el nombre `Onyx Client`, el Client ID y el Id. de directorio. Explica que es el launcher de tu estudio. Mojang revisa cada solicitud a mano y no da plazos. Mientras no te aprueben, el login premium muestra "Mojang aún no ha aprobado…". Las cuentas offline siguen funcionando.
+6. Puedes poner el Client ID en el launcher (paso 5) antes de que llegue la aprobación. Cuando Mojang te apruebe, el login funcionará solo, sin publicar otra versión.
+
+## Paso 4 · Discord (gratis)
+1. Entra en **discord.com/developers/applications** → **New Application** → nombre `Onyx Client`.
+2. En **OAuth2 → Redirects** añade exactamente: `http://127.0.0.1:53682/discord` y guarda.
+3. Copia el **Client ID** (está en OAuth2).
+4. Crea una invitación permanente de tu servidor de Discord (para el botón "Discord" del inicio).
+
+## Paso 5 · Configurar `onyx-client/onyx.config.json`
+Ábrelo con el Bloc de notas y cambia solo esto:
+```json
+"microsoftClientId": "el Id. de aplicación de Azure",
+"discordClientId": "el Client ID de Discord",
+"discordInvite": "https://discord.gg/tu-invitacion",
+"reportWebhook": ""
+```
+- `reportWebhook` (opcional): en tu Discord, abre los ajustes del canal → **Integraciones → Webhooks → Nuevo webhook → Copiar URL** y pégala aquí. Así los informes del botón ⚠ te llegan a ese canal. Si lo dejas vacío, el informe se guarda en el PC del jugador.
+
+Después, en GitHub Desktop: escribe un mensaje abajo a la izquierda (por ejemplo "configuración"), pulsa **Commit to main** y luego **Push origin**.
+
+## Paso 6 · Crear el launcher (los instaladores)
+1. Entra en `github.com/TU-USUARIO/onyx-client` → pestaña **Actions**. Si te lo pide, pulsa "I understand… enable them".
+2. Elige **"Publicar nueva versión"** → botón **Run workflow** → **Run workflow**.
+3. Tarda unos 10-20 minutos. Cuando termine, en la página del repo entra en **Releases**:
+   - Windows: `Onyx-Client-Setup-1.0.0.exe`
+   - Mac: `Onyx-Client-1.0.0-arm64.dmg` (Mac M1/M2/M3/M4) o `-x64.dmg` (Mac Intel)
+   - Linux: `Onyx-Client-1.0.0.AppImage`
+
+Ese enlace de Releases es el que compartes con tus jugadores.
+
+## Paso 7 · Sacar actualizaciones
+1. En `onyx-client/package.json` sube el número de `"version"` (por ejemplo `1.0.0` → `1.0.1`).
+2. Haz **Commit** y **Push** en GitHub Desktop.
+3. Vuelve a ejecutar **Run workflow**.
+
+Los launchers abiertos verán "Buscando actualizaciones…", la descargarán y se reiniciarán solos (como en el video).
+Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán quienes elijan el canal **Beta** en Ajustes → Acerca de.
+
+---
+
+## Onyx Panel (panel.onyxclient.site)
+
+Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos se gestionan en el **panel**, sin tocar archivos. Lo de `onyx-data` sigue funcionando para las instancias antiguas.
+
+### Ponerlo en marcha (una sola vez)
+
+1. **Cloudflare → Workers y Pages → Crear → Importar un repositorio** → elige `onyx-client`.
+   - Nombre: `onyx-panel`
+   - **Ruta / directorio raíz: `panel`**
+   - Deja el comando de despliegue como viene (`npx wrangler deploy`). La base de datos (D1), el almacén de archivos (KV) y el dominio `panel.onyxclient.site` se crean solos.
+2. **Discord Developer Portal → tu aplicación → OAuth2 → Redirects** → añade `https://panel.onyxclient.site/auth/callback`.
+3. En la misma página copia el **Client Secret**. En Cloudflare → `onyx-panel` → **Configuración → Variables y secretos → Añadir** → tipo **Secreto**, nombre `DISCORD_CLIENT_SECRET`, pega el valor. (No lo pegues en ningún chat.)
+4. Añade otro **Secreto** llamado `CREATOR_DISCORD_IDS` con tu ID de Discord (Discord → Ajustes → Avanzado → Modo desarrollador; luego clic derecho en tu perfil → *Copiar ID*). Varios IDs se separan con comas.
+5. Abre `panel.onyxclient.site` y entra con Discord. Verás *Creador* en tu perfil y el studio **Onyx Studios** ya creado.
+
+### Uso
+
+- **Studios** (solo el Creador): crea studios nuevos; te da un enlace de invitación para su dueño.
+- **Equipo**: invita a gente a tu studio con un rol (Lector, Editor, Administrador, Dueño).
+- **Instancias → Nueva instancia**: nombre, versión y loader, aspecto y acceso. Al terminar te da el primer código.
+- **Estado de los servicios**: `panel.onyxclient.site/status` (se comprueba cada 5 minutos).
+- **Calendario público**: los eventos marcados como públicos salen en `onyxclient.site/calendario.html`.
+- **Referidos**: el código de tu studio aparece en *Referidos*; los jugadores lo escriben en el launcher.
+
+## Instancias y códigos de acceso (`onyx-data`)
+**Código de prueba incluido:** `ONYX-DEMO-2026` → abre la instancia de ejemplo "Survival Onyx" (Minecraft 1.21.1 con Fabric).
+
+### Crear una instancia
+1. Copia `instances/ejemplo-survival.json` y renómbralo, por ejemplo `instances/eventos.json`.
+2. Cambia `"id"` por el mismo nombre (`"eventos"`) y rellena el resto:
+```json
+{
+  "id": "eventos",
+  "name": "Eventos Onyx",
+  "description": "Texto que verán los jugadores",
+  "icon": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-icono.png",
+  "banner": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-banner.png",
+  "studio": { "name": "Onyx Studios", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
+  "about": "Texto largo para la sección 'Sobre esta instancia'. Separa párrafos con una línea en blanco.",
+  "premium": true,
+  "minecraft": "1.21.1",
+  "loader": { "type": "fabric", "version": "latest" },
+  "server": { "address": "play.tuservidor.com", "port": 25565, "autoJoin": true },
+  "files": [
+    { "path": "mods/sodium.jar", "url": "https://cdn.modrinth.com/data/.../sodium.jar", "sha1": "opcional" }
+  ]
+}
+```
+- `premium: true` → solo pueden entrar cuentas de Microsoft (las offline no).
+- `loader.type`: `vanilla`, `fabric`, `quilt`, `forge` o `neoforge`.
+- `loader.version`: `"latest"` (la más nueva estable), `"recommended"` (solo Forge: la recomendada) o una versión exacta. Ejemplos:
+  - Fabric / Quilt: `"0.16.5"`
+  - Forge: `"47.3.0"` (para Minecraft 1.20.1) o `"10.13.4.1614"` (para 1.7.10)
+  - NeoForge: `"21.1.77"` (para Minecraft 1.21.1). Para 1.20.1 usa el número de su web, p. ej. `"47.1.106"`.
+- Funciona con todas las versiones de Minecraft de Mojang (también las antiguas y las snapshots). Forge desde la 1.6.4; NeoForge desde la 1.20.1. La primera vez que se abre una instancia con Forge o NeoForge tarda un poco más porque el launcher lo instala ("Instalando el loader").
+- `server.autoJoin: true` → el juego entra directamente a tu servidor al abrirse.
+- `files` → mods, configs o resource packs. Para los mods, copia el enlace de descarga del archivo en modrinth.com. Si quitas un archivo de la lista, el launcher también lo borra de los jugadores. Los mods que ponga el propio jugador no se tocan.
+- Las imágenes las puedes subir a la carpeta `img/` del repo.
+- `"maintenance": "Volvemos a las 18:00"` bloquea la instancia temporalmente.
+- `studio` muestra "por Onyx Studios" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
+- Si hay `server.address`, la instancia muestra los **jugadores conectados** en vivo (ej. 12 / 100).
+
+### Packs `.onyxpack`
+Un `.onyxpack` es un `.zip` con una carpeta `overrides/` dentro (por ejemplo `overrides/mods/`, `overrides/config/`, `overrides/resourcepacks/`).
+En la página de una instancia: botón **⋯ → Instalar desde .onyxpack** copia todo eso dentro de la instancia. Sirve para pasar mods o configs a mano sin subirlos a GitHub.
+
+### Crear un código
+1. Abre `onyx-data/herramientas/generar-codigo.html` con doble clic (se abre en tu navegador).
+2. Escribe el id (`eventos`), pulsa **Aleatorio** y luego **Generar línea**.
+3. Pega la línea dentro de `codes.json`, separada por comas:
+```json
+{
+  "28ae428a19e3370c9fa29bc4b890f4dc0d55e2d7199a7baa375eaad113422477": "ejemplo-survival",
+  "la-linea-nueva...": "eventos"
+}
+```
+4. **Commit → Push**. Comparte el código con tus jugadores. Para anular un código, borra su línea.
+
+> En GitHub solo se guarda la "huella" del código, no el código. Aunque el repositorio es público, nadie puede adivinarlo.
+
+### Otros archivos de `onyx-data`
+| Archivo | Qué hace |
+|---|---|
+| `creators.json` | Pantalla **Creadores**: nombre, @usuario, `username` de Minecraft (para la skin 3D) y redes (`instagram`, `discord`, `x`, `tiktok`, `youtube`, `twitch`, `github`, `web`). |
+| `notifications.json` | La campanita **Avisos**. `kind` puede ser `success`, `warn` o `danger`. Opcional: `url`. |
+| `studios.json` | Estudios para el sistema de **Referidos** (código, nombre, logo). |
+| `terms/es.md`, `terms/en.md` | Términos y condiciones. Se pueden editar cuando quieras. |
+
+## Referidos con conteo automático (opcional, gratis)
+Sin configurar nada, el ranking muestra los números que pongas a mano en `studios.json` (`players` y `monthly`).
+Para que se cuenten solos:
+1. Crea un proyecto gratis en **supabase.com**.
+2. Ve a **SQL Editor**, pega el contenido de `onyx-client/supabase.sql` y pulsa **Run**.
+3. En **Project Settings → API** copia la **Project URL** y la clave **anon public** en `onyx.config.json` → `supabase`.
+4. Saca una versión nueva (Paso 7).
+
+---
+
+## Cosas a saber
+- **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
+- **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.
+- **Loaders:** ahora mismo funcionan Vanilla, Fabric y Quilt. Forge y NeoForge se pueden añadir más adelante.
+- **Skins:** en cuentas de Microsoft se cambian de verdad en Minecraft (64×64 o 64×32). En cuentas offline solo se ven dentro del launcher.
+- **Probar en tu PC sin compilar** (opcional): instala Node.js 20, abre una terminal en `onyx-client` y ejecuta `npm install` y después `npm start`.
+- Las carpetas de datos del juego están en `%APPDATA%\.onyxclient` (Windows), `~/Library/Application Support/onyxclient` (Mac) y `~/.onyxclient` (Linux).

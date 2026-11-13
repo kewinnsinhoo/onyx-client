@@ -5,6 +5,38 @@
   const Views = window.Views = window.Views || {};
   let cleanup = null;
 
+  // ---------- launcher de marca (nombre, logo, colores y fondo del studio) ----------
+  const hexRgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const mix = (h, w, k) => { const a = hexRgb(h), b = hexRgb(w); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+  function applyBrand() {
+    const b = S.info.brand;
+    if (!b) return;
+    document.body.classList.add('branded');
+    document.title = b.name;
+    const ok = (c) => /^#[0-9a-f]{6}$/i.test(c || '');
+    if (ok(b.accent)) {
+      const a = b.accent, a2 = ok(b.accent2) ? b.accent2 : mix(a, '#000000', 0.25), [r, g, bl] = hexRgb(a), [r2, g2, b2] = hexRgb(a2);
+      const st = document.documentElement.style;
+      st.setProperty('--accent', a);
+      st.setProperty('--accent-2', a2);
+      st.setProperty('--accent-soft', `rgba(${r},${g},${bl},.14)`);
+      st.setProperty('--accent-grad', `linear-gradient(135deg, ${mix(a, '#ffffff', 0.18)} 0%, ${a} 55%, ${a2} 100%)`);
+      st.setProperty('--accent-shadow', `0 10px 28px -8px rgba(${r2},${g2},${b2},.65)`);
+      st.setProperty('--glow-1', `rgba(${r2},${g2},${b2},.22)`);
+      st.setProperty('--glow-2', `rgba(${r},${g},${bl},.12)`);
+    }
+    if (b.background && !/\.(webm|mp4)$/i.test(b.background)) {
+      document.body.style.setProperty('--brand-bg', `url("${String(b.background).replace(/["\\]/g, '')}")`);
+      document.body.classList.add('has-brand-bg');
+    }
+  }
+  // Logo de arriba: el del studio (si lo tiene) o su nombre escrito; en Onyx, el de Onyx
+  window.brandMark = (cls = '') => {
+    const b = S.info && S.info.brand;
+    if (!b) return `<img class="${cls}" src="assets/logo-wordmark.png" alt="Onyx Client">`;
+    return b.logo ? `<img class="${cls} brand-logo" src="${esc(b.logo)}" alt="${esc(b.name)}">` : `<b class="${cls} brand-name">${esc(b.name)}</b>`;
+  };
+
   // ---------- utilidades de estado ----------
   function applySettings() {
     document.documentElement.dataset.theme = ['onyx', 'oled', 'amethyst', 'aurora'].includes(S.settings.theme) ? S.settings.theme : 'onyx';
@@ -282,7 +314,7 @@
     const r = S.route ? S.route.name : 'home';
     tb.className = 'titlebar' + (mac ? ' mac' : '');
     tb.innerHTML = html`
-      <div class="brand"><img src="assets/logo-wordmark.png" alt="Onyx Client"><span class="ver">v${esc(S.info.version || '')}</span></div>
+      <div class="brand">${brandMark()}<span class="ver">v${esc(S.info.version || '')}</span></div>
       <span class="crumb">${t(SECTION[r] || 'Inicio')}</span>
       <div class="spacer"></div>
       <div class="tools">
@@ -380,7 +412,8 @@
       S.settings = await onyx.settings.get();
     } catch (e) { console.error(e); }
     applySettings();
-    $('#splash .logo-wrap').innerHTML = '<img src="assets/logo-wordmark.png" alt="Onyx Client">';
+    applyBrand();
+    $('#splash .logo-wrap').innerHTML = brandMark();
     if (S.info.platform === 'darwin') document.body.classList.add('mac');
 
     onyx.instances.onProgress((p) => {

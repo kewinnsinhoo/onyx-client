@@ -493,3 +493,52 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .modal .row > .field { min-width: 0; }
 .input[type=datetime-local] { min-width: 0; width: 100%; }
 .side .nav { scrollbar-width: thin; }
+
+/* ---------- Launchers de marca ---------- */
+.lb-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; margin-top: 16px; }
+@media (max-width: 1100px) { .lb-grid { grid-template-columns: 1fr; } }
+.lb-slots { display: grid; gap: 8px; margin: 6px 0 14px; }
+.lb-slot { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card-2); }
+.lb-slot .pv { width: 52px; height: 52px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--line); color: var(--faint); overflow: hidden; }
+.lb-slot .pv.logo, .lb-slot .pv.background { width: 92px; }
+.lb-slot .pv img { width: 100%; height: 100%; object-fit: contain; }
+.lb-slot .pv.background img { object-fit: cover; }
+.lb-slot .pv svg { width: 20px; height: 20px; }
+.lb-slot b { display: block; font-size: 14px; }
+.lb-slot small { color: var(--muted); font-size: 12.5px; line-height: 1.35; display: block; }
+.dl-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); }
+.dl-row:hover { border-color: var(--accent); }
+.dl-row svg { width: 17px; height: 17px; color: var(--muted); flex: none; }
+.dl-row b { display: block; font-size: 14px; }
+.dl-row small { color: var(--faint); font-size: 12px; }
+.dl-row .size { color: var(--muted); font-size: 13px; }
+/* vista previa del launcher */
+.lp { display: grid; gap: 14px; }
+.lp-win { --bg: none; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); background: linear-gradient(180deg, rgba(5,6,12,.72), rgba(5,6,12,.92)), var(--bg) center / cover no-repeat, radial-gradient(500px 300px at 95% 110%, color-mix(in srgb, var(--a2) 35%, transparent), transparent 60%), #07080d; color: #e8ebff; box-shadow: 0 24px 50px -24px rgba(0,0,0,.7); }
+.lp-top { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; }
+.lp-top img { height: 15px; max-width: 110px; object-fit: contain; }
+.lp-top b { font: 800 12.5px Sora, system-ui; }
+.lp-top .v { font-size: 9.5px; padding: 1px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); color: #9aa1c7; }
+.lp-top i { width: 9px; height: 2px; background: #6b7299; border-radius: 2px; }
+.lp-body { display: flex; gap: 10px; padding: 0 10px 10px; height: 210px; }
+.lp-side { width: 34px; display: flex; flex-direction: column; gap: 8px; align-items: center; padding-top: 6px; }
+.lp-side span { width: 24px; height: 24px; border-radius: 8px; background: rgba(255,255,255,.06); }
+.lp-side span.on { background: linear-gradient(135deg, var(--a), var(--a2)); box-shadow: 0 6px 14px -6px var(--a); }
+.lp-side span.pin { margin-top: 6px; border: 1.5px solid var(--a); overflow: hidden; }
+.lp-side span.pin img { width: 100%; height: 100%; object-fit: cover; }
+.lp-main { flex: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 16px; }
+.lp-hello { font: 800 18px Sora, system-ui; }
+.lp-hello b { color: var(--a); }
+.lp-tag { font-size: 12px; color: #9aa1c7; margin-top: 2px; }
+.lp-card { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 10px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+.lp-card .ic { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.08); overflow: hidden; }
+.lp-card .ic img { width: 100%; height: 100%; object-fit: cover; }
+.lp-card b { display: block; font-size: 12.5px; }
+.lp-card small { font-size: 10.5px; color: #9aa1c7; }
+.lp-card .play { padding: 7px 14px; border-radius: 9px; font-weight: 700; font-size: 12px; color: #fff; background: linear-gradient(135deg, var(--a), var(--a2)); box-shadow: 0 8px 18px -8px var(--a); }
+.lp-cap { display: flex; align-items: center; gap: 12px; }
+.lp-cap img, .lp-cap .noicon { width: 44px; height: 44px; border-radius: 11px; flex: none; }
+.lp-cap .noicon { display: grid; place-items: center; background: var(--card-2); border: 1px dashed var(--line-2); color: var(--faint); }
+.lp-cap .noicon svg { width: 18px; height: 18px; }
+.lp-cap b { display: block; }
+.lp-cap small { color: var(--muted); font-size: 12.5px; }

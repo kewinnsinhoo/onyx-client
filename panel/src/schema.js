@@ -200,6 +200,18 @@ CREATE INDEX notices_time ON notices(starts_at);
 CREATE TABLE settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
+)`,
+  `-- Launchers de marca (el launcher propio de un studio)
+ALTER TABLE studios ADD COLUMN brand_allowed INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE brands (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  data TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  build_requested_at INTEGER,
+  built_version TEXT
 )`
 ];
 

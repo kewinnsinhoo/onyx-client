@@ -1,7 +1,10 @@
 // Estado de Discord ("Jugando a Onyx Client"): qué se muestra en cada momento.
 const { DiscordRPC } = require('./discord-rpc');
 
-const LOGO_URL = 'https://raw.githubusercontent.com/kewinnsinhoo/onyx-client/main/src/renderer/assets/icon.png';
+const { config } = require('./config');
+// Logo para Discord: el icono de la marca (lo deja la fábrica en brand.json) o el de Onyx
+const LOGO_URL = (config.brand && /^https:/.test(config.brand.iconUrl || '')) ? config.brand.iconUrl : 'https://onyxclient.site/img/icon.png';
+const APP = config.appName || 'Onyx Client';
 
 // Textos en [es, en, ca, fr]
 const TXT = {
@@ -13,7 +16,7 @@ const TXT = {
   creators: ['Viendo creadores', 'Browsing creators', 'Mirant creadors', 'Découvre les créateurs'],
   settings: ['En ajustes', 'In settings', 'A la configuració', 'Dans les paramètres'],
   launching: ['Iniciando {name}', 'Starting {name}', 'Iniciant {name}', 'Lance {name}'],
-  download: ['Descargar Onyx Client', 'Download Onyx Client', 'Descarrega Onyx Client', 'Télécharger Onyx Client'],
+  download: ['Descargar {app}', 'Download {app}', 'Descarrega {app}', 'Télécharger {app}'],
   join: ['Unirse al Discord', 'Join the Discord', 'Uneix-te al Discord', 'Rejoindre le Discord']
 };
 const LANGS = ['es', 'en', 'ca', 'fr'];
@@ -43,7 +46,7 @@ const isHttpsImage = (u) => typeof u === 'string' && /^https:\/\//.test(u) && u.
 function buildActivity(state, ctx) {
   const lang = ctx.lang || 'es';
   const buttons = [];
-  if (ctx.githubRepo) buttons.push({ label: tr('download', lang), url: `https://github.com/${ctx.githubRepo}/releases/latest` });
+  if (ctx.githubRepo || config.brand) buttons.push({ label: fit(tr('download', lang, { app: APP }).slice(0, 32)), url: config.brand ? `${config.panelUrl || 'https://panel.onyxclient.site'}/l/${config.brand.id}` : 'https://onyxclient.site/download.html' });
   if (ctx.discordInvite) buttons.push({ label: tr('join', lang), url: ctx.discordInvite });
 
   const act = { instance: false };
@@ -54,7 +57,7 @@ function buildActivity(state, ctx) {
     act.state = fit(versionLine(inst));
     act.timestamps = { start: state.startedAt || Date.now() };
     if (isHttpsImage(inst.icon)) {
-      act.assets = { large_image: inst.icon, large_text: fit(name), small_image: LOGO_URL, small_text: 'Onyx Client' };
+      act.assets = { large_image: inst.icon, large_text: fit(name), small_image: LOGO_URL, small_text: APP };
     } else {
       act.assets = { large_image: LOGO_URL, large_text: fit(name) };
     }
@@ -62,9 +65,9 @@ function buildActivity(state, ctx) {
     const section = state.section || 'home';
     const key = TXT[section] ? section : 'menu';
     act.details = fit(key === 'instance' ? tr('instance', lang, { name: state.name || '' }) : tr(key, lang));
-    act.state = fit(`Onyx Client · v${ctx.version || ''}`);
+    act.state = fit(`${APP} · v${ctx.version || ''}`);
     act.timestamps = { start: ctx.openedAt || Date.now() };
-    act.assets = { large_image: LOGO_URL, large_text: 'Onyx Client' };
+    act.assets = { large_image: LOGO_URL, large_text: APP };
   }
   if (buttons.length) act.buttons = buttons.slice(0, 2).map(b => ({ label: fit(b.label, 32), url: b.url }));
   return act;

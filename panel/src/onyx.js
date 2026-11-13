@@ -214,7 +214,7 @@ export async function allStudiosFull(env) {
   const s = await studioStats(env);
   return rows.map(r => ({
     id: r.id, name: r.name, logo: r.logo, created_at: r.created_at, note: r.note || '',
-    suspended: !!r.suspended_at, suspendedAt: r.suspended_at, suspendReason: r.suspend_reason || '',
+    suspended: !!r.suspended_at, suspendedAt: r.suspended_at, suspendReason: r.suspend_reason || '', brandAllowed: !!r.brand_allowed,
     maxInstances: r.max_instances || null, maxStorageMb: r.max_storage_mb || null,
     instances: s.instances[r.id] || 0, members: s.members[r.id] || 0, owners: s.owners[r.id] || [],
     players30: s.players[r.id] || 0, plays30: s.plays[r.id] || 0, playingNow: s.playing[r.id] || 0, storage: s.storage[r.id] || 0
@@ -270,6 +270,10 @@ async function studiosAdmin(c, sid, sub, m) {
     const maxI = 'maxInstances' in b ? int(b.maxInstances, 1, 10000, null) : st.max_instances;
     const maxS = 'maxStorageMb' in b ? int(b.maxStorageMb, 10, 1000000, null) : st.max_storage_mb;
     let susp = st.suspended_at, reason = st.suspend_reason;
+    if ('brandAllowed' in b) {
+      await env.DB.prepare('UPDATE studios SET brand_allowed = ? WHERE id = ?').bind(b.brandAllowed ? 1 : 0, sid).run();
+      if (!!b.brandAllowed !== !!st.brand_allowed) await audit(env, user, sid, b.brandAllowed ? 'brand.allow' : 'brand.deny', st.name);
+    }
     if ('suspended' in b) {
       if (b.suspended && sid === 'onyx-studios') fail(400, 'main', 'No puedes suspender tu propio studio principal');
       susp = b.suspended ? (st.suspended_at || now()) : null;

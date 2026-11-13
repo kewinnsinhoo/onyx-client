@@ -431,4 +431,58 @@ await test('Creador: avisos del launcher, mantenimiento y baneo global', async (
   assert.strictEqual((await call('GET', '/api/onyx/bans', { cookie: other })).status, 403);
 });
 
+await test('Launchers de marca: permiso, ficha, compilar y descargas', async () => {
+  other = await login('222', 'otro');
+  const nova = (await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios.find(x => x.name === 'Nova Estudios');
+  // sin permiso del Creador no se puede
+  assert.strictEqual((await call('GET', `/api/s/${nova.id}/brand`, { cookie: other })).data.allowed, false);
+  assert.strictEqual((await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Nova Launcher' } })).status, 403);
+  await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { brandAllowed: true } });
+  assert.strictEqual((await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Onyx Fake' } })).status, 400, 'no puede llamarse Onyx');
+  const sv = await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Nova Launcher', accent: '#F59E0B', discord: 'http://inseguro', web: 'https://nova.gg' } });
+  assert.strictEqual(sv.status, 201, JSON.stringify(sv.data));
+  const id = sv.data.id;
+  assert.strictEqual(id, 'nova-launcher');
+  // compilar: sin icono no; con icono avisa a GitHub
+  assert.strictEqual((await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other })).data.error, 'icon');
+  const icon = await call('POST', `/api/s/${nova.id}/media?name=icon.png`, { cookie: other, raw: new Uint8Array([137, 80, 78, 71, 1, 2, 3]), headers: { 'Content-Type': 'image/png' } });
+  await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { icon: icon.data.url } });
+  const sent = [];
+  let dispatched = false;
+  env.GITHUB_TOKEN = 'tok';
+  env.GITHUB_FETCH = async (u, init = {}) => {
+    sent.push([init.method || 'GET', u, init.body]);
+    if (u.endsWith('/dispatches')) { dispatched = true; return new Response(null, { status: 204 }); }
+    if (u.includes('/runs')) return new Response(JSON.stringify({ workflow_runs: !dispatched ? [] : [{ display_title: `Marca ${id}`, status: 'in_progress', conclusion: null, html_url: 'https://github.com/x', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }] }), { status: 200 });
+    if (u.includes('/releases/tags/brand-')) return new Response(JSON.stringify({ assets: [
+      { name: 'Nova-Launcher-Setup-1.3.0.exe', browser_download_url: 'https://g/x.exe', size: 90e6, updated_at: new Date().toISOString() },
+      { name: 'Nova-Launcher-1.3.0-arm64.dmg', browser_download_url: 'https://g/a.dmg', size: 95e6, updated_at: new Date().toISOString() },
+      { name: 'latest.yml', browser_download_url: 'https://g/l.yml', size: 300, updated_at: new Date().toISOString() }] }), { status: 200 });
+    return new Response('{}', { status: 404 });
+  };
+  const b = await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other });
+  assert.strictEqual(b.status, 200, JSON.stringify(b.data));
+  assert.ok(sent.some(([m, u, body]) => m === 'POST' && u.endsWith('/repos/kewinnsinhoo/onyx-client-releases/actions/workflows/build-brand.yml/dispatches') && JSON.parse(body).inputs.brand === id));
+  assert.strictEqual((await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other })).status, 409, 'no dos a la vez');
+  const st = (await call('GET', `/api/s/${nova.id}/brand`, { cookie: other })).data;
+  assert.strictEqual(st.run.status, 'in_progress');
+  assert.deepStrictEqual(st.downloads.files.map(f => f.os), ['windows', 'mac-arm']);
+  assert.strictEqual(st.downloads.version, '1.3.0');
+  assert.strictEqual(st.brand.discord, null, 'solo enlaces https');
+  // ficha pública para GitHub y el launcher (imágenes con dirección completa)
+  const pub = (await call('GET', `/api/public/brands/${id}/build`)).data.brand;
+  assert.strictEqual(pub.name, 'Nova Launcher');
+  assert.strictEqual(pub.accent, '#f59e0b');
+  assert.ok(pub.icon.startsWith('https://panel.onyxclient.site/m/'));
+  assert.ok((await call('GET', '/api/public/brands')).data.brands.some(x => x.id === id), 'ya compilado: sale en la lista para recompilar');
+  // página de descarga
+  assert.strictEqual((await call('GET', `/api/public/brands/${id}/downloads`)).data.files.length, 2);
+  // el Creador ve todas y puede recompilar
+  const all = (await call('GET', '/api/onyx/brands', { cookie: creator })).data;
+  assert.strictEqual(all.brands[0].id, id);
+  await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { brandAllowed: false } });
+  assert.strictEqual((await call('GET', `/api/public/brands/${id}/build`)).status, 403, 'sin permiso GitHub no puede fabricarlo');
+  delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

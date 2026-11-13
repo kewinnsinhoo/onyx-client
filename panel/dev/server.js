@@ -116,6 +116,10 @@ async function seed() {
   ];
   for (const [h, uid, un, sid, action, target, detail] of A) await run('INSERT INTO audit (at, user_id, user_name, studio_id, action, target, detail) VALUES (?, ?, ?, ?, ?, ?, ?)', t - h * 3600e3, uid, un, sid, action, target, detail ? JSON.stringify(detail) : null);
   await run("INSERT INTO bans (scope, kind, value, created_by, created_at) VALUES ('global', 'name', 'griefer99', '111', ?)", t - 0.2 * 3600e3);
+  // Launcher de marca de ejemplo
+  await run("UPDATE studios SET brand_allowed = 1 WHERE id = 'nova-estudios'");
+  await run("INSERT INTO brands (id, studio_id, name, data, created_at, updated_at) VALUES ('nova-launcher', 'nova-estudios', 'Nova Launcher', ?, ?, ?)",
+    JSON.stringify({ name: 'Nova Launcher', icon: '/m/0123456789abcdef0124/skin.webp', background: '/m/0123456789abcdef0123/fondo.webp', accent: '#f59e0b', accent2: '#ea580c', tagline: 'Los eventos de Nova, en un clic', discord: 'https://discord.gg/nova', web: 'https://nova.gg', onlyStudio: true }), t, t);
   const { runChecks } = await import('../src/extra.js');
   for (let i = 0; i < 3; i++) await runChecks(env, async () => new Response('ok'));
 }

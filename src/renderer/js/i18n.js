@@ -306,6 +306,10 @@
     ['Instancia no encontrada', 'Instance not found', 'No s’ha trobat la instància', 'Instance introuvable'],
     ['La instancia está en mantenimiento', 'The instance is under maintenance', 'La instància està en manteniment', 'L’instance est en maintenance'],
     ['Cierra el juego antes de actualizar', 'Close the game before updating', 'Tanca el joc abans d’actualitzar', 'Ferme le jeu avant de mettre à jour'],
+    ['Launcher de {s} · con la tecnología de Onyx Client', '{s} launcher · powered by Onyx Client', 'Launcher de {s} · amb la tecnologia d’Onyx Client', 'Launcher de {s} · propulsé par Onyx Client'],
+    ['Web', 'Website', 'Web', 'Site web'],
+    ['Tienda', 'Store', 'Botiga', 'Boutique'],
+    ['Este código es de otro studio. Úsalo en Onyx Client.', 'This code belongs to another studio. Use it in Onyx Client.', 'Aquest codi és d’un altre studio. Fes-lo servir a Onyx Client.', 'Ce code appartient à un autre studio. Utilise-le dans Onyx Client.'],
     ['Última vez', 'Last played', 'Última vegada', 'Dernière partie']
   ];
 

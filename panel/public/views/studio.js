@@ -97,18 +97,6 @@
     }
   };
 
-  // ---------------------------------------------------------------- Launchers
-  V.launchers = async (view) => {
-    let rel = null;
-    try { rel = await (await fetch('https://api.github.com/repos/kewinnsinhoo/onyx-client/releases/latest')).json(); } catch { /* sin conexión con GitHub */ }
-    view.innerHTML = html`<div class="page">${head(t('Launchers'), t('Los launchers desde los que tus jugadores entran a tus instancias.'))}
-      <div class="card"><div style="display:flex;align-items:center;gap:16px"><img src="/img/icon.png" alt="" style="width:56px;height:56px;border-radius:14px">
-        <div style="flex:1"><h3 style="font-size:18px">Onyx Client <span class="badge ok">${t('Oficial')}</span></h3>
-          <div style="color:var(--muted)">${rel && rel.tag_name ? t('Versión {v}, publicada {d}', { v: esc(rel.tag_name.replace(/^v/, '')), d: fmtDate(Date.parse(rel.published_at), { day: 'numeric', month: 'long' }) }) : t('Windows, macOS y Linux')}</div></div>
-        <a class="btn" href="https://onyxclient.site/download" target="_blank" rel="noopener">${icon('external')}${t('Página de descarga')}</a></div></div>
-      <div class="card empty"><div class="ic">${icon('rocket')}</div><h4>${t('Launchers propios')}</h4><p>${t('Pronto podrás tener un launcher con el nombre, el logo y los colores de tu studio. Todavía no hay ninguno.')}</p></div></div>`;
-  };
-
   // ---------------------------------------------------------------- Histórico
   V.history = async (view) => {
     const h = await sapi('GET', '/history');

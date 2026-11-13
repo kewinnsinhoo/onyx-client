@@ -8,6 +8,7 @@ import { versions as metaVersions, loaderVersions } from './meta.js';
 import { ensureSchema } from './schema.js';
 import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
+import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
 
@@ -45,6 +46,8 @@ async function route(req, env, ctx) {
   const m = req.method;
 
   if (p.startsWith('/m/')) return serveMedia(p, env);
+  // Página pública de descarga de un launcher de marca: panel.onyxclient.site/l/<id>
+  if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
   if (p === '/auth/login') return authLogin(req, env, u);
   if (p === '/auth/callback') return authCallback(req, env, u);
   if (p === '/auth/logout' && m === 'POST') return authLogout(req, env);
@@ -182,6 +185,7 @@ async function panelApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'onyx') {
     if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede entrar aquí');
     if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
+    if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);
   }
 
@@ -267,6 +271,7 @@ async function studioApi(c, parts, m) {
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
+  if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
   if (a === 'activity' && m === 'GET') {
     c.need('admin');

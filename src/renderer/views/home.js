@@ -89,7 +89,7 @@
           ${Skin3D.head(App.skinOf(acc), 54, 14)}
           <div class="grow">
             <h1>${greeting()}, <span class="accent">${esc(acc ? acc.name : '')}</span></h1>
-            <p class="home-sub">${list.length ? t('Elige una instancia y a jugar.') : t('Añade tu primera instancia con un código de acceso.')}</p>
+            <p class="home-sub">${!list.length ? t('Añade tu primera instancia con un código de acceso.') : S.info.brand && S.info.brand.tagline ? esc(S.info.brand.tagline) : t('Elige una instancia y a jugar.')}</p>
           </div>
           <div class="promo" id="h-promo">
             <img src="assets/logo-mark.png" alt="">

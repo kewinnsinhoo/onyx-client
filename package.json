@@ -1,7 +1,7 @@
 {
   "name": "onyx-client",
   "productName": "Onyx Client",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "Launcher de Minecraft de Onyx Studios",
   "main": "src/main/main.js",
   "author": {
@@ -40,9 +40,13 @@
     ],
     "publish": [
       {
+        "provider": "generic",
+        "url": "https://github.com/kewinnsinhoo/onyx-client-releases/releases/latest/download"
+      },
+      {
         "provider": "github",
         "owner": "kewinnsinhoo",
-        "repo": "onyx-client",
+        "repo": "onyx-client-releases",
         "releaseType": "draft"
       }
     ],

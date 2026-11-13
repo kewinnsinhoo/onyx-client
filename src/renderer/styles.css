@@ -558,3 +558,16 @@ textarea.input { height: 90px; padding: 12px 14px; resize: none; }
 .sponsor b { font-size: 15px; }
 .sponsor .go { position: absolute; top: 14px; right: 14px; color: var(--text-2); }
 .sponsor .go svg { width: 14px; height: 14px; }
+
+/* ---------- launcher de marca ---------- */
+.titlebar .brand .brand-logo { height: 20px; max-width: 150px; object-fit: contain; }
+.titlebar .brand .brand-name { font-weight: 800; font-size: 14px; letter-spacing: -.01em; color: var(--text); }
+#splash .brand-logo { max-height: 64px; max-width: 280px; object-fit: contain; }
+#splash .brand-name { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.about .brand-logo.wordmark { max-height: 56px; max-width: 260px; object-fit: contain; }
+.about .brand-name.wordmark { display: block; font-size: 28px; font-weight: 800; }
+body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea todo */
+  background:
+    radial-gradient(900px 600px at 92% 105%, var(--glow-1), transparent 60%),
+    linear-gradient(180deg, rgba(5,6,12,.72), rgba(5,6,12,.9)),
+    var(--brand-bg) center / cover no-repeat, var(--bg); }

@@ -60,7 +60,13 @@
     'ban.global': ['shield', '{user} baneó a {target} en todo Onyx'],
     'unban.global': ['shield', '{user} quitó el baneo global a {target}'],
     'maintenance.on': ['wrench', '{user} activó el modo mantenimiento'],
-    'maintenance.off': ['wrench', '{user} desactivó el modo mantenimiento']
+    'maintenance.off': ['wrench', '{user} desactivó el modo mantenimiento'],
+    'brand.allow': ['rocket', '{user} activó el launcher propio de {target}'],
+    'brand.deny': ['rocket', '{user} quitó el launcher propio de {target}'],
+    'brand.create': ['rocket', '{user} creó el launcher {target}'],
+    'brand.update': ['rocket', '{user} cambió el launcher {target}'],
+    'brand.build': ['rocket', '{user} mandó compilar el launcher {target}'],
+    'brand.rebuild': ['rocket', '{user} mandó recompilar todos los launchers de marca']
   };
   window.activityText = (a) => {
     let [ic, tpl] = ACTIONS[a.action] || ['activity', a.action];
@@ -263,6 +269,12 @@
         <div class="card" style="margin:0"><div class="card-head"><h3>${icon('users')}${t('Equipo')}</h3><span class="grow"></span><button class="btn sm" id="owner">${icon('link')}${t('Enlace para un dueño')}</button></div>
           <div style="margin-top:8px">${d.members.length ? d.members.map(m => `<div class="list-row">${avatar(m)}<span class="grow"><b>${esc(m.name)}</b></span><span class="badge mute">${roleName(m.role)}</span></div>`).join('') : `<p class="help">${t('Nadie todavía. Crea un enlace para su dueño.')}</p>`}</div>
           <div id="ownout"></div></div>
+        <div class="card" style="margin:0"><div class="card-head"><h3>${icon('rocket')}${t('Launcher propio')}</h3><span class="grow"></span>
+            <label class="switch"><input type="checkbox" id="brand" ${s.brandAllowed ? 'checked' : ''}><span></span></label></div>
+          <p class="sub">${t('Si lo activas, su equipo puede crear en Launchers un launcher con su nombre, icono y colores, y fabricarlo.')}</p>
+          ${s.brandAllowed ? `<a class="btn sm" id="brandgo" style="margin-top:10px">${icon('external')}${t('Ver su launcher')}</a>` : ''}</div>
+      </div>
+      <div class="grid" style="margin-top:16px">
         <div class="card ${s.suspended ? '' : 'danger-zone'}" style="margin:0"><h3>${icon('ban')}${s.suspended ? t('Studio suspendido') : t('Zona peligrosa')}</h3>
           ${s.suspended ? html`<p class="sub">${t('Motivo: {r}', { r: esc(s.suspendReason || '—') })}</p><p class="sub">${t('Su equipo solo puede mirar el panel y sus instancias no se pueden jugar.')}</p>
             <button class="btn green" id="unsusp" style="margin-top:12px">${icon('check')}${t('Reactivar studio')}</button>`
@@ -273,6 +285,9 @@
     const reload = () => studioDetail(view, sid);
     const patch = async (body, msg) => { try { await api('PATCH', `/onyx/studios/${encodeURIComponent(sid)}`, body); toast(msg); S.me = null; reload(); } catch (e) { fail(e); } };
     $('#enter', view).onclick = () => { try { localStorage.setItem('onyx-studio', sid); } catch { /* nada */ } S.studio = { id: sid }; S.me = null; go('/'); };
+    $('#brand', view).onchange = (e) => patch({ brandAllowed: e.target.checked }, e.target.checked ? t('Launcher propio activado') : t('Launcher propio desactivado'));
+    const bg = $('#brandgo', view);
+    if (bg) bg.onclick = () => { try { localStorage.setItem('onyx-studio', sid); } catch { /* nada */ } S.studio = { id: sid }; S.me = null; go('/launchers'); };
     $('#savel', view).onclick = () => patch({ maxInstances: $('#mi', view).value || null, maxStorageMb: $('#ms', view).value || null }, t('Límites guardados'));
     $('#saven', view).onclick = () => patch({ note: $('#note', view).value }, t('Nota guardada'));
     $('#clean', view).onclick = async (e) => {

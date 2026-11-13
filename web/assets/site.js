@@ -1,6 +1,6 @@
 // Onyx Client — web. Sin dependencias.
 (function () {
-  const REPO = 'kewinnsinhoo/onyx-client';
+  const REPO = 'kewinnsinhoo/onyx-client-releases';
   const RELEASES = `https://github.com/${REPO}/releases`;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -45,13 +45,15 @@
     } catch (e) { /* sin almacenamiento */ }
     return load().then(d => { try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) { /* nada */ } return d; });
   }
-  const releases = () => cache('onyx-releases', 10 * 60e3, () =>
-    fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers: { Accept: 'application/vnd.github+json' } })
-      .then(r => { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
-      .then(list => list.filter(r => !r.draft).map(r => ({
-        tag: r.tag_name, pre: r.prerelease, date: r.published_at,
-        assets: r.assets.map(a => ({ name: a.name, url: a.browser_download_url, size: a.size, count: a.download_count }))
-      }))));
+  // Solo las versiones de Onyx (vX.Y.Z); las de los launchers de marca viven en el mismo repo
+  const fetchRel = (repo) => fetch(`https://api.github.com/repos/${repo}/releases?per_page=30`, { headers: { Accept: 'application/vnd.github+json' } })
+    .then(r => { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
+    .then(list => list.filter(r => !r.draft && /^v\d/.test(r.tag_name)).map(r => ({
+      tag: r.tag_name, pre: r.prerelease, date: r.published_at,
+      assets: r.assets.map(a => ({ name: a.name, url: a.browser_download_url, size: a.size, count: a.download_count }))
+    })));
+  const releases = () => cache('onyx-releases-2', 10 * 60e3, () =>
+    fetchRel(REPO).then(l => (l.length ? l : fetchRel('kewinnsinhoo/onyx-client').catch(() => []))));
 
   const tipos = {
     win: (a) => /\.exe$/i.test(a.name) && !/blockmap/i.test(a.name),

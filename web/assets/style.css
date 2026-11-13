@@ -308,3 +308,16 @@ a.pieza:hover { background: rgba(255, 255, 255, .025); }
   .cal-ev { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 16px; }
   .cal-ev .arte { display: none; }
 }
+
+/* ---------- términos ---------- */
+.legal-doc { max-width: 760px; padding: 72px 0 110px; }
+.legal-doc h1 { font-size: clamp(32px, 4vw, 44px); font-weight: 800; line-height: 1.1; }
+.legal-doc h2 { font-size: 22px; letter-spacing: -.015em; margin: 40px 0 10px; }
+.legal-doc p, .legal-doc li { color: var(--niebla); }
+.legal-doc p { margin: 12px 0; }
+.legal-doc ul, .legal-doc ol { padding-left: 22px; margin: 10px 0; }
+.legal-doc li { margin: 6px 0; }
+.legal-doc strong { color: var(--hielo); }
+.legal-doc blockquote { margin: 22px 0; padding: 14px 18px; border-radius: 12px; border: 1px solid var(--linea-2); background: var(--tinta); font-size: 15px; }
+.legal-doc blockquote p { margin: 0; }
+.legal-doc a { color: var(--lavanda); border-bottom: 1px solid currentColor; }

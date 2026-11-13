@@ -21,7 +21,7 @@
     const mac = S.info.platform === 'darwin';
     root.innerHTML = html`
       <header class="titlebar ${mac ? 'mac' : ''}">
-        <div class="brand"><img src="assets/logo-wordmark.png" alt="Onyx Client"><span class="ver">v${esc(S.info.version || '')}</span></div>
+        <div class="brand">${brandMark()}<span class="ver">v${esc(S.info.version || '')}</span></div>
         <div class="spacer"></div>
         ${mac ? '' : `<div class="winctl"><button data-w="min">${icon('minimize')}</button><button data-w="max">${icon('maximize')}</button><button class="close" data-w="close">${icon('close')}</button></div>`}
       </header>

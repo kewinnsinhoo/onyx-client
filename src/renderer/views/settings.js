@@ -235,9 +235,11 @@
   // ---------- Acerca de ----------
   TABS.about = function (body) {
     const i = S.info;
-    body.innerHTML = html`<div class="card"><div class="about"><img class="wordmark" src="assets/logo-wordmark.png" alt="${esc(i.name)}">
+    const B = i.brand;
+    body.innerHTML = html`<div class="card"><div class="about">${brandMark('wordmark')}
         <div class="ver mono">${t('Versión')} v${esc(i.version)} · ${t('Compilación')} ${esc(i.build)} · Core ${esc(i.core)}</div>
-        <div class="by">${t('Hecho por {s}', { s: esc(i.studio) })}</div>
+        <div class="by">${B ? t('Launcher de {s} · con la tecnología de Onyx Client', { s: esc(B.studioName || B.name) }) : t('Hecho por {s}', { s: esc(i.studio) })}</div>
+        ${B && (B.web || B.store) ? `<div class="row" style="justify-content:center;margin:4px 0 6px">${B.web ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.web)}">${icon('globe')}${t('Web')}</button>` : ''}${B.store ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.store)}">${icon('external')}${t('Tienda')}</button>` : ''}</div>` : ''}
         <button class="btn btn-primary btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button></div></div>
       <div class="card"><h3>${t('Canal de actualizaciones')} <span class="info-i" title="${t('Beta recibe novedades antes, pero puede tener fallos.')}">i</span></h3>
         <div class="segmented" id="ab-ch"><button data-c="stable">${t('Estable')}</button><button data-c="beta">Beta</button></div>
@@ -252,6 +254,7 @@
       body.querySelectorAll('#ab-ch button').forEach(b => b.classList.toggle('on', b.dataset.c === c));
       body.querySelector('#ab-ch-d').textContent = c === 'beta' ? t('Novedades antes que nadie (puede fallar).') : t('Versiones probadas.');
     };
+    body.querySelectorAll('[data-ext]').forEach(x => x.onclick = () => onyx.app.openExternal(x.dataset.ext));
     body.querySelectorAll('#ab-ch button').forEach(b => b.onclick = async () => { await App.saveSettings({ updateChannel: b.dataset.c }); drawCh(); });
     drawCh();
     body.querySelector('#ab-up').onclick = async (e) => {

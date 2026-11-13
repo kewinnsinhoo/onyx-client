@@ -1,0 +1,28 @@
+# Puente para los launchers antiguos (1.2.x), que buscaban actualizaciones en ESTE repo.
+# Copia aquí una versión ya publicada en kewinnsinhoo/onyx-client-releases. Esa versión ya busca
+# sus siguientes actualizaciones en el repo público de descargas, así que esto solo hace falta una vez.
+# Las versiones nuevas se publican desde onyx-client-releases → Actions → «Onyx Client».
+name: Puente de actualizaciones
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Versión a copiar (por ejemplo v1.3.0)'
+        required: true
+permissions:
+  contents: write
+jobs:
+  copiar:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::tag no válido"; exit 1; }
+          gh release download "$TAG" -R kewinnsinhoo/onyx-client-releases -D files
+          ls files
+          gh release delete "$TAG" -R "$GITHUB_REPOSITORY" -y 2>/dev/null || true
+          gh release create "$TAG" files/* -R "$GITHUB_REPOSITORY" --latest --title "Onyx Client $TAG" \
+            --notes "Onyx Client $TAG. Las próximas versiones se descargan desde https://github.com/kewinnsinhoo/onyx-client-releases"

@@ -19,6 +19,10 @@ function init(gameRoot) {
 }
 
 const isPanel = (i) => !!(i && i.manifest && i.manifest.source === 'panel');
+// En un launcher de marca solo salen las instancias de su studio
+const { config: CFG } = require('./config');
+const BRAND_STUDIO = CFG.brand && CFG.brand.onlyStudio !== false ? CFG.brand.studio || null : null;
+const ofBrand = (m) => !BRAND_STUDIO || !!(m && m.studio && m.studio.id === BRAND_STUDIO);
 
 function view(i) {
   const m = i.manifest || {};
@@ -59,7 +63,7 @@ function view(i) {
 }
 
 function list() {
-  return store.get().instances.map(view).sort((a, b) => (b.lastPlayed || b.addedAt) - (a.lastPlayed || a.addedAt));
+  return store.get().instances.filter(i => ofBrand(i.manifest)).map(view).sort((a, b) => (b.lastPlayed || b.addedAt) - (a.lastPlayed || a.addedAt));
 }
 
 function get(id) {
@@ -100,12 +104,17 @@ async function redeem(code, account) {
     if (!account) throw new Error('Inicia sesión para canjear códigos');
     try {
       const r = await panel.redeem(account, code);
+      if (!ofBrand(r.instance)) {
+        const other = new Error('Este código es de otro studio. Úsalo en Onyx Client.');
+        other.code = 'other_studio';
+        throw other;
+      }
       const res = addOrUpdate(r.instance.id, r.instance);
       res.already = res.already || !!r.already;
       return res;
     } catch (e) {
       // Si el panel no conoce el código (o no responde), se prueba con los códigos antiguos de GitHub
-      if (!['code', 'offline'].includes(e.code)) throw e;
+      if (!['code', 'offline'].includes(e.code)) throw e; // (other_studio también se lanza tal cual)
       panelError = e;
     }
   }
@@ -129,6 +138,7 @@ async function syncPanel(account, { force = false } = {}) {
     const d = store.get();
     const dismissed = new Set(d.dismissed || []);
     for (const m of remote) {
+      if (!ofBrand(m)) continue;
       const ex = d.instances.find(x => x.id === m.id);
       if (ex) ex.manifest = m;
       else if (!dismissed.has(m.id)) d.instances.push({ id: m.id, manifest: m, addedAt: Date.now(), managedFiles: [] });

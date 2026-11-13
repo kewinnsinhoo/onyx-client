@@ -8,8 +8,8 @@
   "discordInvite": "https://discord.gg/TU-INVITACION",
 
   "panelUrl": "https://panel.onyxclient.site",
-  "dataUrl": "https://raw.githubusercontent.com/kewinnsinhoo/onyx-data/main",
-  "githubRepo": "kewinnsinhoo/onyx-client",
+  "dataUrl": "https://onyxclient.site/data",
+  "githubRepo": "kewinnsinhoo/onyx-client-releases",
 
   "reportWebhook": "",
 
