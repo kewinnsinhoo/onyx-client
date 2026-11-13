@@ -25,6 +25,7 @@ export function defaults() {
     },
     access: { codes: true, list: false, public: false, premiumOnly: false, maxPlayers: null, staff: [] },
     files: [],
+    dirs: [],
     sync: { mode: 'keep', playerPaths: [{ path: 'options.txt', mode: 'once' }] },
     schedule: { predownload: false, opensAt: null, closesAt: null, kickOnClose: false },
     server: { address: '', port: 25565, autoJoin: false },
@@ -87,9 +88,13 @@ export function sanitize(patch, current = defaults()) {
     d.files = p.files.map(f => ({
       path: cleanPath(f && f.path), url: url(f && f.url),
       sha1: /^[0-9a-f]{40}$/i.test(String(f && f.sha1 || '')) ? String(f.sha1).toLowerCase() : null,
-      size: int(f && f.size, 0, 4e9, null), name: str(f && f.name, 120)
-    })).filter(f => f.path && f.url && !seen.has(f.path) && seen.add(f.path)).slice(0, 2000);
+      size: int(f && f.size, 0, 4e9, null), name: str(f && f.name, 120), at: time(f && f.at),
+      ...(f && /^[A-Za-z0-9]{8}$/.test(String(f.mr || '')) ? { mr: String(f.mr) } : {})
+    })).filter(f => f.path && f.url && !seen.has(f.path) && seen.add(f.path)).slice(0, 5000);
   }
+  // Carpetas creadas a mano (aunque estén vacías)
+  if (Array.isArray(p.dirs)) d.dirs = [...new Set(p.dirs.map(cleanPath).filter(Boolean))].slice(0, 1000);
+  if (!Array.isArray(d.dirs)) d.dirs = [];
   if (p.sync) {
     if (SYNC_MODES.includes(p.sync.mode)) d.sync.mode = p.sync.mode;
     if (Array.isArray(p.sync.playerPaths)) {
@@ -143,6 +148,7 @@ export function toManifest(row, studio, origin) {
     java: d.java,
     server: d.server.address ? d.server : null,
     files: d.files.map(f => ({ path: f.path, url: abs(f.url), sha1: f.sha1 || undefined, size: f.size || undefined })),
+    dirs: d.dirs || [],
     sync: d.sync,
     state: row.state,
     schedule: d.schedule,

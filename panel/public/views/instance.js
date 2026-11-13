@@ -99,48 +99,18 @@
 
     // Archivos
     async function files(el) {
-      const guess = (name) => /\.jar$/i.test(name) ? `mods/${name}` : /\.zip$/i.test(name) ? `resourcepacks/${name}` : /\.(json|toml|cfg|txt|properties)$/i.test(name) ? `config/${name}` : name;
-      const draw = () => {
-        el.innerHTML = html`<div class="card"><div class="card-head"><div><h3>${icon('folder')}${t('Archivos de la instancia')}</h3><p class="sub">${t('Mods, configs y resource packs que se descargan en el PC del jugador. Solo se descarga lo que cambia.')}</p></div><span class="grow"></span>
-            ${editable ? `<button class="btn" id="f-link">${icon('link')}${t('Añadir por enlace')}</button><button class="btn primary" id="f-up">${icon('upload')}${t('Subir archivos')}</button>` : ''}</div>
-          ${d.files.length ? html`<table class="table"><thead><tr><th>${t('Ruta en el PC del jugador')}</th><th>${t('Tamaño')}</th><th>${t('Origen')}</th><th></th></tr></thead><tbody>
-            ${d.files.map((f, i) => html`<tr><td><input class="input mono" data-path="${i}" value="${esc(f.path)}" style="height:32px;font-size:12.5px"></td>
-              <td>${fmtSize(f.size)}</td><td>${f.url.startsWith('/m/') ? `<span class="badge">${t('Subido')}</span>` : `<span class="badge mute">${t('Enlace')}</span>`}${f.sha1 ? ` <span class="badge ok" title="SHA-1 ${esc(f.sha1)}">${icon('shield')}</span>` : ''}</td>
-              <td class="r">${editable ? `<button class="btn sm icon ghost" data-rm="${i}" title="${t('Quitar')}">${icon('trash')}</button>` : ''}</td></tr>`).join('')}</tbody></table>`
-          : `<div class="empty"><div class="ic">${icon('folder')}</div><h4>${t('Sin archivos')}</h4><p>${t('Arrastra aquí tus mods o pega el enlace de descarga de Modrinth.')}</p></div>`}
-          <p class="help" style="margin:14px 0 0">${t('Máximo 25 MB por archivo subido. Para mods grandes usa el enlace de descarga.')}</p></div>`;
-        $$('[data-path]', el).forEach(i => i.oninput = () => { d.files[i.dataset.path].path = i.value.trim(); changed(); });
-        $$('[data-rm]', el).forEach(b => b.onclick = () => { d.files.splice(Number(b.dataset.rm), 1); changed(); draw(); });
-        const up = $('#f-up', el);
-        if (up) up.onclick = async () => { const fs = await pickFile('*'); if (fs && fs.length) addFiles(fs); };
-        const ln = $('#f-link', el);
-        if (ln) ln.onclick = () => modal((m, close) => {
-          m.innerHTML = html`<div class="mh"><h3>${icon('link')}${t('Añadir por enlace')}</h3></div><div class="mb">
-            <div class="field"><span class="label">${t('Enlace de descarga')}</span><input class="input" id="l-url" placeholder="https://cdn.modrinth.com/data/…/sodium.jar"></div>
-            <div class="field"><span class="label">${t('Ruta en el PC del jugador')}</span><input class="input mono" id="l-path" placeholder="mods/sodium.jar"></div></div>
-            <div class="mf"><button class="btn" id="l-no">${t('Cancelar')}</button><button class="btn primary" id="l-ok">${t('Añadir')}</button></div>`;
-          const u = $('#l-url', m), p = $('#l-path', m);
-          u.oninput = () => { if (!p.dataset.touched) { const n = decodeURIComponent(u.value.split('?')[0].split('/').pop() || ''); p.value = n ? guess(n) : ''; } };
-          p.oninput = () => { p.dataset.touched = 1; };
-          $('#l-no', m).onclick = close;
-          $('#l-ok', m).onclick = () => {
-            if (!/^https:\/\//.test(u.value.trim())) return toast(t('El enlace debe empezar por https://'), 'err');
-            if (!p.value.trim()) return toast(t('Escribe la ruta del archivo'), 'err');
-            d.files.push({ path: p.value.trim(), url: u.value.trim(), sha1: null, size: null, name: '' });
-            changed(); close(); draw();
-          };
-        });
-        el.ondragover = (e) => { e.preventDefault(); };
-        el.ondrop = (e) => { e.preventDefault(); if (editable && e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); };
-      };
-      const addFiles = async (list) => {
-        for (const f of list) {
-          toast(t('Subiendo {name}…', { name: f.name }));
-          try { const r = await upload(f); d.files = d.files.filter(x => x.path !== guess(f.name)); d.files.push({ path: guess(f.name), url: r.url, sha1: r.sha1, size: r.size, name: f.name }); changed(); draw(); }
-          catch (e) { fail(e); }
+      // Explorador de archivos (views/files.js). Cada cambio se guarda al momento.
+      FilesTab(el, {
+        getData: () => d,
+        editable,
+        persist: async (patch) => {
+          const res = await sapi('PATCH', base, { data: patch });
+          const o = JSON.parse(orig);
+          for (const k of Object.keys(patch)) { d[k] = res.data[k]; o[k] = res.data[k]; inst.data[k] = res.data[k]; }
+          orig = JSON.stringify(o);
+          changed(); paintHead();
         }
-      };
-      draw();
+      });
     }
 
     // Personalización

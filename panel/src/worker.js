@@ -15,7 +15,7 @@ const LEVEL = { viewer: 1, editor: 2, admin: 3, owner: 4 };
 const ROLES = Object.keys(LEVEL);
 const ACTIVE_MS = 90e3; // una partida cuenta como "jugando" si dio señales en los últimos 90 s
 const MAX_UPLOAD = 25 * 1024 * 1024;
-const UPLOAD_TYPES = /^(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|ogg|wav|webm)|application\/(java-archive|zip|json|octet-stream|x-java-archive)|text\/plain)$/;
+const UPLOAD_TYPES = /^(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|ogg|wav|webm)|application\/(java-archive|zip|x-zip-compressed|json|octet-stream|x-java-archive)|text\/plain)$/;
 
 export default {
   async fetch(req, env, ctx) {

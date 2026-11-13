@@ -93,6 +93,11 @@ await test('utilidades y modelo', async () => {
   assert.deepStrictEqual(d.access.staff, ['Kewinn']);
   assert.strictEqual(d.access.maxPlayers, 30);
   assert.strictEqual(sanitize({ loader: { type: 'vanilla', version: '1' } }).loader.version, 'latest');
+  // Explorador de archivos: carpetas vacías, fecha y proyecto de Modrinth
+  const fm = sanitize({ files: [{ path: 'mods/a.jar', url: 'https://cdn.modrinth.com/data/AANobbMI/x/a.jar', at: 123, mr: 'AANobbMI' }, { path: '../malo', url: 'https://x' }], dirs: ['shaderpacks', 'shaderpacks', '../fuera', 'config/vacía'] });
+  assert.deepStrictEqual(fm.files.map(f => [f.path, f.at, f.mr]), [['mods/a.jar', 123, 'AANobbMI']]);
+  assert.deepStrictEqual(fm.dirs, ['shaderpacks', 'config/vacía']);
+  assert.deepStrictEqual(toManifest({ id: 'x', data: JSON.stringify(fm), state: 'open', updated_at: 1 }, { name: 'S' }, 'https://p').dirs, ['shaderpacks', 'config/vacía']);
   assert.ok(cmpVersion('21.1.77', '21.1.9') > 0);
   assert.strictEqual(neoPrefix('1.21.1'), '21.1.');
   const D = 864e5, base = 10 * D;

@@ -183,6 +183,11 @@ async function syncFiles(inst, gameDir, concurrency, progress) {
   await downloadAll(tasks, { concurrency, onProgress: (d, t) => progress({ stage: 'files', done: d, total: t }) });
   for (const rel of p.remove) { try { fs.unlinkSync(path.join(gameDir, rel)); } catch { /* nada */ } }
   if (p.remove.length) { Sync.pruneEmpty(gameDir); log.info(`[sync] ${inst.id}: ${p.remove.length} archivo(s) quitados (modo ${p.mode})`); }
+  // Carpetas vacías que el studio creó en el panel (p. ej. shaderpacks)
+  for (const dir of Array.isArray(m.dirs) ? m.dirs : []) {
+    const rel = Sync.norm(dir);
+    if (rel) fs.mkdirSync(path.join(gameDir, rel), { recursive: true });
+  }
   inst.syncState = p.state;
   inst.managedFiles = p.state.managed;
 }

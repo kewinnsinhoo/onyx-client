@@ -18,6 +18,14 @@
     activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
     building: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M10 21v-4h4v4"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+    more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+    move: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 13h6M13 10l3 3-3 3"/>',
+    folderPlus: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',
+    filePlus: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/>',
+    package: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9M8 5.3l8 4.4"/>',
+    modrinth: '<circle cx="12" cy="12" r="9"/><path d="M8 15.5 10.5 8l3 5 2-3.5"/>',
+
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
     chevDown: '<path d="m6 9 6 6 6-6"/>', chevRight: '<path d="m9 6 6 6-6 6"/>', chevLeft: '<path d="m15 6-6 6 6 6"/>',
     updown: '<path d="m7 9 5-5 5 5M7 15l5 5 5-5"/>',
@@ -80,7 +88,8 @@
     if (s < 60) return t('ahora mismo');
     if (s < 3600) return t('hace {n} min', { n: Math.floor(s / 60) });
     if (s < 86400) return t('hace {n} h', { n: Math.floor(s / 3600) });
-    return t('hace {n} días', { n: Math.floor(s / 86400) });
+    const d = Math.floor(s / 86400);
+    return d === 1 ? t('ayer') : t('hace {n} días', { n: d });
   };
   window.loaderName = (l) => ({ vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' }[(l && l.type) || 'vanilla']);
   window.mediaUrl = (u) => u || '';

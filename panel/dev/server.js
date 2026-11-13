@@ -63,7 +63,17 @@ async function seed() {
   };
   await mk('ignite-extremo-3', { name: 'IGNITE EXTREMO 3', category: 'Serie', description: 'Supervivencia extrema con vidas limitadas', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' },
     look: { background: '/m/0123456789abcdef0123/fondo.webp', icon: '/m/0123456789abcdef0124/skin.webp', accent: '#f59e0b', playColor: '#ea580c' }, access: { maxPlayers: 100, staff: ['kewinn'] },
-    files: [{ path: 'mods/sodium.jar', url: 'https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar', size: 1048000 }, { path: 'mods/voicechat.jar', url: '/m/0123456789abcdef0123/voicechat.jar', size: 3400000, sha1: 'a'.repeat(40) }],
+    files: [
+      { path: 'mods/sodium.jar', url: 'https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar', size: 1048000, at: t - 4 * DAY },
+      { path: 'mods/voicechat.jar', url: '/m/0123456789abcdef0123/voicechat.jar', size: 3400000, sha1: 'a'.repeat(40), at: t - 4 * DAY },
+      { path: 'mods/muertes-epicas-1.21.1-1.12.0.jar', url: '/m/0123456789abcdef0125/muertes.jar', size: 5800000, at: t - 2 * 3600e3 },
+      { path: 'mods/iris.jar', url: 'https://cdn.modrinth.com/data/YL57xq9U/versions/y/iris.jar', size: 2900000, at: t - 4 * DAY },
+      { path: 'config/sodium-options.json', url: '/m/0123456789abcdef0126/sodium-options.json', size: 1200, at: t - 3 * DAY },
+      { path: 'config/voicechat/voicechat-client.properties', url: '/m/0123456789abcdef0127/vc.properties', size: 900, at: t - 3 * DAY },
+      { path: 'config/voicechat/voicechat-server.properties', url: '/m/0123456789abcdef0128/vcs.properties', size: 1400, at: t - 3 * DAY },
+      { path: 'resourcepacks/Onyx-UI.zip', url: '/m/0123456789abcdef0129/onyx-ui.zip', size: 4200000, at: t - DAY },
+      { path: 'options.txt', url: '/m/012345678900abcdef12/options.txt', size: 5300, at: t - 5 * DAY }
+    ], dirs: ['shaderpacks'],
     server: { address: 'play.onyx.gg', autoJoin: true } });
   await mk('torneo-pvp', { name: 'Torneo PvP', category: 'Torneo', minecraft: '1.8.9', loader: { type: 'vanilla' }, look: { background: '/m/0123456789abcdef0124/skin.webp', accent: '#ef4444', playColor: '#dc2626' }, access: { premiumOnly: true } }, 'locked');
   await mk('modpack-staff', { name: 'Modpack del staff', category: 'Survival', minecraft: '1.20.1', loader: { type: 'forge', version: '47.3.0' }, look: { accent: '#8b5cf6', playColor: '#7c3aed' } }, 'open', 1);
