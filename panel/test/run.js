@@ -344,4 +344,91 @@ await test('estado de los servicios (comprobación automática)', async () => {
   assert.strictEqual(by.launcher.uptime, 0);
 });
 
+await test('Creador: resumen, studios, límites, suspender, usuarios, jugadores', async () => {
+  other = await login('222', 'otro');
+  // solo el Creador
+  assert.strictEqual((await call('GET', '/api/onyx/overview', { cookie: other })).status, 403);
+  const ov = await call('GET', '/api/onyx/overview', { cookie: creator });
+  assert.strictEqual(ov.status, 200, JSON.stringify(ov.data));
+  assert.ok(ov.data.studios >= 2 && ov.data.instances >= 1 && ov.data.chart.length >= 30);
+  assert.ok(ov.data.activity.length > 0, 'hay actividad registrada');
+  const list = (await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios;
+  const nova = list.find(x => x.name === 'Nova Estudios');
+  assert.ok(nova && nova.owners.length === 1);
+  // límite de instancias
+  await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { maxInstances: 1, maxStorageMb: 10 } });
+  const mk = (n) => call('POST', `/api/s/${nova.id}/instances`, { cookie: other, body: { data: { name: n, minecraft: '1.21.1' } } });
+  assert.strictEqual((await mk('Primera')).status, 201);
+  const second = await mk('Segunda');
+  assert.strictEqual(second.status, 403);
+  assert.strictEqual(second.data.error, 'limit');
+  // espacio
+  const big = await call('POST', `/api/s/${nova.id}/media?name=x.bin`, { cookie: other, raw: new Uint8Array(11 * 1024 * 1024), headers: { 'Content-Type': 'application/octet-stream' } });
+  assert.strictEqual(big.status, 413);
+  assert.strictEqual(big.data.error, 'quota');
+  const use = await call('GET', `/api/s/${nova.id}/usage`, { cookie: other });
+  assert.strictEqual(use.data.maxInstances, 1);
+  // suspender: solo lectura para el studio y no se juega
+  await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { suspended: true, reason: 'Pruebas' } });
+  const me = (await call('GET', '/api/me', { cookie: other })).data;
+  assert.strictEqual(me.studios.find(x => x.id === nova.id).suspended, true);
+  const blockedEdit = await call('POST', `/api/s/${nova.id}/invites`, { cookie: other, body: { role: 'editor' } });
+  assert.strictEqual(blockedEdit.status, 423);
+  assert.strictEqual((await call('GET', `/api/s/${nova.id}/instances`, { cookie: other })).status, 200, 'puede ver');
+  assert.strictEqual((await call('PATCH', `/api/onyx/studios/onyx-studios`, { cookie: creator, body: { suspended: true } })).status, 400);
+  await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { suspended: false, maxInstances: null } });
+  assert.strictEqual((await mk('Segunda')).status, 201, 'sin límite ya se puede');
+  // usuarios: bloquear cierra la sesión y no deja volver a entrar
+  const users = (await call('GET', '/api/onyx/users?q=otro', { cookie: creator })).data.users;
+  const u2 = users.find(x => x.id === '222');
+  assert.ok(u2 && u2.studios.length >= 1);
+  assert.strictEqual((await call('PATCH', '/api/onyx/users/111', { cookie: creator, body: { blocked: true } })).status, 400, 'no se bloquea al Creador');
+  await call('PATCH', '/api/onyx/users/222', { cookie: creator, body: { blocked: true } });
+  assert.strictEqual((await call('GET', '/api/me', { cookie: other })).status, 401);
+  discordUser = { id: '222', username: 'otro', global_name: 'otro', avatar: null };
+  const l = await worker.fetch(new Request(ORIGIN + '/auth/login'), env, {});
+  const state = new URL(l.headers.get('Location')).searchParams.get('state');
+  const cb = await worker.fetch(new Request(`${ORIGIN}/auth/callback?code=x&state=${state}`, { headers: { Cookie: l.headers.get('Set-Cookie').split(';')[0] } }), env, {});
+  assert.strictEqual(cb.headers.get('Location'), '/#/login?error=blocked');
+  await call('PATCH', '/api/onyx/users/222', { cookie: creator, body: { blocked: false } });
+  other = await login('222', 'otro');
+  // buscar jugador en todo Onyx
+  const pl = (await call('GET', '/api/onyx/players?q=ana', { cookie: creator })).data.players;
+  assert.ok(pl.some(x => x.key === 'ana'));
+  // actividad del studio (solo admins) y global
+  const act = (await call('GET', `/api/s/${nova.id}/activity`, { cookie: other })).data.items.map(x => x.action);
+  assert.ok(act.includes('studio.suspend') && act.includes('instance.create') && act.includes('studio.limits'), act.join(','));
+  const glob = (await call('GET', '/api/onyx/audit?q=Segunda', { cookie: creator })).data.items;
+  assert.ok(glob.length >= 1);
+});
+
+await test('Creador: avisos del launcher, mantenimiento y baneo global', async () => {
+  const n = await call('POST', '/api/onyx/notices', { cookie: creator, body: { title: 'Nueva versión 1.3', body: 'Trae cosas', kind: 'success', url: 'https://onyxclient.site' } });
+  assert.strictEqual(n.status, 201, JSON.stringify(n.data));
+  const nova = (await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios.find(x => x.name === 'Nova Estudios');
+  await call('POST', `/api/s/${nova.id}/notices`, { cookie: other, body: { title: 'Evento el sábado', kind: 'event' } });
+  assert.strictEqual((await call('POST', '/api/onyx/notices', { cookie: creator, body: { title: 'x', url: 'http://inseguro' } })).status, 400);
+  const pubAll = (await call('GET', '/api/public/notices')).data.notices;
+  assert.deepStrictEqual(pubAll.map(x => x.title), ['Nueva versión 1.3'], 'sin studios solo los de todo Onyx');
+  const pubNova = (await call('GET', `/api/public/notices?studios=${nova.id}`)).data.notices;
+  assert.strictEqual(pubNova.length, 2);
+  assert.strictEqual(pubNova.find(x => x.kind === 'event').author, 'Nova Estudios');
+  // mantenimiento: nadie juega salvo el staff
+  await call('PATCH', '/api/onyx/settings', { cookie: creator, body: { maintenance: { on: true, message: 'Volvemos en 10 minutos' } } });
+  assert.strictEqual((await call('GET', '/api/public/notices')).data.notices[0].id, 'maintenance');
+  const z = await player('Zoe', false);
+  const pm = await call('POST', '/api/l/play', { headers: z, body: { instance: iid } });
+  assert.strictEqual(pm.data.reason, 'maintenance');
+  assert.strictEqual(pm.data.message, 'Volvemos en 10 minutos');
+  await call('PATCH', '/api/onyx/settings', { cookie: creator, body: { maintenance: { on: false } } });
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: z, body: { instance: iid } })).data.ok, true);
+  // baneo en todo Onyx
+  await call('POST', '/api/onyx/bans', { cookie: creator, body: { kind: 'name', value: 'Zoe' } });
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: z, body: { instance: iid } })).data.reason, 'banned');
+  assert.ok(!(await call('GET', '/api/l/instances', { headers: z })).data.instances.length);
+  await call('DELETE', '/api/onyx/bans/zoe?kind=name', { cookie: creator });
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: z, body: { instance: iid } })).data.ok, true);
+  assert.strictEqual((await call('GET', '/api/onyx/bans', { cookie: other })).status, 403);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

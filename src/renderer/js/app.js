@@ -260,7 +260,7 @@
       const items = S.notifications.slice(0, 12);
       dd.innerHTML = `<div class="dd-title">${t('Avisos')}</div>` + (items.length ? items.map(n => html`
         <div class="notif"${n.url ? ` data-url="${esc(n.url)}" style="cursor:pointer"` : ''}><span class="b ${esc(n.kind || '')}"></span><div>
-        <div class="t">${esc(n.title)}</div><div class="s">${esc([n.author, n.time ? UI.timeAgo(n.time) : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
+        <div class="t">${esc(n.title)}</div>${n.body ? `<div class="m">${esc(n.body)}</div>` : ''}<div class="s">${esc([n.author, n.time ? UI.timeAgo(n.time) : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
         : `<div class="dd-empty">${t('No tienes avisos')}</div>`);
       dd.querySelectorAll('[data-url]').forEach(x => x.onclick = () => onyx.app.openExternal(x.dataset.url));
     }, { width: 320 });
@@ -419,6 +419,7 @@
     if (!S.settings.onboarded || !S.account) showLogin();
     else enterApp(false);
     loadNotifications();
+    setInterval(loadNotifications, 5 * 60e3); // los avisos nuevos del panel llegan solos
     setInterval(loadNotifications, 5 * 60e3);
   }
 

@@ -2,7 +2,7 @@
 (function () {
   const V = window.Views;
   const box = (inner) => { document.body.innerHTML = `<div class="gate"><div class="box">${inner}</div></div>`; };
-  const ERR = { cancelled: 'Cancelaste el inicio de sesión.', state: 'La sesión caducó. Vuelve a intentarlo.', discord: 'Discord no respondió. Vuelve a intentarlo.' };
+  const ERR = { cancelled: 'Cancelaste el inicio de sesión.', state: 'La sesión caducó. Vuelve a intentarlo.', discord: 'Discord no respondió. Vuelve a intentarlo.', blocked: 'Tu acceso al panel está bloqueado. Habla con Onyx Studios si crees que es un error.' };
 
   V.login = (r) => {
     const next = r.query.get('next') || '/';

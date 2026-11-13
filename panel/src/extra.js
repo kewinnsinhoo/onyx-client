@@ -1,6 +1,7 @@
 // Eventos, histórico, referidos y estado de los servicios.
 import { json, fail, now, randomToken, readJson, str, url as cleanUrl, color, int } from './util.js';
 import { peaksByDay } from './stats.js';
+import { audit, publicNotices } from './onyx.js';
 
 export const EVENT_CATS = ['Evento', 'Torneo', 'Serie', 'Squid Game', 'Directo', 'Otro'];
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=60' };
@@ -39,6 +40,7 @@ export async function eventsApi(c, eid, m) {
     const id = randomToken(8);
     await env.DB.prepare('INSERT INTO events (id, studio_id, instance_id, title, category, color, description, image, starts_at, ends_at, public, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(id, studio.id, e.instance_id || null, e.title, e.category, e.color, e.description || '', e.image || null, e.starts_at, e.ends_at || null, e.public, user.id, now()).run();
+    await audit(env, user, studio.id, 'event.create', e.title, { at: e.starts_at });
     return json({ id }, 201);
   }
   const row = await env.DB.prepare('SELECT * FROM events WHERE id = ? AND studio_id = ? AND deleted_at IS NULL').bind(eid, studio.id).first();
@@ -49,9 +51,14 @@ export async function eventsApi(c, eid, m) {
     if (e.ends_at && e.ends_at < e.starts_at) fail(400, 'date', 'El final no puede ser antes del inicio');
     await env.DB.prepare('UPDATE events SET instance_id = ?, title = ?, category = ?, color = ?, description = ?, image = ?, starts_at = ?, ends_at = ?, public = ? WHERE id = ?')
       .bind(e.instance_id || null, e.title, e.category, e.color, e.description || '', e.image || null, e.starts_at, e.ends_at || null, e.public, eid).run();
+    await audit(env, user, studio.id, 'event.update', e.title, { at: e.starts_at });
     return json({ ok: true });
   }
-  if (m === 'DELETE') { await env.DB.prepare('UPDATE events SET deleted_at = ? WHERE id = ?').bind(now(), eid).run(); return json({ ok: true }); }
+  if (m === 'DELETE') {
+    await env.DB.prepare('UPDATE events SET deleted_at = ? WHERE id = ?').bind(now(), eid).run();
+    await audit(env, user, studio.id, 'event.delete', row.title);
+    return json({ ok: true });
+  }
   fail(405, 'method', 'Método no permitido');
 }
 
@@ -139,6 +146,10 @@ export async function publicApi(req, env, u, parts, m) {
     return json({ studios: rows.map(r => ({ ...r, code: r.id.toUpperCase(), logo: r.logo && r.logo.startsWith('/m/') ? origin + r.logo : r.logo })) }, 200, CORS);
   }
   if (parts[0] === 'status') return json(await statusSummary(env), 200, CORS);
+  if (parts[0] === 'notices') {
+    const studios = String(u.searchParams.get('studios') || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+    return json({ notices: await publicNotices(env, studios, env.PUBLIC_URL || u.origin) }, 200, { ...CORS, 'Cache-Control': 'public, max-age=30' });
+  }
   if (parts[0] === 'referrals') {
     const since = u.searchParams.get('period') === 'month' ? now() - 30 * 864e5 : 0;
     const rows = (await env.DB.prepare(`SELECT s.id, s.name, s.logo, COUNT(r.player_key) AS players FROM studios s

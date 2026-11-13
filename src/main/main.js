@@ -279,10 +279,22 @@ handle('skins:screenshot', async (rect) => {
 });
 
 // ---------- datos (repo de GitHub) ----------
-handle('data:get', (name) => {
+handle('data:get', async (name) => {
   if (!/^[a-z0-9_-]+\.json$/i.test(name)) throw new Error('Nombre no válido');
+  if (name === 'notifications.json') return notifications();
   return data.getJson(name, { fallback: null });
 });
+
+// Avisos de la campana: los del panel (de Onyx y de los studios de tus instancias) + los de onyx-data
+async function notifications() {
+  const base = await data.getJson('notifications.json', { fallback: [] }).catch(() => []);
+  const list = Array.isArray(base) ? base : (base && base.items) || [];
+  if (!panel.enabled()) return list;
+  const studios = [...new Set(instances.list().map(i => i.studio && i.studio.id).filter(Boolean))];
+  const r = await panel.publicGet('notices' + (studios.length ? '?studios=' + encodeURIComponent(studios.join(',')) : ''));
+  const fromPanel = r && Array.isArray(r.notices) ? r.notices : [];
+  return [...fromPanel, ...list];
+}
 handle('data:terms', async (lang) => {
   const local = (l) => { try { return fs.readFileSync(path.join(__dirname, '..', 'renderer', 'terms', `${l}.md`), 'utf8'); } catch { return null; } };
   const remote = await data.getText(`terms/${lang}.md`, '') || await data.getText('terms/es.md', '');

@@ -140,7 +140,7 @@ export function toManifest(row, studio, origin) {
       music: l.music.url ? { url: abs(l.music.url), volume: l.music.volume, loop: l.music.loop } : null,
       sponsor: l.sponsor.name ? { name: l.sponsor.name, logo: abs(l.sponsor.logo), url: l.sponsor.url } : null
     },
-    studio: studio ? { name: studio.name, logo: abs(studio.logo) } : null,
+    studio: studio ? { id: studio.id, name: studio.name, logo: abs(studio.logo) } : null,
     premium: d.access.premiumOnly,
     maxPlayers: d.access.maxPlayers,
     minecraft: d.minecraft,

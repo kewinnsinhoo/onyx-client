@@ -8,6 +8,7 @@ import { versions as metaVersions, loaderVersions } from './meta.js';
 import { ensureSchema } from './schema.js';
 import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
+import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
 
 const SESSION_DAYS = 30;
@@ -33,6 +34,7 @@ export default {
   async scheduled(event, env, ctx) {
     await ensureSchema(env.DB);
     ctx.waitUntil(runChecks(env));
+    ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
   }
 };
 
@@ -118,6 +120,10 @@ async function startSession(env, user, next) {
     global_role = CASE WHEN ? THEN 'creator' ELSE users.global_role END`)
     .bind(user.id, user.name, user.avatar, isCreator ? 'creator' : 'user', t, t, isCreator ? 1 : 0).run();
   if (isCreator) await ensureCreatorStudio(env, user.id);
+  const blocked = await env.DB.prepare('SELECT blocked_at FROM users WHERE id = ?').bind(user.id).first();
+  if (blocked && blocked.blocked_at && !isCreator) {
+    return new Response(null, { status: 302, headers: [['Location', '/#/login?error=blocked'], ['Set-Cookie', cookie('onyx_oauth', '', { maxAge: 0 })]] });
+  }
   const token = randomToken(32);
   await env.DB.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
     .bind(await sha256(token), user.id, t, t + SESSION_DAYS * 864e5).run();
@@ -145,7 +151,7 @@ async function authLogout(req, env) {
 async function currentUser(req, env) {
   const token = parseCookies(req).onyx_s;
   if (!token) return null;
-  const row = await env.DB.prepare(`SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?`)
+  const row = await env.DB.prepare(`SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ? AND (u.blocked_at IS NULL OR u.global_role = 'creator')`)
     .bind(await sha256(token), now()).first();
   return row || null;
 }
@@ -170,8 +176,13 @@ async function panelApi(req, env, u, path, m, ctx) {
 
   if (parts[0] === 'studios') {
     if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede gestionar studios');
-    if (m === 'GET' && !parts[1]) return json(await allStudios(env));
+    if (m === 'GET' && !parts[1]) return json({ studios: await allStudiosFull(env) });
     if (m === 'POST' && !parts[1]) return createStudio(req, env, user);
+  }
+  if (parts[0] === 'onyx') {
+    if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede entrar aquí');
+    if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
+    return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);
   }
 
   if (parts[0] === 's' && parts[1]) {
@@ -181,6 +192,7 @@ async function panelApi(req, env, u, path, m, ctx) {
     const role = isCreator ? 'owner' : (await env.DB.prepare('SELECT role FROM members WHERE studio_id = ? AND user_id = ?').bind(sid, user.id).first() || {}).role;
     if (!role) fail(403, 'forbidden', 'No perteneces a este studio');
     const need = (r) => { if (LEVEL[role] < LEVEL[r]) fail(403, 'forbidden', 'Tu rol no permite hacer esto'); };
+    if (studio.suspended_at && !isCreator && m !== 'GET') fail(423, 'suspended', 'Este studio está suspendido. Solo puedes ver, no cambiar nada.');
     const ctxS = { env, user, studio, role, need, req, u, isCreator };
     return studioApi(ctxS, parts.slice(2), m);
   }
@@ -189,16 +201,10 @@ async function panelApi(req, env, u, path, m, ctx) {
 
 async function meInfo(env, user) {
   const studios = user.global_role === 'creator'
-    ? (await env.DB.prepare("SELECT s.id, s.name, s.logo, COALESCE(m.role, 'owner') AS role FROM studios s LEFT JOIN members m ON m.studio_id = s.id AND m.user_id = ? WHERE s.deleted_at IS NULL ORDER BY (s.id = 'onyx-studios') DESC, s.name").bind(user.id).all()).results
-    : (await env.DB.prepare('SELECT s.id, s.name, s.logo, m.role FROM members m JOIN studios s ON s.id = m.studio_id WHERE m.user_id = ? AND s.deleted_at IS NULL ORDER BY s.name').bind(user.id).all()).results;
-  return { user: { id: user.id, name: user.name, avatar: user.avatar, role: user.global_role }, studios };
-}
-
-async function allStudios(env) {
-  const rows = (await env.DB.prepare(`SELECT s.*, (SELECT COUNT(*) FROM members m WHERE m.studio_id = s.id) AS members,
-    (SELECT COUNT(*) FROM instances i WHERE i.studio_id = s.id AND i.deleted_at IS NULL) AS instances
-    FROM studios s WHERE s.deleted_at IS NULL ORDER BY s.created_at`).all()).results;
-  return { studios: rows };
+    ? (await env.DB.prepare("SELECT s.id, s.name, s.logo, s.suspended_at, s.suspend_reason, COALESCE(m.role, 'owner') AS role FROM studios s LEFT JOIN members m ON m.studio_id = s.id AND m.user_id = ? WHERE s.deleted_at IS NULL ORDER BY (s.id = 'onyx-studios') DESC, s.name").bind(user.id).all()).results
+    : (await env.DB.prepare('SELECT s.id, s.name, s.logo, s.suspended_at, s.suspend_reason, m.role FROM members m JOIN studios s ON s.id = m.studio_id WHERE m.user_id = ? AND s.deleted_at IS NULL ORDER BY s.name').bind(user.id).all()).results;
+  return { user: { id: user.id, name: user.name, avatar: user.avatar, role: user.global_role },
+    studios: studios.map(s => ({ id: s.id, name: s.name, logo: s.logo, role: s.role, suspended: !!s.suspended_at, suspendReason: s.suspend_reason || '' })) };
 }
 
 async function createStudio(req, env, user) {
@@ -212,6 +218,7 @@ async function createStudio(req, env, user) {
   const token = randomToken(16);
   await env.DB.prepare('INSERT INTO invites (token, studio_id, studio_name, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .bind(token, id, name, 'owner', user.id, t, t + 14 * 864e5).run();
+  await audit(env, user, id, 'studio.create', name);
   return json({ studio: { id, name }, invite: token }, 201);
 }
 
@@ -230,6 +237,7 @@ async function inviteAccept(env, user, token) {
     env.DB.prepare('INSERT INTO members (studio_id, user_id, role, added_at) VALUES (?, ?, ?, ?) ON CONFLICT(studio_id, user_id) DO UPDATE SET role = excluded.role').bind(inv.studio_id, user.id, inv.role, t),
     env.DB.prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE token = ?').bind(user.id, t, token)
   ]);
+  await audit(env, user, inv.studio_id, 'invite.accept', user.name, { role: inv.role });
   return json({ studio: inv.studio_id });
 }
 
@@ -244,6 +252,7 @@ async function studioApi(c, parts, m) {
     const name = 'name' in body ? str(body.name, 50).trim() : studio.name;
     const logo = 'logo' in body ? cleanUrl(body.logo) : studio.logo;
     await env.DB.prepare('UPDATE studios SET name = ?, logo = ? WHERE id = ?').bind(name || studio.name, logo, studio.id).run();
+    await audit(env, c.user, studio.id, 'studio.update', name || studio.name);
     return json({ ok: true });
   }
   if (a === 'overview' && m === 'GET') return json(await overview(env, studio.id));
@@ -258,6 +267,19 @@ async function studioApi(c, parts, m) {
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
+  if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
+  if (a === 'activity' && m === 'GET') {
+    c.need('admin');
+    const q = c.u.searchParams;
+    return json(await auditList(env, { studio: studio.id, q: str(q.get('q'), 60), before: int(q.get('before'), 1, 9e15, null) }));
+  }
+  if (a === 'usage' && m === 'GET') return json({ ...(await usage(env, studio)), orphans: (await orphanMedia(env, studio.id)).length });
+  if (a === 'clean' && m === 'POST') {
+    c.need('admin');
+    const r = await cleanOrphans(env, studio.id);
+    await audit(env, c.user, studio.id, 'storage.clean', studio.name, r);
+    return json(r);
+  }
   if (a === 'instances') {
     if (!b) {
       if (m === 'GET') return json({ instances: await listInstances(env, studio.id) });
@@ -305,6 +327,7 @@ function instanceView(r) {
 async function createInstance(c) {
   c.need('editor');
   const { env, studio, user } = c;
+  await checkInstanceLimit(env, studio);
   const body = await readJson(c.req);
   const data = sanitize(body.data || {}, defaults());
   const id = `${slugify(data.name)}-${randomToken(2)}`;
@@ -319,6 +342,7 @@ async function createInstance(c) {
     out.code = code;
   }
   if (Array.isArray(body.names) && body.names.length) await addManual(env, id, body.names);
+  await audit(env, user, studio.id, 'instance.create', data.name, { id });
   return json(out, 201);
 }
 
@@ -339,15 +363,28 @@ async function instanceApi(c, row, sub, d, m) {
       const state = body.state === 'locked' || body.state === 'open' ? body.state : row.state;
       const hidden = 'hidden' in body ? (body.hidden ? 1 : 0) : row.hidden;
       await env.DB.prepare('UPDATE instances SET data = ?, state = ?, hidden = ?, updated_at = ? WHERE id = ?').bind(JSON.stringify(data), state, hidden, now(), iid).run();
+      const old = JSON.parse(row.data);
+      const fields = Object.keys(data).filter(k => JSON.stringify(data[k]) !== JSON.stringify(old[k]));
+      if (state !== row.state) await audit(env, user, row.studio_id, state === 'locked' ? 'instance.lock' : 'instance.unlock', data.name, { id: iid });
+      if (hidden !== row.hidden) await audit(env, user, row.studio_id, hidden ? 'instance.hide' : 'instance.show', data.name, { id: iid });
+      if (fields.length) await audit(env, user, row.studio_id, 'instance.update', data.name, { id: iid, fields });
       return json({ ok: true, data, state, hidden: !!hidden });
     }
     if (m === 'DELETE') {
       c.need('admin');
       await env.DB.prepare('UPDATE instances SET deleted_at = ? WHERE id = ?').bind(now(), iid).run();
+      await audit(env, user, row.studio_id, 'instance.delete', JSON.parse(row.data).name, { id: iid });
       return json({ ok: true });
     }
   }
-  if (sub === 'restore' && m === 'POST') { c.need('admin'); await env.DB.prepare('UPDATE instances SET deleted_at = NULL, updated_at = ? WHERE id = ?').bind(now(), iid).run(); return json({ ok: true }); }
+  const iname = JSON.parse(row.data).name;
+  if (sub === 'restore' && m === 'POST') {
+    c.need('admin');
+    if (row.deleted_at) await checkInstanceLimit(env, c.studio);
+    await env.DB.prepare('UPDATE instances SET deleted_at = NULL, updated_at = ? WHERE id = ?').bind(now(), iid).run();
+    await audit(env, user, row.studio_id, 'instance.restore', iname, { id: iid });
+    return json({ ok: true });
+  }
   if (sub === 'purge' && m === 'DELETE') {
     c.need('admin');
     if (!row.deleted_at) fail(400, 'not_deleted', 'Primero envía la instancia a la papelera');
@@ -357,16 +394,19 @@ async function instanceApi(c, row, sub, d, m) {
       env.DB.prepare('DELETE FROM access WHERE instance_id = ?').bind(iid),
       env.DB.prepare('DELETE FROM bans WHERE scope = ?').bind(`instance:${iid}`)
     ]);
+    await audit(env, user, row.studio_id, 'instance.purge', iname, { id: iid });
     return json({ ok: true });
   }
   if (sub === 'duplicate' && m === 'POST') {
     c.need('editor');
+    await checkInstanceLimit(env, c.studio);
     const data = JSON.parse(row.data);
     data.name = `${data.name} (copia)`.slice(0, 60);
     const id = `${slugify(data.name)}-${randomToken(2)}`;
     const t = now();
     await env.DB.prepare('INSERT INTO instances (id, studio_id, data, state, hidden, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(id, row.studio_id, JSON.stringify(data), 'locked', 1, user.id, t, t).run();
+    await audit(env, user, row.studio_id, 'instance.duplicate', data.name, { id, from: iname });
     return json({ id }, 201);
   }
   if (sub === 'codes') return codesApi(c, row, d, m);
@@ -403,10 +443,12 @@ async function codesApi(c, row, code, m) {
       await env.DB.prepare('INSERT INTO codes (code, instance_id, max_uses, uses, created_by, created_at) VALUES (?, ?, ?, 0, ?, ?)').bind(cd, row.id, maxUses, user.id, t).run();
       created.push(cd);
     }
+    await audit(env, user, row.studio_id, 'code.create', JSON.parse(row.data).name, { id: row.id, n: created.length, codes: created.slice(0, 5), unlimited: maxUses === null });
     return json({ codes: created }, 201);
   }
   if (m === 'DELETE' && code) {
     await env.DB.prepare('DELETE FROM codes WHERE code = ? AND instance_id = ?').bind(code, row.id).run();
+    await audit(env, user, row.studio_id, 'code.delete', JSON.parse(row.data).name, { id: row.id, code });
     return json({ ok: true });
   }
   fail(405, 'method', 'Método no permitido');
@@ -435,10 +477,12 @@ async function accessApi(c, row, key, m) {
     const b = await readJson(c.req);
     const added = await addManual(env, row.id, b.names || b.name || []);
     if (!added.length) fail(400, 'name', 'Escribe nombres de Minecraft válidos (3-16 letras, números o _)');
+    await audit(env, c.user, row.studio_id, 'access.add', JSON.parse(row.data).name, { id: row.id, names: added.slice(0, 20), n: added.length });
     return json({ added });
   }
   if (m === 'DELETE' && key) {
     await env.DB.prepare('DELETE FROM access WHERE instance_id = ? AND player_key = ?').bind(row.id, playerKey(key)).run();
+    await audit(env, c.user, row.studio_id, 'access.remove', JSON.parse(row.data).name, { id: row.id, name: key });
     return json({ ok: true });
   }
   fail(405, 'method', 'Método no permitido');
@@ -459,11 +503,13 @@ async function bansApi(c, scope, value, m) {
     if (kind === 'ip' ? !/^[0-9a-fA-F:.]{3,45}$/.test(v) : !NAME_RE.test(v)) fail(400, 'value', kind === 'ip' ? 'Dirección IP no válida' : 'Nombre de jugador no válido');
     await env.DB.prepare('INSERT OR IGNORE INTO bans (scope, kind, value, created_by, created_at) VALUES (?, ?, ?, ?, ?)').bind(scope, kind, v, user.id, now()).run();
     if (kind === 'name' && scope.startsWith('instance:')) await env.DB.prepare('DELETE FROM access WHERE instance_id = ? AND player_key = ?').bind(scope.slice(9), v).run();
+    await audit(env, user, c.studio.id, 'ban.add', v, { kind, scope });
     return json({ ok: true });
   }
   if (m === 'DELETE' && value) {
     const kind = c.u.searchParams.get('kind') === 'ip' ? 'ip' : 'name';
     await env.DB.prepare('DELETE FROM bans WHERE scope = ? AND kind = ? AND value = ?').bind(scope, kind, value).run();
+    await audit(env, user, c.studio.id, 'ban.remove', value, { kind, scope });
     return json({ ok: true });
   }
   fail(405, 'method', 'Método no permitido');
@@ -477,7 +523,7 @@ async function members(c, uid, m) {
     return json({ members: rows });
   }
   c.need('admin');
-  const target = await env.DB.prepare('SELECT role FROM members WHERE studio_id = ? AND user_id = ?').bind(studio.id, uid).first();
+  const target = await env.DB.prepare('SELECT m.role, u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.studio_id = ? AND m.user_id = ?').bind(studio.id, uid).first();
   if (!target) fail(404, 'member', 'Esa persona no está en el studio');
   if (target.role === 'owner' && c.role !== 'owner') fail(403, 'forbidden', 'Solo el dueño puede cambiar a otro dueño');
   if (m === 'PATCH') {
@@ -485,6 +531,7 @@ async function members(c, uid, m) {
     if (!ROLES.includes(b.role)) fail(400, 'role', 'Rol no válido');
     if (b.role === 'owner' && c.role !== 'owner') fail(403, 'forbidden', 'Solo el dueño puede nombrar otro dueño');
     await env.DB.prepare('UPDATE members SET role = ? WHERE studio_id = ? AND user_id = ?').bind(b.role, studio.id, uid).run();
+    await audit(env, user, studio.id, 'member.role', target.name, { role: b.role });
     return json({ ok: true });
   }
   if (m === 'DELETE') {
@@ -493,6 +540,7 @@ async function members(c, uid, m) {
       if (owners.n <= 1) fail(400, 'last_owner', 'El studio necesita al menos un dueño');
     }
     await env.DB.prepare('DELETE FROM members WHERE studio_id = ? AND user_id = ?').bind(studio.id, uid).run();
+    await audit(env, user, studio.id, 'member.remove', target.name);
     return json({ ok: true });
   }
   fail(405, 'method', 'Método no permitido');
@@ -511,6 +559,7 @@ async function invites(c, token, m) {
     const tk = randomToken(16);
     const t = now();
     await env.DB.prepare('INSERT INTO invites (token, studio_id, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)').bind(tk, studio.id, role, user.id, t, t + 7 * 864e5).run();
+    await audit(env, user, studio.id, 'invite.create', null, { role });
     return json({ token: tk, role }, 201);
   }
   if (m === 'DELETE' && token) {
@@ -537,6 +586,7 @@ async function mediaApi(c, mid, m) {
     const body = new Uint8Array(await c.req.arrayBuffer());
     if (body.length > MAX_UPLOAD) fail(413, 'too_large', 'El archivo pasa de 25 MB');
     if (!body.length) fail(400, 'empty', 'El archivo está vacío');
+    await checkStorageLimit(env, studio, body.length);
     const name = str(c.u.searchParams.get('name') || 'archivo', 120).replace(/[^\w.\-() ]+/g, '_');
     const id = randomToken(10);
     const sha1 = await sha1Bytes(body);
@@ -607,7 +657,7 @@ async function launcherApi(req, env, u, path, m) {
   const origin = env.PUBLIC_URL || u.origin;
 
   const isBanned = async (row) => {
-    const r = await env.DB.prepare(`SELECT 1 FROM bans WHERE scope IN (?, ?) AND ((kind = 'name' AND value = ?) OR (kind = 'ip' AND value = ?)) LIMIT 1`)
+    const r = await env.DB.prepare(`SELECT 1 FROM bans WHERE scope IN (?, ?, 'global') AND ((kind = 'name' AND value = ?) OR (kind = 'ip' AND value = ?)) LIMIT 1`)
       .bind(`instance:${row.id}`, `studio:${row.studio_id}`, P.key, ip).first();
     return !!r;
   };
@@ -616,7 +666,8 @@ async function launcherApi(req, env, u, path, m) {
     if (!row) fail(404, 'instance', 'Esta instancia ya no existe');
     return row;
   };
-  const studioOf = (sid) => env.DB.prepare('SELECT name, logo FROM studios WHERE id = ?').bind(sid).first();
+  const studioOf = (sid) => env.DB.prepare('SELECT id, name, logo, suspended_at FROM studios WHERE id = ?').bind(sid).first();
+  const SUSPENDED = { ok: false, reason: 'suspended', message: 'El studio de esta instancia está suspendido' };
 
   if (parts[0] === 'referral' && m === 'POST') return addReferral(env, P, (await readJson(req)).studio);
 
@@ -629,6 +680,7 @@ async function launcherApi(req, env, u, path, m) {
     const row = await loadInst(cd.instance_id);
     const data = JSON.parse(row.data);
     if (await isBanned(row)) fail(403, 'banned', 'No puedes entrar a esta instancia');
+    if ((await studioOf(row.studio_id)).suspended_at) return json(SUSPENDED, 403);
     if (!data.access.codes) fail(403, 'codes_off', 'Esta instancia ya no acepta códigos');
     const already = await env.DB.prepare('SELECT 1 FROM access WHERE instance_id = ? AND player_key = ?').bind(row.id, P.key).first();
     if (!already) {
@@ -670,6 +722,9 @@ async function launcherApi(req, env, u, path, m) {
     const active = await env.DB.prepare('SELECT COUNT(*) AS n FROM plays WHERE instance_id = ? AND ended_at IS NULL AND last_seen > ? AND player_key != ?').bind(row.id, t - ACTIVE_MS, P.key).first();
     const g = gate({ row, data, player: P, banned: await isBanned(row), hasAccess: !!has, activeOthers: active.n || 0, at: t });
     if (!g.ok) return json(g, 403);
+    if ((await studioOf(row.studio_id)).suspended_at) return json(SUSPENDED, 403);
+    const mt = await maintenance(env);
+    if (mt.on && !g.staff) return json({ ok: false, reason: 'maintenance', message: mt.message || 'Onyx está en mantenimiento. Vuelve en un rato.' }, 403);
     await env.DB.prepare('UPDATE plays SET ended_at = ? WHERE instance_id = ? AND player_key = ? AND ended_at IS NULL').bind(t, row.id, P.key).run();
     const id = randomToken(12);
     await env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)')

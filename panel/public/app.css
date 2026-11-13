@@ -41,8 +41,8 @@ img { display: block; max-width: 100%; }
 .brand img { width: 26px; height: 26px; border-radius: 7px; }
 .brand b { font: 800 16px "Sora", system-ui, sans-serif; color: var(--text); letter-spacing: -.02em; }
 .nav { flex: 1; overflow-y: auto; padding: 6px 10px 12px; }
-.nav h6 { margin: 16px 10px 6px; font: 600 11.5px "Instrument Sans", system-ui, sans-serif; color: var(--faint); letter-spacing: .02em; }
-.nav a { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border-radius: 10px; color: var(--text-2); font-weight: 500; position: relative; }
+.nav h6 { margin: 14px 10px 5px; font: 600 11.5px "Instrument Sans", system-ui, sans-serif; color: var(--faint); letter-spacing: .02em; }
+.nav a { display: flex; align-items: center; gap: 11px; padding: 7px 10px; border-radius: 10px; color: var(--text-2); font-weight: 500; position: relative; }
 .nav a svg { width: 17px; height: 17px; flex: none; color: var(--muted); }
 .nav a:hover { background: var(--accent-soft); color: var(--text); }
 .nav a.on { background: var(--accent-soft); color: var(--text); font-weight: 600; }
@@ -457,3 +457,39 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 }
 .fm-head .grow, .fm-bar .grow, .fm-selbar .grow { flex: 1; }
 .fm-mr .grow { flex: 1; min-width: 0; }
+
+/* ---------- herramientas del Creador ---------- */
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.act { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.act:last-child { border-bottom: 0; }
+.act .ic { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.act .ic svg { width: 15px; height: 15px; }
+.act p { margin: 0; font-size: 13.5px; color: var(--text-2); line-height: 1.45; }
+.act p b { color: var(--text); font-weight: 600; }
+.act small { color: var(--faint); font-size: 12px; }
+.meter { height: 7px; border-radius: 7px; background: var(--card-2); border: 1px solid var(--line); overflow: hidden; margin-top: 8px; }
+.meter i { display: block; height: 100%; background: var(--grad); border-radius: 7px; }
+.table tr.click { cursor: pointer; }
+.table tr.click:hover td { background: rgba(255, 255, 255, .025); }
+.danger-zone { border-color: rgba(255, 107, 125, .22); }
+.warn-card { border-color: rgba(255, 196, 92, .35); box-shadow: 0 0 0 3px var(--warn-bg); }
+.player-card .head { border-radius: 8px; image-rendering: pixelated; flex: none; }
+.player-card .card-head { gap: 14px; align-items: center; }
+.player-card h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.notice-row .badge { vertical-align: 1px; margin-left: 4px; }
+.badge.nk-info { background: var(--accent-soft); color: var(--accent); }
+.badge.nk-success { background: var(--ok-bg); color: var(--ok); }
+.badge.nk-event { background: rgba(95, 212, 224, .12); color: #5fd4e0; }
+.badge.nk-warn { background: var(--warn-bg); color: var(--warn); }
+.susp-bar { display: flex; align-items: center; gap: 10px; margin: 16px 28px 0; padding: 12px 16px; border-radius: 12px; background: var(--bad-bg); color: var(--bad); font-size: 13.5px; }
+.susp-bar svg { width: 17px; height: 17px; flex: none; }
+.susp-bar b { color: var(--bad); }
+.page-head .av { width: 46px; height: 46px; border-radius: 13px; font-size: 15px; }
+
+.ban-add { display: flex; gap: 8px; margin: 14px 0 6px; flex-wrap: wrap; }
+.ban-add select { width: 130px; flex: none; }
+.ban-add input { flex: 1; min-width: 180px; }
+.modal .row > .field { min-width: 0; }
+.input[type=datetime-local] { min-width: 0; width: 100%; }
+.side .nav { scrollbar-width: thin; }

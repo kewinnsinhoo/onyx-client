@@ -163,7 +163,44 @@ CREATE TABLE status_checks (
   ok INTEGER NOT NULL,
   ms INTEGER
 );
-CREATE INDEX status_service ON status_checks(service, at)`
+CREATE INDEX status_service ON status_checks(service, at)`,
+  `-- Herramientas del Creador: suspender studios, límites, bloquear usuarios, actividad, avisos y ajustes
+ALTER TABLE studios ADD COLUMN suspended_at INTEGER;
+ALTER TABLE studios ADD COLUMN suspend_reason TEXT;
+ALTER TABLE studios ADD COLUMN max_instances INTEGER;
+ALTER TABLE studios ADD COLUMN max_storage_mb INTEGER;
+ALTER TABLE studios ADD COLUMN note TEXT;
+ALTER TABLE users ADD COLUMN blocked_at INTEGER;
+CREATE TABLE audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  at INTEGER NOT NULL,
+  user_id TEXT,
+  user_name TEXT,
+  studio_id TEXT,
+  action TEXT NOT NULL,
+  target TEXT,
+  detail TEXT
+);
+CREATE INDEX audit_studio ON audit(studio_id, at);
+CREATE INDEX audit_at ON audit(at);
+CREATE TABLE notices (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT,
+  title TEXT NOT NULL,
+  body TEXT,
+  kind TEXT NOT NULL DEFAULT 'info',
+  url TEXT,
+  starts_at INTEGER NOT NULL,
+  ends_at INTEGER,
+  created_by TEXT,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+CREATE INDEX notices_time ON notices(starts_at);
+CREATE TABLE settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+)`
 ];
 
 export function statements(sql) {

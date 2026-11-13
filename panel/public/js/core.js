@@ -18,6 +18,9 @@
     activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
     building: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h.01M15 7h.01M9 11h.01M15 11h.01M10 21v-4h4v4"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    megaphone: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+    hardDrive: '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5.5 13 8 5h8l2.5 8M7 16.5h.01M11 16.5h.01"/>',
+    wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
     download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
     more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
     move: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 13h6M13 10l3 3-3 3"/>',
@@ -203,6 +206,10 @@
     renderShell(name);
     const view = $('#view');
     view.innerHTML = '';
+    // Studio suspendido por el Creador: solo se puede mirar
+    const sb = $('.susp-bar');
+    if (sb) sb.remove();
+    if (S.studio.suspended) view.insertAdjacentHTML('beforebegin', `<div class="susp-bar">${icon('ban')}<span><b>${esc(t('Este studio está suspendido.'))}</b> ${esc(S.studio.suspendReason ? t('Motivo: {r}', { r: S.studio.suspendReason.replace(/[.\s]+$/, '') }) + '.' : '')} ${esc(t('Puedes mirar, pero no cambiar nada.'))}</span></div>`);
     const fn = Views[name] || Views.notFound;
     try { const c = await fn(view, r); if (typeof c === 'function') cleanup = c; }
     catch (e) { view.innerHTML = `<div class="page"><div class="card empty"><div class="ic">${icon('alert')}</div><h4>${t('No se pudo cargar')}</h4><p>${esc(e.message)}</p></div></div>`; }
@@ -219,12 +226,20 @@
     { id: 'launchers', i: 'rocket', t: 'Launchers' },
     { h: 'Studio' },
     { id: 'team', i: 'users', t: 'Equipo' },
+    { id: 'notices', i: 'megaphone', t: 'Avisos' },
+    { id: 'activity', i: 'activity', t: 'Actividad', admin: true },
     { id: 'history', i: 'history', t: 'Histórico' },
     { id: 'referrals', i: 'link', t: 'Referidos' },
     { id: 'trash', i: 'trash', t: 'Papelera' },
     { id: 'settings', i: 'settings', t: 'Ajustes' },
     { h: 'Onyx' },
+    { id: 'onyx', i: 'crown', t: 'Resumen de Onyx', creator: true },
     { id: 'studios', i: 'building', t: 'Studios', creator: true },
+    { id: 'users', i: 'shield', t: 'Usuarios', creator: true },
+    { id: 'players', i: 'user', t: 'Jugadores', creator: true },
+    { id: 'broadcast', i: 'megaphone', t: 'Avisos del launcher', creator: true },
+    { id: 'moderation', i: 'ban', t: 'Moderación', creator: true },
+    { id: 'audit', i: 'history', t: 'Actividad de Onyx', creator: true },
     { id: 'status', i: 'activity', t: 'Estado de los servicios', href: '/status' }
   ];
   window.roleName = (r) => ({ owner: t('Dueño'), admin: t('Administrador'), editor: t('Editor'), viewer: t('Lector') }[r] || r);
@@ -240,7 +255,7 @@
     const side = $('.side');
     side.innerHTML = html`
       <div class="brand"><img src="/img/icon.png" alt=""><b>Onyx Panel</b></div>
-      <nav class="nav">${NAV.filter(n => !n.creator || isCreator).map(n => n.h
+      <nav class="nav">${NAV.filter(n => (!n.creator || isCreator) && (!n.admin || can('admin'))).map(n => n.h
         ? `<h6>${esc(t(n.h))}</h6>`
         : `<a href="${n.href || '#/' + (n.id === 'home' ? '' : n.id)}" ${n.href ? 'target="_blank" rel="noopener"' : ''} class="${(n.match || [n.id]).includes(active) ? 'on' : ''}">${icon(n.i)}<span>${esc(t(n.t))}</span>${n.soon ? `<span class="soon">${t('Pronto')}</span>` : ''}</a>`).join('')}
       </nav>

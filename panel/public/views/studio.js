@@ -1,4 +1,4 @@
-// Equipo, Studios (Creador), Papelera, Ajustes, Launchers, Histórico y Referidos.
+// Equipo, Papelera, Ajustes, Launchers, Histórico y Referidos.
 (function () {
   const V = window.Views;
   const avatar = (u, round = true) => `<span class="av ${round ? 'round' : ''}">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : initials(u.name)}</span>`;
@@ -46,34 +46,6 @@
     });
   };
 
-  // ---------------------------------------------------------------- Studios (solo Creador)
-  V.studios = async (view) => {
-    if (S.me.user.role !== 'creator') return V.notFound(view);
-    const { studios } = await api('GET', '/studios');
-    view.innerHTML = html`<div class="page">${head(t('Studios'), t('Todos los studios de Onyx. Solo tú (Creador) puedes crear studios.'), `<button class="btn primary" id="new">${icon('plus')}${t('Nuevo studio')}</button>`)}
-      <div class="card"><table class="table"><thead><tr><th>${t('Studio')}</th><th>${t('Miembros')}</th><th>${t('Instancias')}</th><th>${t('Creado')}</th></tr></thead><tbody>
-        ${studios.map(s => html`<tr><td><div style="display:flex;gap:10px;align-items:center"><span class="av">${s.logo ? `<img src="${esc(s.logo)}" alt="">` : initials(s.name)}</span><b>${esc(s.name)}</b></div></td>
-          <td>${s.members}</td><td>${s.instances}</td><td>${fmtDate(s.created_at, { day: 'numeric', month: 'short', year: 'numeric' })}</td></tr>`).join('')}</tbody></table></div></div>`;
-    $('#new', view).onclick = () => modal((m, close) => {
-      m.innerHTML = html`<div class="mh"><h3>${icon('building')}${t('Nuevo studio')}</h3></div><div class="mb">
-        <div class="field"><span class="label">${t('Nombre del studio')}</span><input class="input" id="n" maxlength="50" placeholder="${t('Ej.: Nova Estudios')}"></div>
-        <div id="out" style="margin-top:14px"></div></div>
-        <div class="mf"><button class="btn" id="no">${t('Cerrar')}</button><button class="btn primary" id="ok">${icon('check')}${t('Crear studio')}</button></div>`;
-      $('#no', m).onclick = () => { close(); V.studios(view); };
-      $('#ok', m).onclick = async (e) => {
-        busy(e.currentTarget, true);
-        try {
-          const r = await api('POST', '/studios', { name: $('#n', m).value });
-          $('#out', m).innerHTML = html`<p style="margin:0 0 8px">${t('Envía este enlace al dueño del studio. Entrará con Discord y quedará como Dueño:')}</p>
-            <div class="code-box"><span class="mono" style="font-size:12.5px;word-break:break-all">${esc(inviteUrl(r.invite))}</span><button class="btn sm" id="cp">${icon('copy')}${t('Copiar')}</button></div>`;
-          $('#cp', m).onclick = () => copy(inviteUrl(r.invite));
-          $('#ok', m).remove();
-          S.me = null;
-        } catch (err) { fail(err); busy(e.currentTarget, false); }
-      };
-    });
-  };
-
   // ---------------------------------------------------------------- Papelera
   V.trash = async (view) => {
     const { items } = await sapi('GET', '/trash');
@@ -104,12 +76,14 @@
         <div class="row" style="margin-top:14px;align-items:end"><div class="field"><span class="label">${t('Nombre del studio')}</span><input class="input" id="sn" maxlength="50" value="${esc(S.studio.name)}"></div>
           <div class="field"><span class="label">${t('Logo')}</span><div style="display:flex;gap:8px"><input class="input" id="sl" placeholder="https://…" value="${esc(S.studio.logo || '')}"><button class="btn" id="slu">${icon('upload')}</button></div></div>
           <button class="btn primary" id="ss" style="width:fit-content">${icon('check')}${t('Guardar')}</button></div></div>
+      <div id="usage"></div>
       <div class="card"><h3>${icon('ban')}${t('Baneos de todo el studio')}</h3><p class="sub">${t('Se aplican a todas las instancias del studio.')}</p>
         <div class="row" style="margin-top:14px"><div style="display:flex;gap:8px"><input class="input" id="bn" placeholder="${t('Nombre de jugador')}"><button class="btn danger solid" id="bna">${icon('plus')}${t('Banear')}</button></div>
           <div style="display:flex;gap:8px"><input class="input" id="bi" placeholder="${t('Dirección IP')}"><button class="btn danger solid" id="bia">${icon('plus')}${t('Banear')}</button></div></div>
         <div class="chips" style="margin-top:12px">${bans.bans.length ? bans.bans.map(b => `<span class="chip">${icon(b.kind === 'ip' ? 'globe' : 'user')}${esc(b.value)}<button class="x" data-unban="${esc(b.value)}" data-kind="${b.kind}">${icon('x')}</button></span>`).join('') : `<span class="help">${t('No hay nadie baneado.')}</span>`}</div></div>` : ''}
     </div>`;
     $('#out', view).onclick = async () => { await fetch('/auth/logout', { method: 'POST' }); S.me = null; go('/login'); };
+    if ($('#usage', view)) usageCard($('#usage', view)).catch(() => {});
     $$('#theme button', view).forEach(b => b.onclick = () => { Theme.set(b.dataset.v); V.settings(view); });
     $$('#lang button', view).forEach(b => b.onclick = () => { I18N.set(b.dataset.v); rerender(); });
     const ss = $('#ss', view);
