@@ -9,6 +9,7 @@
 > - `onyx-client-releases` ya no se usa.
 > - Notificaciones, creadores, studios y términos del launcher: `web/data/` (se publican en `onyxclient.site/data/`).
 > - Instancias, códigos, eventos y referidos: en Kopi Panel. El sistema antiguo de `onyx-data` ya no se usa.
+> - **Kopi Skins (skins en servidores en modo offline):** plugins en `server-plugins/` para Paper/Purpur/Folia, Velocity y BungeeCord/Waterfall. Se compilan en Actions → **Kopi Skins (plugins)** (marca «publicar» para sacar los .jar en la release `kopi-skins-v…`). Premium: su skin real. No premium: la que eligen en Kopi Client (el launcher la sube al panel y el panel la convierte con MineSkin; secreto opcional `MINESKIN_API_KEY` en Cloudflare `onyx-panel`).
 > - **Antes de hacer privado este repo** hay que mover las descargas fuera de GitHub (por ejemplo a Cloudflare R2): en un repo privado nadie podría descargar ni actualizar.
 
 
