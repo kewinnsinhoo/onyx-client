@@ -113,10 +113,11 @@
     return true;
   }
 
-  // ---------- cuenta: usa la bienvenida (onboarding) ----------
+  // ---------- cuenta: pantalla de inicio de sesión ----------
   function showLogin() {
+    closeDrawer();
     $('#shell').classList.add('hidden');
-    Onboarding.show({ startAt: S.settings.onboarded ? 'account' : 'welcome', accountOnly: !!S.settings.onboarded });
+    Login.show();
   }
   async function enterApp(firstTime) {
     await loadAccounts();
@@ -197,6 +198,85 @@
     if (!S.account) { showLogin(); return; }
     renderChrome();
     rerender();
+  }
+
+  // ---------- cuentas: la actual destacada, las otras y cerrar sesión ----------
+  function accountsModal() {
+    closeDrawer();
+    modal((m, close) => {
+      const draw = () => {
+        const all = S.accounts.accounts, cur = S.account;
+        const others = all.filter(a => !cur || a.id !== cur.id);
+        const kind = (a) => a.type === 'msa' ? 'Microsoft' : t('Sin premium');
+        m.classList.add('acc-modal');
+        m.innerHTML = html`<div class="acc-k">${t('Cuentas')}</div>
+          ${cur ? html`<div class="acc-cur">${Skin3D.head(skinOf(cur), 64, 0)}
+            <div><b>${esc(cur.name)}</b><span class="tag">${t('Jugando ahora')}</span><small>${kind(cur)}</small></div></div>` : ''}
+          <div class="acc-k2">${t('Otras cuentas')}</div>
+          <p class="acc-p">${t('Añade otra cuenta para cambiar de jugador sin cerrar sesión.')}</p>
+          ${others.map(a => html`<div class="acc-row">${Skin3D.head(skinOf(a), 40, 0)}
+            <div class="grow"><b>${esc(a.name)}</b><small>${kind(a)}</small></div>
+            <button class="btn btn-outline btn-sm" data-use="${esc(a.id)}">${t('Usar')}</button>
+            <button class="icon-btn" data-rm="${esc(a.id)}" title="${t('Quitar')}">${icon('trash')}</button></div>`).join('')}
+          <button class="acc-add" id="acc-add"><span class="ic">${icon('plus')}</span><span><b>${t('Añadir otra cuenta')}</b><small>${t('Microsoft o sin premium')}</small></span></button>
+          <div class="acc-foot"><button class="acc-out" id="acc-out">${icon('logout')}${t('Cerrar sesión')}</button></div>`;
+        m.querySelectorAll('[data-use]').forEach(b => b.onclick = async () => { await onyx.accounts.setActive(b.dataset.use); await refreshAccountUi(); draw(); });
+        m.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { await onyx.accounts.remove(b.dataset.rm); await loadAccounts(); draw(); });
+        m.querySelector('#acc-add').onclick = () => { close(); addAccountModal(); };
+        m.querySelector('#acc-out').onclick = () => { close(); logout(); };
+      };
+      draw();
+    });
+  }
+  // Cerrar sesión: quita la cuenta en uso. Si no queda ninguna, vuelve a la pantalla de inicio de sesión.
+  async function logout() {
+    closeDrawer();
+    if (!S.account) return showLogin();
+    if (!(await UI.confirmModal({ title: t('¿Cerrar sesión?'), text: t('Se quitará {name} de este launcher. Podrás volver a entrar cuando quieras.', { name: S.account.name }), confirm: t('Cerrar sesión'), danger: true, ico: 'logout' }))) return;
+    await onyx.accounts.remove(S.account.id);
+    await refreshAccountUi();
+  }
+
+  // ---------- panel lateral (al pulsar tu avatar) ----------
+  function closeDrawer() {
+    const d = document.getElementById('drawer');
+    if (!d) return;
+    d.classList.remove('open');
+    setTimeout(() => d.remove(), 220);
+  }
+  function openDrawer() {
+    if (document.getElementById('drawer')) return closeDrawer();
+    const d = document.createElement('div');
+    d.id = 'drawer';
+    const acc = S.account, b = S.info.brand;
+    const item = (a, ic, label) => `<button class="dr-item" data-a="${a}">${icon(ic)}<span>${t(label)}</span></button>`;
+    d.innerHTML = html`<div class="dr-shade"></div><aside class="dr-panel">
+      <button class="dr-back" title="${t('Cerrar')}">${icon('chevronLeft')}</button>
+      <div class="dr-me"><div class="dr-skin">${Skin3D.head(skinOf(acc), 112, 0)}<button class="dr-swap" title="${t('Cambiar de cuenta')}">${icon('refresh')}</button></div>
+        <b>${esc(acc ? acc.name : t('Sin cuenta'))}</b><small>${acc ? (acc.type === 'msa' ? 'Microsoft' : t('Sin premium')) : ''}</small></div>
+      <nav class="dr-list">
+        ${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
+        ${item('help', 'alert', 'Ayuda y comentarios')}${item('about', 'info', 'Acerca de')}
+        ${item('accounts', 'refresh', 'Cambiar de cuenta')}${item('logout', 'logout', 'Cerrar sesión')}
+      </nav>
+      <div class="dr-foot">${b ? (b.logo ? `<img src="${esc(b.logo)}" alt="">` : `<b>${esc(b.name)}</b>`) : '<img src="assets/logo-studio.png" alt="Kopi Studio">'}
+        <button class="dr-terms" data-a="terms">${t('Términos y condiciones')}</button></div>
+    </aside>`;
+    document.body.appendChild(d);
+    requestAnimationFrame(() => d.classList.add('open'));
+    d.querySelector('.dr-shade').onclick = closeDrawer;
+    d.querySelector('.dr-back').onclick = closeDrawer;
+    d.querySelector('.dr-swap').onclick = accountsModal;
+    d.querySelectorAll('[data-a]').forEach(btn => btn.onclick = () => {
+      const a = btn.dataset.a;
+      if (a === 'accounts') return accountsModal();
+      if (a === 'logout') return logout();
+      closeDrawer();
+      if (a === 'help') return reportModal();
+      if (a === 'about') return go('settings', { tab: 'about' });
+      if (a === 'terms') return go('settings', { tab: 'terms' });
+      go(a);
+    });
   }
 
   // ---------- código de instancia ----------
@@ -330,26 +410,24 @@
     tb.ondblclick = (e) => { if (e.target === tb || e.target.classList.contains('spacer') || e.target.classList.contains('crumb')) onyx.win.maximize(); };
 
     const sb = $('#sidebar');
-    const nav = (name, ic, label, extra = '') => `<button class="nav-btn ${r === name || extra ? 'active' : ''}" data-go="${name}" title="${t(label)}">${icon(ic)}</button>`;
     const curInst = r === 'instance' && S.route.params ? S.route.params.id : null;
+    const tileBg = (i) => i.icon || i.banner;
+    const inMenu = ['instances', 'skins', 'gallery', 'creators', 'settings'].includes(r) || (r === 'instance' && !S.instances.find(i => i.id === curInst));
     sb.innerHTML = html`
-      ${nav('home', 'home', 'Inicio')}
-      ${nav('instances', 'grid', 'Instancias', r === 'instance' && !S.instances.find(i => i.id === curInst))}
-      ${nav('gallery', 'image', 'Galería')}
-      ${nav('creators', 'users', 'Creadores')}
+      <button class="sb-home ${r === 'home' ? 'active' : ''}" data-go="home" title="${t('Inicio')}">${icon('home')}</button>
       <span class="nav-sep"></span>
       <div class="inst-pins">
-        ${S.instances.slice(0, 6).map(i => html`<button class="pin ${curInst === i.id ? 'active' : ''}" data-inst="${esc(i.id)}" title="${esc(i.name)}"
-          style="${i.icon ? `background-image:url('${esc(i.icon)}')` : ''}">${i.icon ? '' : esc(i.name.slice(0, 2).toUpperCase())}${S.progress[i.id] && S.progress[i.id].stage === 'running' ? '<span class="live"></span>' : ''}</button>`).join('')}
-        <button class="pin add-pin" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
+        ${S.instances.map(i => html`<button class="pin ${curInst === i.id ? 'active' : ''}" data-inst="${esc(i.id)}" title="${esc(i.name)}"
+          style="${tileBg(i) ? `background-image:url('${esc(tileBg(i))}')` : ''}">${tileBg(i) ? '' : `<b>${esc(i.name.slice(0, 2).toUpperCase())}</b>`}${S.progress[i.id] && S.progress[i.id].stage === 'running' ? '<span class="live"></span>' : ''}</button>`).join('')}
       </div>
       <div class="bottom">
-        <button class="avatar-btn ${r === 'skins' ? 'active' : ''}" data-go="skins" title="${t('Skins')}">${Skin3D.head(skinOf(S.account), 38, 0)}</button>
-        ${nav('settings', 'settings', 'Ajustes')}
+        <button class="sb-add" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
+        <button class="avatar-btn ${inMenu ? 'active' : ''}" id="sb-me" title="${esc(S.account ? S.account.name : t('Más opciones'))}">${Skin3D.head(skinOf(S.account), 50, 0)}</button>
       </div>`;
     sb.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     sb.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => go('instance', { id: b.dataset.inst }));
     $('#sb-add').onclick = addInstanceModal;
+    $('#sb-me').onclick = openDrawer;
     updateBell();
   }
   const renderTopbar = renderChrome;
@@ -357,6 +435,7 @@
   // ---------- rutas ----------
   function go(name, params = {}) {
     UI.closeDropdown();
+    closeDrawer();
     if (cleanup) { try { cleanup(); } catch { /* nada */ } cleanup = null; }
     S.route = { name, params };
     renderChrome();
@@ -457,7 +536,7 @@
   }
 
   window.App = {
-    go, rerender, play, stageText, addInstanceModal, addAccountModal, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    go, rerender, play, stageText, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
     loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);

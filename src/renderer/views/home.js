@@ -3,10 +3,6 @@
   const { esc, html, toast } = UI;
   const V = window.Views = window.Views || {};
 
-  function greeting() {
-    const h = new Date().getHours();
-    return h < 6 ? t('Buenas noches') : h < 12 ? t('Buenos días') : h < 20 ? t('Buenas tardes') : t('Buenas noches');
-  }
   function loaderLabel(l, withVersion) {
     const type = (l && l.type) || 'vanilla';
     const name = { vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' }[type] || type;
@@ -48,110 +44,98 @@
     document.addEventListener('onyx:progress', onP);
     return () => { cancelAnimationFrame(frame); document.removeEventListener('onyx:progress', onP); };
   }
-  function updateCardText(root, id) {
-    const meta = root.querySelector(`.inst-card[data-id="${CSS.escape(id)}"] .meta`);
-    const p = S.progress[id];
-    if (meta && p) meta.textContent = App.stageText(p);
-  }
 
-  function instanceCard(i) {
-    const p = S.progress[i.id];
-    return html`<div class="inst-card" data-id="${esc(i.id)}">
-      <div class="banner" style="${i.banner ? `background-image:url('${esc(i.banner)}')` : ''}">
-        ${(() => { const st = stateOf(i); return st ? `<span class="badge ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(st.short || st.label)}</span>` : i.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : ''; })()}
-      </div>
-      <div class="body">
-        <div class="icon" style="${i.icon ? `background-image:url('${esc(i.icon)}')` : ''}">${i.icon ? '' : `<b>${initials(i.name)}</b>`}</div>
-        <div class="grow" style="min-width:0;padding-bottom:4px">
-          <div class="name">${esc(i.name)}</div>
-          <div class="meta">${p ? esc(App.stageText(p)) : `${esc(i.minecraft || '')} · ${loaderLabel(i.loader)}`}</div>
-        </div>
-        <button class="play-btn" data-play="${esc(i.id)}" title="${t('Jugar')}">${p ? icon('refresh', 'spin') : icon('play')}</button>
-      </div></div>`;
-  }
-  function bindCards(root) {
-    root.querySelectorAll('.inst-card[data-id]').forEach(c => c.onclick = (e) => {
-      if (e.target.closest('[data-play]')) return;
-      App.go('instance', { id: c.dataset.id });
-    });
-    root.querySelectorAll('[data-play]').forEach(b => b.onclick = () => { if (!S.progress[b.dataset.play]) App.play(b.dataset.play); });
-    const add = root.querySelector('.inst-card.add');
-    if (add) add.onclick = App.addInstanceModal;
-  }
-
-  // Portada de Kopi: el logo de Kopi Studio y un botón grande para la última partida
-  function kopiHero(list) {
-    const last = list.slice().sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))[0];
-    const p = last && S.progress[last.id];
-    return html`<div class="kopi-hero">
-      <i class="kh-glow"></i><i class="kh-stars"></i>
-      <img class="kh-logo" src="assets/logo-studio.png" alt="Kopi Studio">
-      <div class="kh-side">${last ? html`
-        <div class="kh-k">${t('Última partida')}</div>
-        <div class="kh-n">${esc(last.name)}</div>
-        <button class="kh-play" id="kh-play" data-id="${esc(last.id)}">${p ? icon('refresh', 'spin') : icon('play')}<span>${p ? esc(App.stageText(p)) : t('Jugar')}</span></button>`
-      : html`<div class="kh-k">${t('Bienvenido')}</div><div class="kh-n wrap">${t('Añade una instancia para empezar')}</div>`}</div>
-    </div>`;
-  }
 
   // ---------------- Inicio ----------------
+  // El logo del studio en grande, con brillo, y un botón JUGAR abajo (como un menú de juego).
+  const PICK = 'kopi.homePick';
+  function homePick() {
+    let id = null;
+    try { id = localStorage.getItem(PICK); } catch { /* nada */ }
+    const list = S.instances;
+    return list.find(i => i.id === id) || list.slice().sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))[0] || null;
+  }
+  function homeLogo() {
+    const b = S.info.brand;
+    if (!b) return `<img class="kp-logo" src="assets/logo-studio.png" alt="Kopi Studio">`;
+    return b.logo ? `<img class="kp-logo" src="${esc(b.logo)}" alt="${esc(b.name)}">` : `<div class="kp-logo kp-logo-text">${esc(b.name)}</div>`;
+  }
   V.home = function (root) {
-    const acc = S.account;
     const render = () => {
-      const list = S.instances;
-      root.innerHTML = html`<div class="page">
-        <div class="home-head">
-          ${Skin3D.head(App.skinOf(acc), 54, 14)}
-          <div class="grow">
-            <h1>${greeting()}, <span class="accent">${esc(acc ? acc.name : '')}</span></h1>
-            <p class="home-sub">${!list.length ? t('Añade tu primera instancia con un código de acceso.') : S.info.brand && S.info.brand.tagline ? esc(S.info.brand.tagline) : t('Elige una instancia y a jugar.')}</p>
-          </div>
-          <div class="promo" id="h-promo">
-            <img src="assets/logo-mark.png" alt="">
-            <div><div class="tag">${t('Comunidad')}</div><div class="t">${t('Únete a nuestro Discord')}</div><div class="s">${t('Novedades, eventos y soporte')}</div></div>
-          </div>
+      const cur = homePick();
+      const p = cur && S.progress[cur.id];
+      const st = cur && stateOf(cur);
+      root.innerHTML = html`<div class="kp-home">
+        <i class="kp-glow"></i><i class="kp-stars"></i>
+        <div class="kp-center">${homeLogo()}</div>
+        <div class="kp-bottom">
+          ${cur ? html`
+            <button class="kp-pick" id="kp-pick" title="${t('Cambiar instancia')}">
+              <span class="ic" style="${cur.icon || cur.banner ? `background-image:url('${esc(cur.icon || cur.banner)}')` : ''}">${cur.icon || cur.banner ? '' : initials(cur.name)}</span>
+              <span class="tx"><b>${esc(cur.name)}</b><small>${p ? esc(App.stageText(p)) : st ? esc(st.short || st.label) : `${esc(cur.minecraft || '')} · ${loaderLabel(cur.loader)}`}</small></span>
+              ${S.instances.length > 1 ? icon('chevronDown') : ''}
+            </button>
+            <button class="kp-play ${p ? 'busy' : ''}" id="kp-play">${p ? icon('refresh', 'spin') : ''}<span>${p ? (p.stage === 'running' ? t('Jugando') : t('Preparando...')) : t('Jugar')}</span></button>`
+          : html`<p class="kp-hint">${t('Añade una instancia con el código que te dé tu studio.')}</p>
+            <button class="kp-play" id="kp-add">${icon('plus')}<span>${t('Añadir instancia')}</span></button>`}
         </div>
-        ${S.info.brand ? '' : kopiHero(list)}
-        <h2 class="section">${t('Continúa jugando')}</h2>
-        ${list.length ? `<div class="inst-grid">${list.slice(0, 6).map(instanceCard).join('')}
-          <div class="inst-card add">${icon('plus')}${t('Añadir instancia')}</div></div>`
-        : html`<div class="card empty-card">
-            <div class="ico">${icon('sparkles')}</div>
-            <div class="grow"><div class="t">${t('Aún no hay instancias')}</div><div class="s">${t('Añade una con un código de acceso.')}</div></div>
-            <button class="add-big" id="h-add">${icon('plus')}${t('Añadir instancia')}</button>
-          </div>`}
       </div>`;
-      root.querySelector('#h-promo').onclick = () => {
-        if (S.info.discordInvite) onyx.app.openExternal(S.info.discordInvite);
-        else toast(t('El enlace de Discord aún no está configurado'), 'info');
-      };
-      const add = root.querySelector('#h-add');
+      const play = root.querySelector('#kp-play');
+      if (play) play.onclick = () => { if (!S.progress[cur.id]) App.play(cur.id); };
+      const add = root.querySelector('#kp-add');
       if (add) add.onclick = App.addInstanceModal;
-      const hp = root.querySelector('#kh-play');
-      if (hp) hp.onclick = () => { if (!S.progress[hp.dataset.id]) App.play(hp.dataset.id); };
-      const ha = root.querySelector('#kh-add');
-      if (ha) ha.onclick = App.addInstanceModal;
-      bindCards(root);
+      const pick = root.querySelector('#kp-pick');
+      if (pick) pick.onclick = (e) => {
+        if (S.instances.length < 2) return App.go('instance', { id: cur.id });
+        UI.dropdown(e.currentTarget, (dd, close) => {
+          dd.innerHTML = html`<div class="dd-title">${t('Cambiar instancia')}</div>${S.instances.map(i => html`<button class="dd-item ${i.id === cur.id ? 'on' : ''}" data-pick="${esc(i.id)}">
+            <span class="ic" style="${i.icon || i.banner ? `background-image:url('${esc(i.icon || i.banner)}')` : ''}">${i.icon || i.banner ? '' : initials(i.name)}</span>${esc(i.name)}</button>`).join('')}`;
+          dd.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { try { localStorage.setItem(PICK, b.dataset.pick); } catch { /* nada */ } close(); render(); });
+        }, { align: 'left', width: 280 });
+      };
     };
     render();
-    return smoothProgress(render, (id) => updateCardText(root, id));
+    return smoothProgress(render, () => render());
   };
 
   // ---------------- Todas las instancias ----------------
+  function tile(i) {
+    const p = S.progress[i.id], st = stateOf(i), img = i.banner || i.icon;
+    return html`<button class="kp-tile" data-id="${esc(i.id)}">
+      <span class="img" style="${img ? `background-image:url('${esc(img)}')` : ''}">${img ? '' : `<b>${initials(i.name)}</b>`}
+        ${p ? `<span class="badge accent">${icon(p.stage === 'running' ? 'play' : 'refresh', p.stage === 'running' ? '' : 'spin')}${esc(App.stageText(p))}</span>`
+          : st ? `<span class="badge ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(st.short || st.label)}</span>` : i.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : ''}</span>
+      <span class="nm">${esc(i.name)}</span>
+      <span class="mt">${esc(i.minecraft || '')} · ${loaderLabel(i.loader)}</span>
+    </button>`;
+  }
   V.instances = function (root) {
+    let q = '';
     const render = () => {
-      root.innerHTML = html`<div class="page">
-        <div class="page-head"><h1 class="title" style="margin:0">${t('Instancias')}</h1>
-          <button class="btn btn-primary" id="i-add">${icon('key')}${t('Añadir con código')}</button></div>
-        ${S.instances.length ? `<div class="inst-grid">${S.instances.map(instanceCard).join('')}</div>`
-        : html`<div class="center-empty"><div class="ico">${icon('grid')}</div><div class="t">${t('Aún no hay instancias')}</div>
-          <div class="s">${t('Añade una con un código de acceso.')}</div></div>`}
+      const match = (i) => !q || i.name.toLowerCase().includes(q) || String(i.category || '').toLowerCase().includes(q);
+      const all = S.instances.filter(match);
+      const open = all.filter(i => !stateOf(i)), wait = all.filter(i => stateOf(i));
+      const kept = root.querySelector('#kp-q');
+      const focus = kept && document.activeElement === kept;
+      root.innerHTML = html`<div class="kp-list">
+        <div class="kp-bar"><span class="lbl">${t('Instancias')}</span>
+          <label class="kp-search">${icon('search')}<input id="kp-q" placeholder="${t('Buscar')}" value="${esc(q)}" spellcheck="false" autocomplete="off"></label>
+          <button class="btn btn-primary btn-sm" id="i-add">${icon('key')}${t('Añadir con código')}</button></div>
+        <div class="page">
+          <h1 class="kp-h">${t('Instancias <em>disponibles</em>')}</h1>
+          ${open.length ? `<div class="kp-grid">${open.map(tile).join('')}</div>`
+          : html`<div class="kp-empty">${q ? t('No hay resultados para «{q}».', { q: esc(q) }) : t('Aún no tienes instancias. Pídele un código a tu studio y añádelo aquí.')}</div>`}
+          ${wait.length ? html`<h1 class="kp-h kp-h2">${t('Instancias <em>en espera</em>')}</h1><div class="kp-grid">${wait.map(tile).join('')}</div>` : ''}
+        </div>
       </div>`;
       root.querySelector('#i-add').onclick = App.addInstanceModal;
-      bindCards(root);
+      root.querySelectorAll('.kp-tile').forEach(b => b.onclick = () => App.go('instance', { id: b.dataset.id }));
+      const inp = root.querySelector('#kp-q');
+      inp.oninput = () => { q = inp.value.trim().toLowerCase(); render(); };
+      if (focus) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
     };
     render();
-    return smoothProgress(render, (id) => updateCardText(root, id));
+    return smoothProgress(render, () => render());
   };
 
   function fmtTime(ms) {

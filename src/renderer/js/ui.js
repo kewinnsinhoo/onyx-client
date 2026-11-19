@@ -51,7 +51,7 @@
 
   // Menú desplegable anclado a un elemento
   let openDD = null;
-  function dropdown(anchor, build, { align = 'right', width } = {}) {
+  function dropdown(anchor, build, { align = 'right', width, side } = {}) {
     if (openDD) { const same = openDD.anchor === anchor; closeDropdown(); if (same) return; }
     const dd = document.createElement('div');
     dd.className = 'dropdown';
@@ -60,8 +60,13 @@
     build(dd, closeDropdown);
     const r = anchor.getBoundingClientRect();
     const w = dd.offsetWidth;
-    dd.style.top = (r.bottom + 8) + 'px';
-    dd.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, align === 'right' ? r.right - w : r.left)) + 'px';
+    if (side === 'right') { // a la derecha del botón, pegado por abajo (para la barra lateral)
+      dd.style.top = Math.max(8, Math.min(window.innerHeight - dd.offsetHeight - 8, r.bottom - dd.offsetHeight)) + 'px';
+      dd.style.left = (r.right + 12) + 'px';
+    } else {
+      dd.style.top = (r.bottom + 8) + 'px';
+      dd.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, align === 'right' ? r.right - w : r.left)) + 'px';
+    }
     anchor.classList.add('active');
     openDD = { el: dd, anchor };
     setTimeout(() => document.addEventListener('mousedown', outside), 0);
