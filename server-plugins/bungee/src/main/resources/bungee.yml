@@ -1,0 +1,5 @@
+name: KopiSkins
+version: '${version}'
+main: site.onyxclient.kopiskins.bungee.KopiSkinsBungee
+author: Kopi Studio
+description: Las skins de los jugadores en servidores en modo offline (premium y Kopi Client).

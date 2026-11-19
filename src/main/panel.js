@@ -144,6 +144,22 @@ const beat = (account, play) => call(account, 'POST', 'beat', { play });
 const endPlay = (account, play) => call(account, 'POST', 'end', { play });
 const referral = (account, studio) => call(account, 'POST', 'referral', { studio });
 
+// Kopi Skins: sube la skin de una cuenta no premium para que se vea en los servidores con el plugin.
+// Solo si cambió desde la última vez. skin = { png (base64), variant } o null para quitarla.
+const crypto = require('crypto');
+async function syncSkin(account, key, skin) {
+  if (!enabled() || !account || account.type === 'msa' || !key) return { skipped: true };
+  const d = store.get();
+  d.skins = d.skins || {};
+  const k = keyOf(account);
+  const sum = skin ? crypto.createHash('sha256').update(skin.variant + ':' + skin.png).digest('hex') : 'none';
+  if (d.skins[k] === sum) return { unchanged: true };
+  if (skin) await call(account, 'POST', 'skin', { key, png: skin.png, variant: skin.variant });
+  else await call(account, 'DELETE', 'skin', { key });
+  const fresh = store.get(); fresh.skins = fresh.skins || {}; fresh.skins[k] = sum; store.replace(fresh);
+  return { ok: true };
+}
+
 // Lista pública de studios (para el código de referido) y su ranking
 async function publicGet(rel) {
   const b = base();
@@ -171,4 +187,4 @@ function heartbeat(account, play, everySec, onKick) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

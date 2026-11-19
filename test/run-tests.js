@@ -573,6 +573,15 @@ test('panel: errores legibles', () => {
     assert.strictEqual(locked.code, 'no_access');
     assert.strictEqual(locked.message, 'Ya no tienes acceso a esta instancia');
 
+    // Kopi Skins: la skin de la cuenta no premium se sube una vez y el servidor la puede pedir
+    const png = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'assets', 'default-skin.png')).toString('base64');
+    const key = 'clave-secreta-de-prueba-1234567890';
+    assert.ok((await panel.syncSkin(acc, key, { png, variant: 'slim' })).ok);
+    assert.ok((await panel.syncSkin(acc, key, { png, variant: 'slim' })).unchanged, 'no se vuelve a subir si no cambió');
+    const pub = await (await fetch(`http://localhost:${port}/api/public/skin/Probador`)).json();
+    assert.deepStrictEqual([pub.source, pub.variant, pub.signature], ['kopi', 'slim', 'firma-dev']);
+    assert.ok((await panel.syncSkin({ ...acc, type: 'msa' }, key, { png, variant: 'slim' })).skipped, 'las premium no suben nada');
+
     // Si el studio te quita el acceso, desaparece sola de la lista (y al intentar jugar)
     const raw = JSON.parse(fs.readFileSync(path.join(tmp, 'instances.json'), 'utf8'));
     raw.instances.push({ id: 'ya-no-es-mia', manifest: { id: 'ya-no-es-mia', source: 'panel', name: 'Vieja' }, addedAt: 1 });
@@ -595,7 +604,7 @@ test('panel: errores legibles', () => {
     assert.ok(ref.sent && ref.studio === 'onyx-studios');
     const rank = await referrals.ranking('all');
     assert.ok(rank[0].code === 'ONYX-STUDIOS' && rank[0].players >= 5);
-    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, referidos)');
+    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, referidos, skins)');
   } catch (e) { console.error('  ✗ launcher ↔ panel\n    ' + (e.stack || e.message)); process.exitCode = 1; }
   finally { srv.kill(); }
 })();

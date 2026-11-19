@@ -47,7 +47,7 @@
       viewer.setSkin(preview.skin, preview.variant);
       $('#sk-head').innerHTML = Skin3D.head(preview.skin, 36, 7);
       $('#sk-name').textContent = preview.name;
-      $('#sk-state').textContent = dirty() ? t('Sin aplicar') : (isMsa ? t('En uso') : t('Solo en el launcher (offline)'));
+      $('#sk-state').textContent = dirty() ? t('Sin aplicar') : (isMsa ? t('En uso') : t('En uso (en servidores con Kopi Skins)'));
       root.querySelectorAll('#sk-variant button').forEach(b => b.classList.toggle('on', b.dataset.v === preview.variant));
       $('#sk-apply').disabled = !dirty();
       $('#sk-discard').disabled = !dirty();

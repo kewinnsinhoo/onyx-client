@@ -1,0 +1,17 @@
+name: KopiSkins
+version: '${version}'
+main: site.onyxclient.kopiskins.paper.KopiSkinsPaper
+api-version: '1.13'
+folia-supported: true
+description: Las skins de los jugadores en servidores en modo offline (premium y Kopi Client).
+author: Kopi Studio
+website: https://onyxclient.site
+commands:
+  kopiskins:
+    description: Recargar Kopi Skins o volver a pedir la skin de un jugador
+    usage: /kopiskins reload | /kopiskins refresh <jugador>
+    permission: kopiskins.admin
+permissions:
+  kopiskins.admin:
+    description: Usar /kopiskins
+    default: op

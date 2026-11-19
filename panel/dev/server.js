@@ -14,6 +14,9 @@ const PORT = Number(process.argv[2] || 8790);
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
 
 const env = { DB: makeD1(':memory:'), MEDIA: makeKV(), DEV_LOGIN: '1', CREATOR_DISCORD_IDS: '111', DISCORD_CLIENT_ID: 'dev' };
+// En local no se habla con Mojang ni con MineSkin: respuestas de prueba (Kopi Skins)
+env.MOJANG_FETCH = async (u, o) => (/api\.mojang\.com\/users|session\/minecraft\/profile\//.test(String(u)) ? new Response(null, { status: 404 }) : fetch(u, o));
+env.MINESKIN_FETCH = async () => new Response(JSON.stringify({ skin: { texture: { data: { value: 'ZGV2', signature: 'firma-dev' } } } }), { status: 200 });
 env.ASSETS = {
   async fetch(req) {
     const u = new URL(req.url);

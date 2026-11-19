@@ -111,6 +111,16 @@ function panelAccount() {
   return { id: a.id, type: a.type, name: a.name, uuid: a.uuid, getToken: () => accounts.ensureFresh(a.id).then(x => x.accessToken) };
 }
 
+// Kopi Skins: la skin de una cuenta no premium se sube al panel para verse en los servidores
+function syncOfflineSkin(id) {
+  const raw = id ? accounts.getRaw(id) : null;
+  if (!raw || raw.type === 'msa') return Promise.resolve();
+  const ls = raw.localSkin && raw.localSkin.data;
+  const skin = ls ? { png: ls.replace(/^data:image\/png;base64,/, ''), variant: raw.localSkin.variant === 'slim' ? 'slim' : 'classic' } : null;
+  return panel.syncSkin({ id: raw.id, type: raw.type, name: raw.name }, accounts.skinKeyOf(raw.id), skin)
+    .catch(e => log.warn('[skins] No se pudo subir la skin al panel:', e.message));
+}
+
 // Trae del panel las instancias nuevas sin hacer esperar a la interfaz
 let panelSyncing = null;
 function kickPanelSync(force = false) {
@@ -282,7 +292,9 @@ handle('skins:apply', async ({ data: dataUrl, url, variant }) => {
   if (acc.type !== 'msa') {
     // Cuentas offline: la skin solo se ve en el launcher.
     const local = dataUrl || (url ? await skins.toDataUrl(url) : null);
-    return accounts.setLocalSkin(acc.id, local ? { data: local, variant } : null);
+    const view = accounts.setLocalSkin(acc.id, local ? { data: local, variant } : null);
+    syncOfflineSkin(acc.id); // y en los servidores con Kopi Skins
+    return view;
   }
   if (dataUrl) await skins.uploadSkin(acc.accessToken, Buffer.from(dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64'), variant);
   else if (url) await skins.setSkinFromUrl(acc.accessToken, url, variant);
@@ -356,6 +368,7 @@ handle('instances:importPack', async (id) => {
 handle('instances:play', async (id) => {
   const settings = settingsStore.get();
   const account = await accounts.ensureFresh();
+  syncOfflineSkin(account.id); // la skin no premium, lista para los servidores con Kopi Skins
   gameLogBuffer = [];
   presence.launching(instances.get(id));
   let v;

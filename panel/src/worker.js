@@ -9,6 +9,7 @@ import { ensureSchema } from './schema.js';
 import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
+import { uploadSkin, deleteSkin } from './skins.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
 
@@ -677,6 +678,9 @@ async function launcherApi(req, env, u, path, m) {
   const SUSPENDED = { ok: false, reason: 'suspended', message: 'El studio de esta instancia está suspendido' };
 
   if (parts[0] === 'referral' && m === 'POST') return addReferral(env, P, (await readJson(req)).studio);
+  // Kopi Skins: la skin de la cuenta no premium, para verla en los servidores
+  if (parts[0] === 'skin' && m === 'POST') return uploadSkin(env, P, await readJson(req, 128 * 1024));
+  if (parts[0] === 'skin' && m === 'DELETE') return deleteSkin(env, P, await readJson(req));
 
   if (parts[0] === 'redeem' && m === 'POST') {
     const b = await readJson(req);

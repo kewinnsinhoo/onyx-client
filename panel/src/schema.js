@@ -212,6 +212,26 @@ CREATE TABLE brands (
   updated_at INTEGER NOT NULL,
   build_requested_at INTEGER,
   built_version TEXT
+)`,
+  `-- Kopi Skins: skins de los jugadores no premium (subidas desde el launcher) y caché de las premium
+CREATE TABLE skins (
+  name_key TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  owner_hash TEXT NOT NULL,
+  png_hash TEXT NOT NULL,
+  variant TEXT NOT NULL,
+  value TEXT NOT NULL,
+  signature TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE TABLE skin_premium (
+  name_key TEXT PRIMARY KEY,
+  uuid TEXT,
+  name TEXT,
+  value TEXT,
+  signature TEXT,
+  fetched_at INTEGER NOT NULL
 )`
 ];
 

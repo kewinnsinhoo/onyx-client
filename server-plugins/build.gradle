@@ -1,0 +1,43 @@
+// Kopi Skins: la parte común (common/src) se compila dentro de cada plugin.
+subprojects {
+    apply plugin: 'java'
+    group = 'site.onyxclient'
+    version = '1.0.0'
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+        maven { url = 'https://oss.sonatype.org/content/repositories/snapshots/' }
+    }
+
+    sourceSets.main.java.srcDirs += rootProject.file('common/src')
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 8
+    }
+
+    processResources {
+        filesMatching(['plugin.yml', 'bungee.yml']) { expand(version: project.version) }
+    }
+
+    jar {
+        archiveFileName = "KopiSkins-${project.name.capitalize()}-${project.version}.jar"
+    }
+}
+
+project(':paper') {
+    dependencies { compileOnly 'com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT' }
+}
+
+project(':velocity') {
+    tasks.withType(JavaCompile).configureEach { options.release = 17 }
+    dependencies {
+        compileOnly 'com.velocitypowered:velocity-api:3.3.0-SNAPSHOT'
+        annotationProcessor 'com.velocitypowered:velocity-api:3.3.0-SNAPSHOT'
+    }
+}
+
+project(':bungee') {
+    dependencies { compileOnly 'net.md-5:bungeecord-api:1.20-R0.2' }
+}

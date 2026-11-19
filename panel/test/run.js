@@ -31,8 +31,22 @@ globalThis.fetch = async (u, opts = {}) => {
     if (joined.get(q.get('serverId')) === q.get('username')) return new Response(JSON.stringify({ id: 'abcdef0123456789abcdef0123456789', name: q.get('username') }), { status: 200 });
     return new Response(null, { status: 204 });
   }
+  if (s.startsWith('https://api.mojang.com/users/profiles/minecraft/')) {
+    const n = decodeURIComponent(s.split('/').pop());
+    return n.toLowerCase() === 'technoblade' ? new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade' }), { status: 200 }) : new Response(null, { status: 404 });
+  }
+  if (s.startsWith('https://sessionserver.mojang.com/session/minecraft/profile/')) {
+    return new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade', properties: [{ name: 'textures', value: 'cHJlbWl1bQ==', signature: 'firma-mojang' }] }), { status: 200 });
+  }
+  if (s === 'https://api.mineskin.org/v2/generate') {
+    mineskinCalls++;
+    const f = opts.body;
+    if (!(f instanceof FormData) || !f.get('file') || !['classic', 'slim'].includes(f.get('variant'))) return new Response('{}', { status: 400 });
+    return new Response(JSON.stringify({ success: true, skin: { texture: { data: { value: 'a29waS0' + mineskinCalls, signature: 'firma-mineskin' } } } }), { status: 200 });
+  }
   throw new Error('fetch inesperado: ' + s);
 };
+let mineskinCalls = 0;
 
 async function call(method, p, { body, cookie, headers = {}, raw } = {}) {
   const h = { ...headers };
@@ -488,6 +502,40 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
   await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { brandAllowed: false } });
   assert.strictEqual((await call('GET', `/api/public/brands/${id}/build`)).status, 403, 'sin permiso GitHub no puede fabricarlo');
   delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
+});
+
+await test('Kopi Skins: skins en los servidores (premium y no premium)', async () => {
+  // PNG mínimo de 64×64 (solo cabecera: el panel comprueba firma y tamaño)
+  const png = (w, h, extra = 0) => { const b = new Uint8Array(33 + extra); b.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]); const dv = new DataView(b.buffer); dv.setUint32(16, w); dv.setUint32(20, h); return Buffer.from(b).toString('base64'); };
+  const pepe = await player('PepeOff', false);
+  const key = 'k'.repeat(32);
+  const up = await call('POST', '/api/l/skin', { headers: pepe, body: { key, png: png(64, 64), variant: 'slim' } });
+  assert.strictEqual(up.status, 200, JSON.stringify(up.data));
+  assert.strictEqual(mineskinCalls, 1);
+  const same = await call('POST', '/api/l/skin', { headers: pepe, body: { key, png: png(64, 64), variant: 'slim' } });
+  assert.strictEqual(same.data.unchanged, true, 'la misma skin no se vuelve a convertir');
+  assert.strictEqual(mineskinCalls, 1);
+  // otro launcher con el mismo nombre no puede cambiarla
+  const thief = await player('PepeOff', false);
+  assert.strictEqual((await call('POST', '/api/l/skin', { headers: thief, body: { key: 'x'.repeat(32), png: png(64, 64, 1) } })).status, 403);
+  assert.strictEqual((await call('POST', '/api/l/skin', { headers: pepe, body: { key, png: png(32, 32) } })).status, 400, 'tamaño no válido');
+  assert.strictEqual((await call('POST', '/api/l/skin', { headers: pepe, body: { key: 'corta', png: png(64, 64) } })).status, 400, 'clave obligatoria');
+  // el servidor la pide por nombre
+  const pub = await call('GET', '/api/public/skin/pepeoff');
+  assert.strictEqual(pub.status, 200);
+  assert.deepStrictEqual([pub.data.source, pub.data.variant, pub.data.signature], ['kopi', 'slim', 'firma-mineskin']);
+  assert.strictEqual(pub.headers.get('Access-Control-Allow-Origin'), '*');
+  // premium: su skin real de Mojang, sin subir nada
+  const tech = await call('GET', '/api/public/skin/Technoblade');
+  assert.deepStrictEqual([tech.data.source, tech.data.value, tech.data.signature], ['premium', 'cHJlbWl1bQ==', 'firma-mojang']);
+  assert.strictEqual((await call('GET', '/api/public/skin/NadieAqui')).status, 404);
+  assert.strictEqual((await call('GET', '/api/public/skin/no-valido!')).status, 400);
+  // una cuenta premium no sube nada (usa la oficial)
+  const prem = await player('Steve', true);
+  assert.strictEqual((await call('POST', '/api/l/skin', { headers: prem, body: { key, png: png(64, 64) } })).data.premium, true);
+  // quitar la skin
+  await call('DELETE', '/api/l/skin', { headers: pepe, body: { key } });
+  assert.strictEqual((await call('GET', '/api/public/skin/PepeOff')).status, 404);
 });
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

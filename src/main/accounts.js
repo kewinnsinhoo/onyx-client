@@ -147,4 +147,15 @@ function setLocalSkin(id, localSkin) {
   return publicView(acc);
 }
 
-module.exports = { init, list, active, loginMicrosoft, addOffline, ensureFresh, refreshProfile, setActive, remove, setLocalSkin, offlineUuid, publicView };
+// Clave secreta de una cuenta no premium para su skin en los servidores (Kopi Skins).
+// Solo este launcher la conoce: así nadie más puede cambiar la skin de ese nombre.
+function skinKeyOf(id) {
+  const d = store.get();
+  const acc = d.accounts.find(a => a.id === id);
+  if (!acc) return null;
+  if (!acc.skinKey) { acc.skinKey = crypto.randomBytes(24).toString('hex'); store.replace(d); }
+  return acc.skinKey;
+}
+function getRaw(id) { return store.get().accounts.find(a => a.id === id) || null; }
+
+module.exports = { init, list, active, loginMicrosoft, addOffline, ensureFresh, refreshProfile, setActive, remove, setLocalSkin, skinKeyOf, getRaw, offlineUuid, publicView };

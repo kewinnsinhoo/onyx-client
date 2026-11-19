@@ -263,6 +263,7 @@
     ['Skins', 'Skins', 'Skins', 'Skins'],
     ['Solo el equipo de {studio} tiene acceso al informe.', 'Only the {studio} team can see the report.', 'Només l’equip de {studio} té accés a l’informe.', 'Seule l’équipe {studio} a accès au rapport.'],
     ['Solo en el launcher (offline)', 'Launcher only (offline)', 'Només al launcher (offline)', 'Launcher uniquement (hors ligne)'],
+    ['En uso (en servidores con Kopi Skins)', 'In use (on servers with Kopi Skins)', 'En ús (als servidors amb Kopi Skins)', 'Utilisé (sur les serveurs avec Kopi Skins)'],
     ['Subir', 'Upload', 'Puja', 'Importer'],
     ['Suelta tu PNG aquí', 'Drop your PNG here', 'Deixa anar el PNG aquí', 'Dépose ton PNG ici'],
     ['Tamaño de ventana', 'Window size', 'Mida de la finestra', 'Taille de la fenêtre'],

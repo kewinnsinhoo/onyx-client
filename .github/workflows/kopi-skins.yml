@@ -1,0 +1,56 @@
+# Compila los plugins de servidor de Kopi Skins (Paper, Velocity y BungeeCord) desde server-plugins/
+# y, si se pide, los publica en la release «kopi-skins-v<versión>» de ESTE repo.
+# La release es "prerelease" y nunca "latest": así nunca se confunde con el launcher.
+name: Kopi Skins (plugins)
+run-name: Kopi Skins${{ inputs.publish && ' (publicar)' || ' (prueba)' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publicar los .jar en una release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compilar
+        run: gradle -p server-plugins build --no-daemon
+      - name: Archivos
+        run: |
+          mkdir -p out
+          cp server-plugins/*/build/libs/KopiSkins-*.jar out/
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kopi-skins
+          path: out/*.jar
+      - name: Publicar
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          V=$(grep -m1 "version = '" server-plugins/build.gradle | sed "s/.*'\(.*\)'.*/\1/")
+          TAG="kopi-skins-v$V"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --latest=false --target "$GITHUB_SHA" --title "Kopi Skins $V" \
+              --notes-file server-plugins/README.md
+          fi
+          gh release upload "$TAG" out/*.jar --clobber
