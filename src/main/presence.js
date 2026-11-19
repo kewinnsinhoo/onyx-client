@@ -3,7 +3,7 @@ const { DiscordRPC } = require('./discord-rpc');
 
 const { config } = require('./config');
 // Logo para Discord: el icono de la marca (lo deja la fábrica en brand.json) o el de Kopi
-const LOGO_URL = (config.brand && /^https:/.test(config.brand.iconUrl || '')) ? config.brand.iconUrl : 'https://onyxclient.site/img/icon.png';
+const LOGO_URL = (config.brand && /^https:/.test(config.brand.iconUrl || '')) ? config.brand.iconUrl : 'https://onyxclient.site/img/kopi-icon.png';
 const APP = config.appName || 'Kopi Client';
 
 // Textos en [es, en, ca, fr]
