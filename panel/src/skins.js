@@ -32,34 +32,73 @@ export function skinSize(bytes) {
 }
 
 // ---------------------------------------------------------------- premium (Mojang)
-async function premiumSkin(env, name) {
+// Mojang suele bloquear o limitar las peticiones que salen de Cloudflare, así que se prueba por varios caminos:
+//  1) el UUID verificado del jugador si alguna vez entró con Kopi (tabla player_tokens)
+//  2) las búsquedas de Mojang por nombre (api.minecraftservices.com y api.mojang.com)
+//  3) Ashcon (servicio público que guarda los perfiles de Mojang), como último recurso
+// La skin firmada se pide a sessionserver con el UUID; si falla, también a Ashcon.
+async function getJson(f, url, trace, step) {
+  try {
+    const r = await f(url, { headers: UA });
+    trace.push([step, r.status]);
+    if (r.status === 200) return { status: 200, body: await r.json() };
+    return { status: r.status };
+  } catch (e) {
+    trace.push([step, 'error: ' + e.message]);
+    return { status: 0 };
+  }
+}
+const cleanUuid = (u) => String(u || '').replace(/-/g, '').toLowerCase();
+
+async function lookupPremium(env, name, trace) {
+  const f = env.MOJANG_FETCH || fetch;
+  let uuid = null, realName = name, notFound = 0, ashcon = null;
+  // 1) ¿Entró alguna vez con Kopi como premium verificado?
+  const known = await env.DB.prepare('SELECT uuid, player_name FROM player_tokens WHERE player_key = ? AND verified = 1 AND uuid IS NOT NULL ORDER BY created_at DESC LIMIT 1').bind(playerKey(name)).first();
+  if (known) { uuid = cleanUuid(known.uuid); realName = known.player_name; trace.push(['kopi', 'uuid']); }
+  // 2) Mojang por nombre
+  if (!uuid) {
+    for (const [step, url] of [['minecraftservices', `https://api.minecraftservices.com/minecraft/profile/lookup/name/${encodeURIComponent(name)}`], ['mojang', `https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(name)}`]]) {
+      const r = await getJson(f, url, trace, step);
+      if (r.status === 200 && r.body && r.body.id) { uuid = cleanUuid(r.body.id); realName = r.body.name || name; break; }
+      if (r.status === 404 || r.status === 204) notFound++;
+    }
+  }
+  // 3) Ashcon
+  if (!uuid) {
+    const r = await getJson(f, `https://api.ashcon.app/mojang/v2/user/${encodeURIComponent(name)}`, trace, 'ashcon');
+    if (r.status === 200 && r.body && r.body.uuid) { ashcon = r.body; uuid = cleanUuid(r.body.uuid); realName = r.body.username || name; }
+    else if (r.status === 404) notFound++;
+  }
+  if (!uuid) return { notPremium: notFound > 0 }; // alguien respondió «no existe»
+  // La skin firmada
+  const s = await getJson(f, `https://sessionserver.mojang.com/session/minecraft/profile/${uuid}?unsigned=false`, trace, 'sessionserver');
+  let tex = s.status === 200 ? (s.body.properties || []).find(p => p.name === 'textures' && p.signature) : null;
+  if (s.status === 200 && s.body.name) realName = s.body.name;
+  if (!tex) {
+    if (!ashcon) { const r = await getJson(f, `https://api.ashcon.app/mojang/v2/user/${uuid}`, trace, 'ashcon-uuid'); if (r.status === 200) ashcon = r.body; }
+    const raw = ashcon && ashcon.textures && ashcon.textures.raw;
+    if (raw && raw.value && raw.signature) tex = { value: raw.value, signature: raw.signature };
+  }
+  if (!tex) return { error: true };
+  return { uuid, name: realName, value: tex.value, signature: tex.signature };
+}
+
+async function premiumSkin(env, name, trace = []) {
   const key = playerKey(name);
   const cached = await env.DB.prepare('SELECT * FROM skin_premium WHERE name_key = ?').bind(key).first();
   const t = now();
-  if (cached && t - cached.fetched_at < (cached.uuid ? PREMIUM_TTL : NOT_PREMIUM_TTL)) return cached.uuid ? cached : null;
-  const f = env.MOJANG_FETCH || fetch;
-  try {
-    const r = await f(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(name)}`, { headers: UA });
-    let row = { name_key: key, uuid: null, name, value: null, signature: null, fetched_at: t };
-    if (r.status === 200) {
-      const prof = await r.json();
-      const s = await f(`https://sessionserver.mojang.com/session/minecraft/profile/${prof.id}?unsigned=false`, { headers: UA });
-      if (s.status !== 200) throw new Error('sessionserver ' + s.status);
-      const full = await s.json();
-      const tex = (full.properties || []).find(p => p.name === 'textures');
-      if (!tex || !tex.signature) throw new Error('sin textures');
-      row = { ...row, uuid: full.id, name: full.name, value: tex.value, signature: tex.signature };
-    } else if (r.status !== 204 && r.status !== 404) {
-      throw new Error('mojang ' + r.status); // Mojang falla o limita: usar lo guardado si hay
-    }
-    await env.DB.prepare(`INSERT INTO skin_premium (name_key, uuid, name, value, signature, fetched_at) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(name_key) DO UPDATE SET uuid = excluded.uuid, name = excluded.name, value = excluded.value, signature = excluded.signature, fetched_at = excluded.fetched_at`)
-      .bind(row.name_key, row.uuid, row.name, row.value, row.signature, row.fetched_at).run();
-    return row.uuid ? row : null;
-  } catch (e) {
-    console.error('premiumSkin', name, e.message);
-    return cached && cached.uuid ? cached : null;
+  if (cached && t - cached.fetched_at < (cached.uuid ? PREMIUM_TTL : NOT_PREMIUM_TTL)) { trace.push(['cache', cached.uuid ? 'premium' : 'no premium']); return cached.uuid ? cached : null; }
+  const r = await lookupPremium(env, name, trace);
+  if (r.error || (!r.uuid && !r.notPremium)) {
+    console.error('premiumSkin', name, JSON.stringify(trace));
+    return cached && cached.uuid ? cached : null; // Mojang no respondió: lo último que se sabía
   }
+  const row = { name_key: key, uuid: r.uuid || null, name: r.name || name, value: r.value || null, signature: r.signature || null, fetched_at: t };
+  await env.DB.prepare(`INSERT INTO skin_premium (name_key, uuid, name, value, signature, fetched_at) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(name_key) DO UPDATE SET uuid = excluded.uuid, name = excluded.name, value = excluded.value, signature = excluded.signature, fetched_at = excluded.fetched_at`)
+    .bind(row.name_key, row.uuid, row.name, row.value, row.signature, row.fetched_at).run();
+  return row.uuid ? row : null;
 }
 
 // ---------------------------------------------------------------- MineSkin
@@ -115,10 +154,15 @@ export async function deleteSkin(env, P, b) {
 }
 
 // ---------------------------------------------------------------- servidores: la skin de un jugador
-export async function publicSkin(env, name) {
+export async function publicSkin(env, name, debug = false) {
   if (!NAME_RE.test(String(name || ''))) return json({ error: 'name' }, 400, CORS);
-  const prem = await premiumSkin(env, name);
-  const cache = { ...CORS, 'Cache-Control': 'public, max-age=120' };
+  const trace = [];
+  const prem = await premiumSkin(env, name, trace);
+  const cache = { ...CORS, 'Cache-Control': debug ? 'no-store' : 'public, max-age=120' };
+  if (debug) {
+    const row = await env.DB.prepare('SELECT updated_at FROM skins WHERE name_key = ?').bind(playerKey(name)).first();
+    return json({ name, premium: !!prem, kopi: !!row, trace }, 200, cache);
+  }
   if (prem) return json({ name: prem.name, source: 'premium', value: prem.value, signature: prem.signature }, 200, cache);
   const row = await env.DB.prepare('SELECT name, variant, value, signature, updated_at FROM skins WHERE name_key = ?').bind(playerKey(name)).first();
   if (row) return json({ name: row.name, source: 'kopi', variant: row.variant, value: row.value, signature: row.signature, updated: row.updated_at }, 200, cache);

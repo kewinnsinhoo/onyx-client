@@ -35,7 +35,17 @@ globalThis.fetch = async (u, opts = {}) => {
     const n = decodeURIComponent(s.split('/').pop());
     return n.toLowerCase() === 'technoblade' ? new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade' }), { status: 200 }) : new Response(null, { status: 404 });
   }
+  // Mojang bloquea esta búsqueda desde Cloudflare (403): el panel tiene que probar otros caminos
+  if (s.startsWith('https://api.minecraftservices.com/minecraft/profile/lookup/name/')) return new Response('<html>403</html>', { status: 403 });
+  if (s.startsWith('https://api.ashcon.app/mojang/v2/user/')) {
+    const n = decodeURIComponent(s.split('/').pop()).toLowerCase();
+    if (n === 'dream' || n === 'dddddddddddddddddddddddddddddddd') return new Response(JSON.stringify({ uuid: 'dddddddd-dddd-dddd-dddd-dddddddddddd', username: 'Dream', textures: { raw: { value: 'ZHJlYW0=', signature: 'firma-ashcon' } } }), { status: 200 });
+    return new Response('{}', { status: 404 });
+  }
   if (s.startsWith('https://sessionserver.mojang.com/session/minecraft/profile/')) {
+    const id = s.split('/').pop().split('?')[0];
+    if (id === 'dddddddddddddddddddddddddddddddd') return new Response('', { status: 403 });
+    if (id === 'abcdef0123456789abcdef0123456789') return new Response(JSON.stringify({ id, name: 'Steve', properties: [{ name: 'textures', value: 'c3RldmU=', signature: 'firma-steve' }] }), { status: 200 });
     return new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade', properties: [{ name: 'textures', value: 'cHJlbWl1bQ==', signature: 'firma-mojang' }] }), { status: 200 });
   }
   if (s === 'https://api.mineskin.org/v2/generate') {
@@ -528,7 +538,16 @@ await test('Kopi Skins: skins en los servidores (premium y no premium)', async (
   // premium: su skin real de Mojang, sin subir nada
   const tech = await call('GET', '/api/public/skin/Technoblade');
   assert.deepStrictEqual([tech.data.source, tech.data.value, tech.data.signature], ['premium', 'cHJlbWl1bQ==', 'firma-mojang']);
+  // Mojang bloquea la búsqueda por nombre y sessionserver: se usa Ashcon
+  const dream = await call('GET', '/api/public/skin/Dream');
+  assert.deepStrictEqual([dream.data.source, dream.data.name, dream.data.signature], ['premium', 'Dream', 'firma-ashcon']);
+  // premium que entró con Kopi: su UUID verificado, sin buscar por nombre
+  const steve = await call('GET', '/api/public/skin/steve?debug=1');
+  assert.strictEqual(steve.data.premium, true, JSON.stringify(steve.data));
+  assert.deepStrictEqual(steve.data.trace[0], ['kopi', 'uuid']);
+  assert.strictEqual((await call('GET', '/api/public/skin/Steve')).data.signature, 'firma-steve');
   assert.strictEqual((await call('GET', '/api/public/skin/NadieAqui')).status, 404);
+  assert.strictEqual((await call('GET', '/api/public/skin/NadieAqui?debug=1')).data.trace[0][0], 'cache', 'el «no es premium» se recuerda');
   assert.strictEqual((await call('GET', '/api/public/skin/no-valido!')).status, 400);
   // una cuenta premium no sube nada (usa la oficial)
   const prem = await player('Steve', true);
