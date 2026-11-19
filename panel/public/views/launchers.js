@@ -1,7 +1,7 @@
 // Launchers: Onyx Client oficial + el launcher propio del studio (marca), con vista previa y fabricación.
 (function () {
   const V = window.Views;
-  const RELEASES = ['kewinnsinhoo/onyx-client-releases', 'kewinnsinhoo/onyx-client'];
+  const RELEASES = ['kewinnsinhoo/onyx-client'];
   const head = (title, sub, actions = '') => html`<div class="page-head"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><span class="grow"></span>${actions}</div>`;
   const OS_ICON = { windows: 'monitor', mac: 'monitor', 'mac-arm': 'monitor', linux: 'monitor' };
 

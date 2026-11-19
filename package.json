@@ -41,12 +41,12 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://github.com/kewinnsinhoo/onyx-client-releases/releases/latest/download"
+        "url": "https://github.com/kewinnsinhoo/onyx-client/releases/latest/download"
       },
       {
         "provider": "github",
         "owner": "kewinnsinhoo",
-        "repo": "onyx-client-releases",
+        "repo": "onyx-client",
         "releaseType": "draft"
       }
     ],

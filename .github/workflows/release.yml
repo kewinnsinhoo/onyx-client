@@ -1,0 +1,140 @@
+# Compila Onyx Client para Windows, Linux y macOS y lo publica en las Releases de ESTE repo.
+# Cómo usarlo: pestaña "Actions" → "Publicar nueva versión" → botón "Run workflow".
+# (Antes, sube el número de "version" en package.json, por ejemplo 1.3.0 → 1.3.1)
+#
+# Todo pasa aquí, en el repo del código: se compila, se prueba y se publica este mismo proyecto.
+# Los launchers 1.2.x buscan actualizaciones aquí (proveedor github) y los 1.3.x también
+# (releases/latest/download), así que todos se actualizan solos.
+name: Publicar nueva versión
+run-name: Publicar ${{ github.ref_name }}${{ inputs.dry_run && ' (prueba)' || '' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Prueba: compila pero no publica'
+        type: boolean
+        default: false
+      mac:
+        description: 'Compilar también para Mac'
+        type: boolean
+        default: true
+      brands:
+        description: 'Al terminar, recompilar los launchers de marca'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Crear borrador de la release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: v${{ steps.v.outputs.version }}
+        run: |
+          if gh release view "$V" --json isDraft --jq .isDraft 2>/dev/null | grep -q true; then
+            echo "Ya hay un borrador de $V: se reutiliza."
+          elif gh release view "$V" > /dev/null 2>&1; then
+            echo "::error::La versión $V ya está publicada. Sube la versión en package.json."; exit 1
+          else
+            gh release create "$V" --draft --target "$GITHUB_SHA" --title "Onyx Client $V" --notes "Versión $V de Onyx Client."
+          fi
+
+  compilar:
+    needs: preparar
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Configurar
+        run: node scripts/prepare-ci.js
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Pruebas
+        run: npm test
+      - name: Compilar y subir
+        shell: bash
+        env:
+          GH_TOKEN: ${{ !inputs.dry_run && github.token || '' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          PUB: ${{ inputs.dry_run && 'never' || 'always' }}
+        run: npx electron-builder --publish "$PUB"
+
+  # Mac va aparte: a veces GitHub tarda en dar un Mac. Windows y Linux se publican sin esperarlo
+  # y los .dmg se añaden a la misma versión cuando terminen.
+  compilar-mac:
+    needs: preparar
+    if: ${{ inputs.mac }}
+    runs-on: macos-latest
+    continue-on-error: true
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/prepare-ci.js
+      - run: npm install --no-audit --no-fund
+      - name: Compilar y subir
+        env:
+          GH_TOKEN: ${{ !inputs.dry_run && github.token || '' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          PUB: ${{ inputs.dry_run && 'never' || 'always' }}
+        run: npx electron-builder --mac --publish "$PUB"
+
+  publicar:
+    needs: [preparar, compilar]
+    if: ${{ always() && !inputs.dry_run && needs.preparar.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      V: v${{ needs.preparar.outputs.version }}
+    steps:
+      - name: Publicar la release (si está el instalador de Windows)
+        run: |
+          gh release view "$V" --json assets --jq '.assets[].name' | grep -q '\.exe$' \
+            || { echo "::error::No se generó el instalador de Windows: no se publica."; exit 1; }
+          if [[ "$V" == *-* ]]; then
+            gh release edit "$V" --draft=false --prerelease
+          else
+            gh release edit "$V" --draft=false --latest
+          fi
+      - name: Recompilar los launchers de marca
+        if: ${{ inputs.brands }}
+        run: |
+          curl -fsS https://panel.onyxclient.site/api/public/brands | jq -r '.brands[].id' | while read -r id; do
+            [[ "$id" =~ ^[a-z][a-z0-9-]{1,31}$ ]] || continue
+            gh workflow run build-brand.yml -f brand="$id" -f ref="$GITHUB_SHA" && echo "Marca $id en cola"
+            sleep 30
+          done

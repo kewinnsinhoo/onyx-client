@@ -1,5 +1,5 @@
 // Fábrica de launchers de marca: convierte esta copia de Onyx Client en el launcher de un studio.
-// Uso (lo hace GitHub Actions, en el repo público de descargas):
+// Uso (lo hace GitHub Actions en este repo, workflow «Launcher de marca»):
 //   node scripts/brand.js https://panel.onyxclient.site/api/public/brands/<id>/build
 //   node scripts/brand.js ./marca.json         (para probar en local)
 // Cambia: nombre del programa, icono, carpeta de datos, accesos directos, nombre de los instaladores
@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const RELEASES = process.env.RELEASES_REPO || 'kewinnsinhoo/onyx-client-releases';
+const RELEASES = process.env.RELEASES_REPO || 'kewinnsinhoo/onyx-client';
 
 async function load(src) {
   if (/^https:\/\//.test(src)) {

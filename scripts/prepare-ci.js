@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const repo = process.env.GITHUB_REPOSITORY; // "usuario/onyx-client-releases"
+const repo = process.env.GITHUB_REPOSITORY; // "kewinnsinhoo/onyx-client"
 if (!repo) { console.log('GITHUB_REPOSITORY no definido: nada que hacer'); process.exit(0); }
 const [owner, name] = repo.split('/');
 const root = path.join(__dirname, '..');

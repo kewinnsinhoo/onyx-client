@@ -5,7 +5,7 @@ import { audit } from './onyx.js';
 
 const ID_RE = /^[a-z][a-z0-9-]{1,31}$/;
 const RESERVED = new Set(['onyx', 'onyx-client', 'onyxclient', 'admin', 'panel', 'api', 'www', 'oficial', 'official']);
-const repo = (env) => env.RELEASES_REPO || 'kewinnsinhoo/onyx-client-releases';
+const repo = (env) => env.RELEASES_REPO || 'kewinnsinhoo/onyx-client';
 const httpsOnly = (v) => { const u = cleanUrl(v); return u && /^https:\/\//.test(u) ? u : null; };
 
 export function cleanBrand(b, cur = {}) {

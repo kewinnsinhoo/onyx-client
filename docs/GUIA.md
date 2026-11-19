@@ -1,12 +1,14 @@
 # Guía de Onyx Client (todo gratis con GitHub)
 
-> **Esta guía es privada** (repositorio privado `onyx-client`, carpeta `docs/`).
-> - **Código:** `kewinnsinhoo/onyx-client` (privado). **Descargas:** `kewinnsinhoo/onyx-client-releases` (público, solo instaladores e instrucciones de fabricación).
-> - **Publicar una versión de Onyx:** sube `version` en `package.json`, sube los cambios y en `onyx-client-releases` → Actions → **Onyx Client** → Run workflow (ref `main`). Al terminar recompila solo todos los launchers de marca.
-> - **Launchers de marca:** se crean y compilan desde el panel (Launchers). Se fabrican con **Launcher de marca** en el mismo repo público y se publican en la release `brand-<id>`.
-> - **Secretos:** `SOURCE_TOKEN` en `onyx-client-releases` (leer el código) · `GITHUB_TOKEN` en Cloudflare `onyx-panel` (mandar fabricar).
+> **Resumen rápido (noviembre 2026)**
+> - **Código y descargas:** todo en `kewinnsinhoo/onyx-client`. Se compila con GitHub Actions **en este mismo repo** (lo que acordamos con GitHub Support al recuperar la cuenta: nada de compilar el código desde otro repo ni de borrar ejecuciones).
+> - **Publicar una versión de Onyx:** sube `version` en `package.json`, sube los cambios y en `onyx-client` → Actions → **Publicar nueva versión** → Run workflow. Los launchers 1.2.x y 1.3.x se actualizan solos desde aquí.
+> - **Launchers de marca:** se crean y compilan desde el panel (Launchers). Se fabrican con **Launcher de marca** en este repo y se publican en la release `brand-<id>`.
+> - **Secretos:** `GITHUB_TOKEN` en Cloudflare `onyx-panel` (mandar fabricar marcas: token fine-grained de `onyx-client` con **Actions: lectura y escritura** y **Contents: lectura**).
+> - `onyx-client-releases` ya no se usa.
 > - Notificaciones, creadores, studios y términos del launcher: `web/data/` (se publican en `onyxclient.site/data/`).
 > - Instancias, códigos, eventos y referidos: en Onyx Panel. El sistema antiguo de `onyx-data` ya no se usa.
+> - **Antes de hacer privado este repo** hay que mover las descargas fuera de GitHub (por ejemplo a Cloudflare R2): en un repo privado nadie podría descargar ni actualizar.
 
 
 En esta carpeta hay dos proyectos:

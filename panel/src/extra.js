@@ -166,7 +166,7 @@ export async function publicApi(req, env, u, parts, m) {
 export const SERVICES = [
   { id: 'web', name: 'Página web', url: 'https://onyxclient.site/' },
   { id: 'panel', name: 'Panel y API', url: null },
-  { id: 'launcher', name: 'Descargas del launcher', url: 'https://api.github.com/repos/kewinnsinhoo/onyx-client-releases/releases/latest' },
+  { id: 'launcher', name: 'Descargas del launcher', url: 'https://api.github.com/repos/kewinnsinhoo/onyx-client/releases/latest' },
   { id: 'calendar', name: 'Calendario', url: null }
 ];
 

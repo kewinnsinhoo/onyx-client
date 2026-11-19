@@ -462,7 +462,7 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
   };
   const b = await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other });
   assert.strictEqual(b.status, 200, JSON.stringify(b.data));
-  assert.ok(sent.some(([m, u, body]) => m === 'POST' && u.endsWith('/repos/kewinnsinhoo/onyx-client-releases/actions/workflows/build-brand.yml/dispatches') && JSON.parse(body).inputs.brand === id));
+  assert.ok(sent.some(([m, u, body]) => m === 'POST' && u.endsWith('/repos/kewinnsinhoo/onyx-client/actions/workflows/build-brand.yml/dispatches') && JSON.parse(body).inputs.brand === id));
   assert.strictEqual((await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other })).status, 409, 'no dos a la vez');
   const st = (await call('GET', `/api/s/${nova.id}/brand`, { cookie: other })).data;
   assert.strictEqual(st.run.status, 'in_progress');
