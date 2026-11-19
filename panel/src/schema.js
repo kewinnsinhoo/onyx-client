@@ -1,7 +1,7 @@
 // Esquema de la base de datos. El servidor lo aplica solo al arrancar (sin comandos aparte).
 // Para cambios futuros, añade otro elemento al final de MIGRATIONS (nunca edites los anteriores).
 export const MIGRATIONS = [
-  `-- Onyx Panel: esquema inicial (Cloudflare D1 / SQLite)
+  `-- Kopi Panel: esquema inicial (Cloudflare D1 / SQLite)
 CREATE TABLE users (
   id TEXT PRIMARY KEY,               -- id de Discord
   name TEXT NOT NULL,

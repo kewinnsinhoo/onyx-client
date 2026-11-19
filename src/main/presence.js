@@ -1,10 +1,10 @@
-// Estado de Discord ("Jugando a Onyx Client"): qué se muestra en cada momento.
+// Estado de Discord ("Jugando a Kopi Client"): qué se muestra en cada momento.
 const { DiscordRPC } = require('./discord-rpc');
 
 const { config } = require('./config');
-// Logo para Discord: el icono de la marca (lo deja la fábrica en brand.json) o el de Onyx
+// Logo para Discord: el icono de la marca (lo deja la fábrica en brand.json) o el de Kopi
 const LOGO_URL = (config.brand && /^https:/.test(config.brand.iconUrl || '')) ? config.brand.iconUrl : 'https://onyxclient.site/img/icon.png';
-const APP = config.appName || 'Onyx Client';
+const APP = config.appName || 'Kopi Client';
 
 // Textos en [es, en, ca, fr]
 const TXT = {

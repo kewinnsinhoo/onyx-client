@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Estado de los servicios · Onyx</title>
+<title>Estado de los servicios · Kopi</title>
 <link rel="icon" href="/img/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +34,7 @@
 </head>
 <body>
 <div class="st">
-  <header><img src="/img/logo-wordmark.png" alt="Onyx Client"><a href="https://onyxclient.site" data-t>Ir a la web</a></header>
+  <header><img src="/img/logo-wordmark.png" alt="Kopi Client"><a href="https://onyxclient.site" data-t>Ir a la web</a></header>
   <div id="app"><div class="skel" style="height:80px;margin-bottom:18px"></div><div class="skel" style="height:360px"></div></div>
   <p class="foot" id="foot"></p>
 </div>
@@ -50,7 +50,7 @@
     try { s = await (await fetch('/api/public/status')).json(); } catch { document.getElementById('app').innerHTML = `<div class="sum"><h1>${t('No se pudo consultar el estado')}</h1></div>`; return; }
     const any = s.services.some(x => x.up !== null);
     document.getElementById('app').innerHTML = `
-      <div class="sum"><span class="ic" style="background:${!any ? '#8a90b2' : s.allUp ? '#22c38a' : '#ef5a6f'}">${s.allUp ? ok : bad}</span>
+      <div class="sum"><span class="ic" style="background:${!any ? '#a58aa6' : s.allUp ? '#22c38a' : '#ef5a6f'}">${s.allUp ? ok : bad}</span>
         <h1>${!any ? t('Comprobando los servicios…') : s.allUp ? t('Todos los servicios funcionan') : t('Hay servicios con problemas')}</h1></div>
       <div class="card" style="padding:0">${s.services.map(x => `<div class="svc"><div class="top2"><b>${esc(t(x.name))}</b>
           <span class="up" style="color:${x.up === false ? 'var(--bad)' : x.up ? 'var(--ok)' : 'var(--muted)'}">${x.up === false ? t('Con problemas') : x.up ? t('Funciona') : t('Sin datos')}</span></div>

@@ -79,6 +79,21 @@
     if (add) add.onclick = App.addInstanceModal;
   }
 
+  // Portada de Kopi: el logo de Kopi Studio y un botón grande para la última partida
+  function kopiHero(list) {
+    const last = list.slice().sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))[0];
+    const p = last && S.progress[last.id];
+    return html`<div class="kopi-hero">
+      <i class="kh-glow"></i><i class="kh-stars"></i>
+      <img class="kh-logo" src="assets/logo-studio.png" alt="Kopi Studio">
+      <div class="kh-side">${last ? html`
+        <div class="kh-k">${t('Última partida')}</div>
+        <div class="kh-n">${esc(last.name)}</div>
+        <button class="kh-play" id="kh-play" data-id="${esc(last.id)}">${p ? icon('refresh', 'spin') : icon('play')}<span>${p ? esc(App.stageText(p)) : t('Jugar')}</span></button>`
+      : html`<div class="kh-k">${t('Bienvenido')}</div><div class="kh-n wrap">${t('Añade una instancia para empezar')}</div>`}</div>
+    </div>`;
+  }
+
   // ---------------- Inicio ----------------
   V.home = function (root) {
     const acc = S.account;
@@ -96,6 +111,7 @@
             <div><div class="tag">${t('Comunidad')}</div><div class="t">${t('Únete a nuestro Discord')}</div><div class="s">${t('Novedades, eventos y soporte')}</div></div>
           </div>
         </div>
+        ${S.info.brand ? '' : kopiHero(list)}
         <h2 class="section">${t('Continúa jugando')}</h2>
         ${list.length ? `<div class="inst-grid">${list.slice(0, 6).map(instanceCard).join('')}
           <div class="inst-card add">${icon('plus')}${t('Añadir instancia')}</div></div>`
@@ -111,6 +127,10 @@
       };
       const add = root.querySelector('#h-add');
       if (add) add.onclick = App.addInstanceModal;
+      const hp = root.querySelector('#kh-play');
+      if (hp) hp.onclick = () => { if (!S.progress[hp.dataset.id]) App.play(hp.dataset.id); };
+      const ha = root.querySelector('#kh-add');
+      if (ha) ha.onclick = App.addInstanceModal;
       bindCards(root);
     };
     render();

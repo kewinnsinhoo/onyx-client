@@ -1,6 +1,6 @@
-# Onyx Client
+# Kopi Client
 
-Launcher de Minecraft de Onyx Studios para Windows, macOS y Linux.
+Launcher de Minecraft de Kopi Studio para Windows, macOS y Linux.
 
 - Login con Microsoft (premium) y cuentas offline
 - Instancias por código de acceso (Vanilla, Fabric, Quilt), con sincronización de mods

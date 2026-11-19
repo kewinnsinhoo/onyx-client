@@ -1,11 +1,11 @@
 {
   "name": "onyx-client",
-  "productName": "Onyx Client",
-  "version": "1.3.0",
-  "description": "Launcher de Minecraft de Onyx Studios",
+  "productName": "Kopi Client",
+  "version": "1.4.0",
+  "description": "Launcher de Minecraft de Kopi Studio",
   "main": "src/main/main.js",
   "author": {
-    "name": "Onyx Studios",
+    "name": "Kopi Studio",
     "email": "onyx@users.noreply.github.com"
   },
   "license": "UNLICENSED",
@@ -27,8 +27,8 @@
   },
   "build": {
     "appId": "com.onyxstudios.client",
-    "productName": "Onyx Client",
-    "copyright": "© Onyx Studios",
+    "productName": "Kopi Client",
+    "copyright": "© Kopi Studio",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -60,7 +60,7 @@
         }
       ],
       "icon": "build/icon.png",
-      "artifactName": "Onyx-Client-Setup-${version}.${ext}"
+      "artifactName": "Kopi-Client-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -68,7 +68,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Onyx Client"
+      "shortcutName": "Kopi Client"
     },
     "mac": {
       "target": [
@@ -90,7 +90,7 @@
       "icon": "build/icon.png",
       "category": "public.app-category.games",
       "identity": null,
-      "artifactName": "Onyx-Client-${version}-${arch}.${ext}"
+      "artifactName": "Kopi-Client-${version}-${arch}.${ext}"
     },
     "linux": {
       "target": [
@@ -103,7 +103,7 @@
       ],
       "icon": "build/icon.png",
       "category": "Game",
-      "artifactName": "Onyx-Client-${version}.${ext}"
+      "artifactName": "Kopi-Client-${version}.${ext}"
     }
   }
 }

@@ -1,4 +1,4 @@
-// Conexión con el panel de Onyx (panel.onyxclient.site): códigos, acceso, horarios y jugadores en vivo.
+// Conexión con el panel de Kopi (panel.onyxclient.site): códigos, acceso, horarios y jugadores en vivo.
 // El jugador se identifica igual que en un servidor de Minecraft:
 //   1) el panel da un "serverId"  2) el launcher hace join en Mojang con la cuenta  3) el panel lo comprueba.
 // Las cuentas offline entran solo con su nombre (sin verificar).
@@ -55,7 +55,7 @@ function toError(body, status) {
   if (code === 'full' && body.max) vars.max = body.max;
   let msg = MESSAGES[code];
   if (code === 'locked' && body.message && typeof body.message === 'string') msg = body.message;
-  if (!msg) msg = (body && body.message) || 'El panel de Onyx no respondió bien. Inténtalo más tarde.';
+  if (!msg) msg = (body && body.message) || 'El panel de Kopi no respondió bien. Inténtalo más tarde.';
   const e = new PanelError(msg, code, vars, status);
   e.predownload = !!(body && body.predownload);
   return e;
@@ -73,7 +73,7 @@ async function request(method, rel, { body, token, timeout = 15000 } = {}) {
       signal: AbortSignal.timeout(timeout)
     });
   } catch (e) {
-    throw new PanelError('No se pudo conectar con el panel de Onyx. Revisa tu conexión.', 'offline');
+    throw new PanelError('No se pudo conectar con el panel de Kopi. Revisa tu conexión.', 'offline');
   }
   let j = null;
   try { j = await res.json(); } catch { /* sin cuerpo */ }

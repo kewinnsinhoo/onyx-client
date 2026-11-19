@@ -93,10 +93,10 @@ function interactiveLogin(BrowserWindow, parent, clientId) {
 const http = require('http');
 
 const PAGE_TXT = {
-  es: ['Sesión iniciada', 'Ya puedes cerrar esta pestaña y volver a Onyx Client.', 'No se pudo iniciar sesión', 'Vuelve a Onyx Client e inténtalo otra vez.'],
-  en: ['Signed in', 'You can close this tab and go back to Onyx Client.', 'Could not sign in', 'Go back to Onyx Client and try again.'],
-  ca: ['Sessió iniciada', 'Ja pots tancar aquesta pestanya i tornar a Onyx Client.', 'No s’ha pogut iniciar la sessió', 'Torna a Onyx Client i torna-ho a provar.'],
-  fr: ['Connecté', 'Tu peux fermer cet onglet et revenir sur Onyx Client.', 'Connexion impossible', 'Reviens sur Onyx Client et réessaie.']
+  es: ['Sesión iniciada', 'Ya puedes cerrar esta pestaña y volver a Kopi Client.', 'No se pudo iniciar sesión', 'Vuelve a Kopi Client e inténtalo otra vez.'],
+  en: ['Signed in', 'You can close this tab and go back to Kopi Client.', 'Could not sign in', 'Go back to Kopi Client and try again.'],
+  ca: ['Sessió iniciada', 'Ja pots tancar aquesta pestanya i tornar a Kopi Client.', 'No s’ha pogut iniciar la sessió', 'Torna a Kopi Client i torna-ho a provar.'],
+  fr: ['Connecté', 'Tu peux fermer cet onglet et revenir sur Kopi Client.', 'Connexion impossible', 'Reviens sur Kopi Client et réessaie.']
 };
 const escHtml = (s) => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -108,7 +108,7 @@ function resultPage(ok, lang, detail) {
     ? '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
     : '<path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>';
   return `<!DOCTYPE html><html lang="${escHtml(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escHtml(title)} · Onyx Client</title><style>
+<title>${escHtml(title)} · Kopi Client</title><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#eef0ff;
 background-color:#070912;background-image:radial-gradient(900px 520px at 20% -10%,rgba(91,103,232,.35),transparent 60%),radial-gradient(700px 500px at 110% 110%,rgba(142,155,255,.14),transparent 60%);background-repeat:no-repeat;color-scheme:dark}
@@ -121,7 +121,7 @@ box-shadow:${ok ? '0 14px 34px -10px rgba(91,103,232,.8)' : 'none'}}
 .ico svg{width:34px;height:34px}h1{margin:0 0 10px;font-size:24px}p{margin:0;color:#c4c8e6;line-height:1.5;font-size:15px}
 small{display:block;margin-top:16px;color:#8a90b2;font-size:12.5px;word-break:break-word}
 @keyframes in{from{opacity:0;transform:translateY(12px) scale(.98)}}
-</style></head><body><div class="card"><div class="brand">ONYX CLIENT</div>
+</style></head><body><div class="card"><div class="brand">KOPI CLIENT</div>
 <div class="ico"><svg viewBox="0 0 24 24">${mark}</svg></div><h1>${escHtml(title)}</h1><p>${escHtml(text)}</p>
 ${!ok && detail ? `<small>${escHtml(detail)}</small>` : ''}</div>
 <script>${ok ? 'setTimeout(function(){try{window.close()}catch(e){}},2500)' : ''}</script></body></html>`;

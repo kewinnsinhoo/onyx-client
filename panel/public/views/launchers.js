@@ -1,4 +1,4 @@
-// Launchers: Onyx Client oficial + el launcher propio del studio (marca), con vista previa y fabricación.
+// Launchers: Kopi Client oficial + el launcher propio del studio (marca), con vista previa y fabricación.
 (function () {
   const V = window.Views;
   const RELEASES = ['kewinnsinhoo/onyx-client'];
@@ -14,7 +14,7 @@
 
   // Vista previa del launcher con la marca (se actualiza mientras se edita)
   function preview(d) {
-    const a = d.accent || '#8e9bff', a2 = d.accent2 || a;
+    const a = d.accent || '#f58ee0', a2 = d.accent2 || a;
     return html`<div class="lp" style="--a:${esc(a)};--a2:${esc(a2)}">
       <div class="lp-win" style="${d.background ? `--bg:url('${esc(d.background)}')` : ''}">
         <div class="lp-top">${d.logo ? `<img src="${esc(d.logo)}" alt="">` : `<b>${esc(d.name || t('Tu launcher'))}</b>`}<span class="v">v1.3.0</span><span class="grow"></span><i></i><i></i><i></i></div>
@@ -45,12 +45,12 @@
     const [rel, st] = await Promise.all([onyxRelease(), sapi('GET', '/brand')]);
     const creator = S.me.user.role === 'creator';
     const all = creator ? await api('GET', '/onyx/brands').catch(() => null) : null;
-    const d = st.brand ? { ...st.brand } : { name: '', accent: '#8e9bff', accent2: '', tagline: '', onlyStudio: true };
+    const d = st.brand ? { ...st.brand } : { name: '', accent: '#f58ee0', accent2: '', tagline: '', onlyStudio: true };
     const pageUrl = st.brand ? `${location.origin}/l/${st.brand.id}` : '';
     const editable = can('admin') && st.allowed && !S.studio.suspended;
 
     const brandCard = !st.allowed ? html`<div class="card empty"><div class="ic">${icon('lock')}</div><h4>${t('Launcher propio')}</h4>
-        <p>${t('Un launcher con el nombre, el icono, el logo y los colores de {s}, con sus propios instaladores. Onyx Studios lo activa para cada studio.', { s: esc(S.studio.name) })}</p>
+        <p>${t('Un launcher con el nombre, el icono, el logo y los colores de {s}, con sus propios instaladores. Kopi Studio lo activa para cada studio.', { s: esc(S.studio.name) })}</p>
         ${creator ? `<a class="btn primary" href="#/studios/${esc(S.studio.id)}">${icon('crown')}${t('Activarlo en la ficha del studio')}</a>` : ''}</div>`
       : html`<div class="grid lb-grid">
         <div class="card" style="margin:0"><h3>${icon('rocket')}${t('Tu launcher propio')}</h3>
@@ -62,8 +62,8 @@
               <div class="grow"><b>${t(l)}</b><small>${t(h)}</small></div>
               ${editable ? `<button class="btn sm" data-up="${k}">${icon('upload')}${d[k] ? t('Cambiar') : t('Subir')}</button>${d[k] && k !== 'icon' ? `<button class="btn sm icon ghost" data-rm="${k}">${icon('x')}</button>` : ''}` : ''}</div>`).join('')}
           </div>
-          <div class="row"><div class="field"><span class="label">${t('Color principal')}</span><div class="color-pick"><input type="color" id="b-acc" value="${esc(d.accent || '#8e9bff')}" ${editable ? '' : 'disabled'}><span class="mono">${esc(d.accent || '#8e9bff')}</span></div></div>
-            <div class="field"><span class="label">${t('Color secundario (opcional)')}</span><div class="color-pick"><input type="color" id="b-acc2" value="${esc(d.accent2 || d.accent || '#5b67e8')}" ${editable ? '' : 'disabled'}><span class="mono">${esc(d.accent2 || '—')}</span></div></div></div>
+          <div class="row"><div class="field"><span class="label">${t('Color principal')}</span><div class="color-pick"><input type="color" id="b-acc" value="${esc(d.accent || '#f58ee0')}" ${editable ? '' : 'disabled'}><span class="mono">${esc(d.accent || '#f58ee0')}</span></div></div>
+            <div class="field"><span class="label">${t('Color secundario (opcional)')}</span><div class="color-pick"><input type="color" id="b-acc2" value="${esc(d.accent2 || d.accent || '#c13fd6')}" ${editable ? '' : 'disabled'}><span class="mono">${esc(d.accent2 || '—')}</span></div></div></div>
           <div class="field"><span class="label">${t('Frase de bienvenida (opcional)')}</span><input class="input" id="b-tag" maxlength="120" value="${esc(d.tagline || '')}" placeholder="${t('Ej.: Los mejores eventos de Minecraft')}" ${editable ? '' : 'disabled'}></div>
           <div class="row"><div class="field"><span class="label">Discord</span><input class="input" id="b-dc" value="${esc(d.discord || '')}" placeholder="https://discord.gg/…" ${editable ? '' : 'disabled'}></div>
             <div class="field"><span class="label">${t('Web')}</span><input class="input" id="b-web" value="${esc(d.web || '')}" placeholder="https://" ${editable ? '' : 'disabled'}></div></div>
@@ -89,13 +89,13 @@
 
     view.innerHTML = html`<div class="page">${head(t('Launchers'), t('Los launchers desde los que tus jugadores entran a tus instancias.'))}
       <div class="card"><div style="display:flex;align-items:center;gap:16px"><img src="/img/icon.png" alt="" style="width:56px;height:56px;border-radius:14px">
-        <div style="flex:1"><h3 style="font-size:18px">Onyx Client <span class="badge ok">${t('Oficial')}</span></h3>
+        <div style="flex:1"><h3 style="font-size:18px">Kopi Client <span class="badge ok">${t('Oficial')}</span></h3>
           <div style="color:var(--muted)">${rel && rel.tag_name ? t('Versión {v}, publicada {d}', { v: esc(rel.tag_name.replace(/^v/, '')), d: fmtDate(Date.parse(rel.published_at), { day: 'numeric', month: 'long' }) }) : t('Windows, macOS y Linux')}</div></div>
         <a class="btn" href="https://onyxclient.site/download.html" target="_blank" rel="noopener">${icon('external')}${t('Página de descarga')}</a></div></div>
       ${brandCard}
       ${all ? html`<div class="card" style="margin-top:16px"><div class="card-head"><h3>${icon('crown')}${t('Todos los launchers de marca')}</h3><span class="grow"></span>
         <button class="btn sm" id="b-all" ${all.brands.length && all.github ? '' : 'disabled'}>${icon('refresh')}${t('Recompilar todos')}</button></div>
-        <p class="sub">${t('Cuando publicas una versión nueva de Onyx, se recompilan solos. Este botón es por si quieres forzarlo.')}</p>
+        <p class="sub">${t('Cuando publicas una versión nueva de Kopi, se recompilan solos. Este botón es por si quieres forzarlo.')}</p>
         ${all.brands.length ? html`<table class="table" style="margin-top:8px"><thead><tr><th>${t('Launcher')}</th><th>${t('Studio')}</th><th>${t('Versión')}</th><th>${t('Estado')}</th></tr></thead><tbody>
           ${all.brands.map(b => `<tr><td><b>${esc(b.name)}</b> <small class="mono" style="color:var(--faint)">${esc(b.id)}</small></td><td>${esc(b.studioName)}</td><td>${esc(b.builtVersion || '—')}</td><td>${runBadge(b.run)}</td></tr>`).join('')}</tbody></table>`
           : `<p class="help">${t('Ningún studio tiene launcher propio todavía.')}</p>`}</div>` : ''}
@@ -139,7 +139,7 @@
     const cp = $('#b-cp', view); if (cp) cp.onclick = () => copy(pageUrl);
     const ab = $('#b-all', view);
     if (ab) ab.onclick = async () => {
-      if (!(await confirmBox({ title: t('¿Recompilar todos?'), text: t('Se fabrican otra vez todos los launchers de marca con la versión actual de Onyx.'), ok: t('Recompilar'), ico: 'refresh' }))) return;
+      if (!(await confirmBox({ title: t('¿Recompilar todos?'), text: t('Se fabrican otra vez todos los launchers de marca con la versión actual de Kopi.'), ok: t('Recompilar'), ico: 'refresh' }))) return;
       try { const r = await api('POST', '/onyx/brands/rebuild'); toast(t('{n} launchers en cola', { n: r.n })); setTimeout(() => V.launchers(view), 4000); } catch (e) { fail(e); }
     };
     // Mientras se fabrica, se actualiza sola

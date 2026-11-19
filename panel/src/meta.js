@@ -15,7 +15,7 @@ async function cached(key, ctx, load, ttl = 3600) {
 }
 
 async function getJson(url) {
-  const r = await fetch(url, { headers: { 'User-Agent': 'OnyxPanel/1.0' } });
+  const r = await fetch(url, { headers: { 'User-Agent': 'KopiPanel/1.0' } });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }

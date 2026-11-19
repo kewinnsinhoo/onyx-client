@@ -1,4 +1,4 @@
-// Instancias: se añaden con un código de acceso, se sincronizan desde el panel de Onyx
+// Instancias: se añaden con un código de acceso, se sincronizan desde el panel de Kopi
 // (o desde GitHub para las antiguas) y se lanzan.
 const fs = require('fs');
 const path = require('path');
@@ -105,7 +105,7 @@ async function redeem(code, account) {
     try {
       const r = await panel.redeem(account, code);
       if (!ofBrand(r.instance)) {
-        const other = new Error('Este código es de otro studio. Úsalo en Onyx Client.');
+        const other = new Error('Este código es de otro studio. Úsalo en Kopi Client.');
         other.code = 'other_studio';
         throw other;
       }

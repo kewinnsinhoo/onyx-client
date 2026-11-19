@@ -1,4 +1,4 @@
-// Onyx Panel — núcleo: iconos, API, avisos, ventanas, rutas y estructura.
+// Kopi Panel — núcleo: iconos, API, avisos, ventanas, rutas y estructura.
 (function () {
   const S = window.S = { me: null, studio: null, route: null, dirty: null };
   const Views = window.Views = {};
@@ -232,14 +232,14 @@
     { id: 'referrals', i: 'link', t: 'Referidos' },
     { id: 'trash', i: 'trash', t: 'Papelera' },
     { id: 'settings', i: 'settings', t: 'Ajustes' },
-    { h: 'Onyx' },
-    { id: 'onyx', i: 'crown', t: 'Resumen de Onyx', creator: true },
+    { h: 'Kopi' },
+    { id: 'onyx', i: 'crown', t: 'Resumen de Kopi', creator: true },
     { id: 'studios', i: 'building', t: 'Studios', creator: true },
     { id: 'users', i: 'shield', t: 'Usuarios', creator: true },
     { id: 'players', i: 'user', t: 'Jugadores', creator: true },
     { id: 'broadcast', i: 'megaphone', t: 'Avisos del launcher', creator: true },
     { id: 'moderation', i: 'ban', t: 'Moderación', creator: true },
-    { id: 'audit', i: 'history', t: 'Actividad de Onyx', creator: true },
+    { id: 'audit', i: 'history', t: 'Actividad de Kopi', creator: true },
     { id: 'status', i: 'activity', t: 'Estado de los servicios', href: '/status' }
   ];
   window.roleName = (r) => ({ owner: t('Dueño'), admin: t('Administrador'), editor: t('Editor'), viewer: t('Lector') }[r] || r);
@@ -254,7 +254,7 @@
     const isCreator = S.me.user.role === 'creator';
     const side = $('.side');
     side.innerHTML = html`
-      <div class="brand"><img src="/img/icon.png" alt=""><b>Onyx Panel</b></div>
+      <div class="brand"><img src="/img/icon.png" alt=""><b>Kopi Panel</b></div>
       <nav class="nav">${NAV.filter(n => (!n.creator || isCreator) && (!n.admin || can('admin'))).map(n => n.h
         ? `<h6>${esc(t(n.h))}</h6>`
         : `<a href="${n.href || '#/' + (n.id === 'home' ? '' : n.id)}" ${n.href ? 'target="_blank" rel="noopener"' : ''} class="${(n.match || [n.id]).includes(active) ? 'on' : ''}">${icon(n.i)}<span>${esc(t(n.t))}</span>${n.soon ? `<span class="soon">${t('Pronto')}</span>` : ''}</a>`).join('')}

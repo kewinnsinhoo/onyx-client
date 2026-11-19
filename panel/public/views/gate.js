@@ -2,17 +2,17 @@
 (function () {
   const V = window.Views;
   const box = (inner) => { document.body.innerHTML = `<div class="gate"><div class="box">${inner}</div></div>`; };
-  const ERR = { cancelled: 'Cancelaste el inicio de sesión.', state: 'La sesión caducó. Vuelve a intentarlo.', discord: 'Discord no respondió. Vuelve a intentarlo.', blocked: 'Tu acceso al panel está bloqueado. Habla con Onyx Studios si crees que es un error.' };
+  const ERR = { cancelled: 'Cancelaste el inicio de sesión.', state: 'La sesión caducó. Vuelve a intentarlo.', discord: 'Discord no respondió. Vuelve a intentarlo.', blocked: 'Tu acceso al panel está bloqueado. Habla con Kopi Studio si crees que es un error.' };
 
   V.login = (r) => {
     const next = r.query.get('next') || '/';
     const err = r.query.get('error');
-    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Onyx Client">
+    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Kopi Client">
       <h1>${t('Panel de studios')}</h1>
       <p>${t('Entra con tu cuenta de Discord para gestionar las instancias de tu studio.')}</p>
       ${err ? `<div class="note warn" style="margin-bottom:16px;text-align:left">${icon('alert')}<span>${esc(t(ERR[err] || 'No se pudo iniciar sesión.'))}</span></div>` : ''}
       <a class="btn discord" href="/auth/login?next=${encodeURIComponent('/' + (next.startsWith('#') ? next : '#' + next))}">${icon('discord')}${t('Continuar con Discord')}</a>
-      <p style="margin:18px 0 0;font-size:12.5px">${t('Solo pueden entrar los studios invitados por Onyx.')}</p>`);
+      <p style="margin:18px 0 0;font-size:12.5px">${t('Solo pueden entrar los studios invitados por Kopi.')}</p>`);
   };
 
   V.invite = async (r) => {
@@ -26,9 +26,9 @@
     }
     let me = null;
     try { me = await api('GET', '/me', undefined, { quiet: true }); } catch { /* sin sesión */ }
-    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Onyx Client">
+    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Kopi Client">
       <h1>${t('Te han invitado')}</h1>
-      <p>${t('{by} te invita a {studio} como {role}.', { by: info.by || 'Onyx', studio: info.studio, role: roleName(info.role) })}</p>
+      <p>${t('{by} te invita a {studio} como {role}.', { by: info.by || 'Kopi', studio: info.studio, role: roleName(info.role) })}</p>
       ${me ? `<button class="btn primary" style="width:100%;height:46px" id="accept">${icon('check')}${t('Aceptar invitación')}</button>
               <p style="margin:14px 0 0;font-size:12.5px">${t('Entrarás como {name}.', { name: esc(me.user.name) })}</p>`
            : `<a class="btn discord" href="/auth/login?next=${encodeURIComponent('/#/invite/' + token)}">${icon('discord')}${t('Continuar con Discord')}</a>`}`);
@@ -41,9 +41,9 @@
   };
 
   V.noStudio = () => {
-    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Onyx Client">
+    box(html`<img class="logo" src="/img/logo-wordmark.png" alt="Kopi Client">
       <h1>${t('Aún no tienes studio')}</h1>
-      <p>${t('Para entrar necesitas una invitación. Pídele a Onyx o al dueño de tu studio el enlace de invitación y ábrelo con esta cuenta.')}</p>
+      <p>${t('Para entrar necesitas una invitación. Pídele a Kopi o al dueño de tu studio el enlace de invitación y ábrelo con esta cuenta.')}</p>
       <div class="pick" style="cursor:default;margin-bottom:16px"><span class="av" style="border-radius:50%">${S.me.user.avatar ? `<img src="${esc(S.me.user.avatar)}" alt="">` : initials(S.me.user.name)}</span><span><b>${esc(S.me.user.name)}</b><small>Discord</small></span></div>
       <button class="btn" style="width:100%" id="out">${icon('logout')}${t('Cerrar sesión')}</button>`);
     $('#out').onclick = async () => { await fetch('/auth/logout', { method: 'POST' }); location.hash = '#/login'; location.reload(); };

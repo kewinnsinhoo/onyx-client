@@ -1,4 +1,4 @@
-// Onyx Client — web. Sin dependencias.
+// Kopi Client — web. Sin dependencias.
 (function () {
   const REPO = 'kewinnsinhoo/onyx-client';
   const RELEASES = `https://github.com/${REPO}/releases`;
@@ -17,7 +17,7 @@
   // ---------- El código se escribe solo (una vez) ----------
   const codigo = document.querySelector('.codigo');
   if (codigo) {
-    const texto = codigo.dataset.codigo || 'ONYX-DEMO-2026';
+    const texto = codigo.dataset.codigo || 'KOPI-DEMO-2026';
     const celdas = [...codigo.querySelectorAll('.c')];
     const letras = texto.replace(/-/g, '').split('');
     const pinta = (n) => celdas.forEach((c, i) => {
@@ -45,7 +45,7 @@
     } catch (e) { /* sin almacenamiento */ }
     return load().then(d => { try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) { /* nada */ } return d; });
   }
-  // Solo las versiones de Onyx (vX.Y.Z); las releases brand-<id> de los launchers de marca se ignoran
+  // Solo las versiones de Kopi (vX.Y.Z); las releases brand-<id> de los launchers de marca se ignoran
   const fetchRel = (repo) => fetch(`https://api.github.com/repos/${repo}/releases?per_page=30`, { headers: { Accept: 'application/vnd.github+json' } })
     .then(r => { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
     .then(list => list.filter(r => !r.draft && /^v\d/.test(r.tag_name)).map(r => ({

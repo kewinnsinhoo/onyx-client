@@ -1,4 +1,4 @@
-// Herramientas del Creador (Resumen de Onyx, Studios, Usuarios, Jugadores, Avisos, Moderación, Actividad)
+// Herramientas del Creador (Resumen de Kopi, Studios, Usuarios, Jugadores, Avisos, Moderación, Actividad)
 // y lo que comparten con los studios: avisos del launcher, registro de actividad y espacio usado.
 (function () {
   const V = window.Views;
@@ -57,7 +57,7 @@
     'user.block': ['ban', '{user} bloqueó a {target} en el panel'],
     'user.unblock': ['check', '{user} desbloqueó a {target} en el panel'],
     'user.logout': ['logout', '{user} cerró las sesiones de {target}'],
-    'ban.global': ['shield', '{user} baneó a {target} en todo Onyx'],
+    'ban.global': ['shield', '{user} baneó a {target} en todo Kopi'],
     'unban.global': ['shield', '{user} quitó el baneo global a {target}'],
     'maintenance.on': ['wrench', '{user} activó el modo mantenimiento'],
     'maintenance.off': ['wrench', '{user} desactivó el modo mantenimiento'],
@@ -99,7 +99,7 @@
       $('#act', view).innerHTML = activityList(items, { studio: global });
       $('#more', view).hidden = !next;
     };
-    view.innerHTML = html`<div class="page">${head(t('Actividad'), global ? t('Todo lo que pasa en Onyx: quién cambió qué y cuándo. Se guarda 180 días.') : t('Quién del equipo cambió qué y cuándo. Se guarda 180 días.'))}
+    view.innerHTML = html`<div class="page">${head(t('Actividad'), global ? t('Todo lo que pasa en Kopi: quién cambió qué y cuándo. Se guarda 180 días.') : t('Quién del equipo cambió qué y cuándo. Se guarda 180 días.'))}
       <div class="card"><div class="row" style="align-items:end">
         <div class="field"><span class="label">${t('Buscar')}</span><input class="input" id="q" placeholder="${t('Persona, instancia, jugador…')}"></div>
         ${global ? html`<div class="field"><span class="label">${t('Studio')}</span><select class="input" id="st"><option value="">${t('Todos')}</option>${studios.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select></div>` : ''}
@@ -130,12 +130,12 @@
     const { notices } = await get();
     const editable = global || can('admin');
     view.innerHTML = html`<div class="page">${head(global ? t('Avisos del launcher') : t('Avisos'),
-      global ? t('Mensajes que salen en la campana del launcher. Puedes enviarlos a todo Onyx o solo a los jugadores de un studio.') : t('Mensajes que salen en la campana del launcher de los jugadores que tienen alguna instancia de {studio}.', { studio: esc(S.studio.name) }),
+      global ? t('Mensajes que salen en la campana del launcher. Puedes enviarlos a todo Kopi o solo a los jugadores de un studio.') : t('Mensajes que salen en la campana del launcher de los jugadores que tienen alguna instancia de {studio}.', { studio: esc(S.studio.name) }),
       editable ? `<button class="btn primary" id="new">${icon('plus')}${t('Nuevo aviso')}</button>` : '')}
       <div class="card">${notices.length ? html`<div>${notices.map(n => html`<div class="list-row notice-row">
           <span class="grow" style="min-width:0"><b>${esc(n.title)}</b> ${kindBadge(n.kind)} ${noticeState(n)}
             ${n.body ? `<br><small style="color:var(--muted)">${esc(n.body)}</small>` : ''}
-            <br><small style="color:var(--faint)">${global ? `${n.studio_id ? t('Para los jugadores de {s}', { s: esc(n.studio_name || n.studio_id) }) : t('Para todo Onyx')} · ` : ''}${esc(fmtDateTime(n.starts_at))}${n.ends_at ? ` → ${esc(fmtDateTime(n.ends_at))}` : ''}${n.by_name ? ` · ${esc(n.by_name)}` : ''}</small></span>
+            <br><small style="color:var(--faint)">${global ? `${n.studio_id ? t('Para los jugadores de {s}', { s: esc(n.studio_name || n.studio_id) }) : t('Para todo Kopi')} · ` : ''}${esc(fmtDateTime(n.starts_at))}${n.ends_at ? ` → ${esc(fmtDateTime(n.ends_at))}` : ''}${n.by_name ? ` · ${esc(n.by_name)}` : ''}</small></span>
           ${editable ? `<button class="btn sm" data-edit="${esc(n.id)}">${icon('edit')}${t('Editar')}</button><button class="btn sm icon ghost" data-del="${esc(n.id)}">${icon('trash')}</button>` : ''}</div>`).join('')}</div>`
         : html`<div class="empty"><div class="ic">${icon('megaphone')}</div><h4>${t('Sin avisos')}</h4><p>${t('Publica novedades, eventos o cambios importantes y los jugadores los verán en el launcher.')}</p></div>`}</div></div>`;
     const reload = () => noticesPage(view, { global });
@@ -148,7 +148,7 @@
         <div class="field"><span class="label">${t('Enlace al pulsar (opcional)')}</span><input class="input" id="ur" value="${esc(n.url || '')}" placeholder="https://"></div>
         <div class="row"><div class="field"><span class="label">${t('Se muestra desde')}</span><input class="input" type="datetime-local" id="st" value="${esc(localInput(n.starts_at || Date.now()))}"></div>
           <div class="field"><span class="label">${t('Hasta (vacío = siempre)')}</span><input class="input" type="datetime-local" id="en" value="${esc(localInput(n.ends_at))}"></div></div>
-        ${global ? html`<div class="field"><span class="label">${t('Quién lo ve')}</span><select class="input" id="au"><option value="all">${t('Todos los jugadores de Onyx')}</option>
+        ${global ? html`<div class="field"><span class="label">${t('Quién lo ve')}</span><select class="input" id="au"><option value="all">${t('Todos los jugadores de Kopi')}</option>
           ${studios.map(s => `<option value="${esc(s.id)}" ${n.studio_id === s.id ? 'selected' : ''}>${t('Jugadores de {s}', { s: esc(s.name) })}</option>`).join('')}</select></div>` : ''}
         </div>
         <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn primary" id="ok">${icon('check')}${n.id ? t('Guardar') : t('Publicar')}</button></div>`;
@@ -175,11 +175,11 @@
   V.notices = (view) => noticesPage(view, { global: false });
   V.broadcast = (view) => isCreator() ? noticesPage(view, { global: true }) : V.notFound(view);
 
-  // ---------------------------------------------------------------- Resumen de Onyx
+  // ---------------------------------------------------------------- Resumen de Kopi
   V.onyx = async (view) => {
     if (!isCreator()) return V.notFound(view);
     const o = await api('GET', '/onyx/overview');
-    view.innerHTML = html`<div class="page">${head(t('Resumen de Onyx'), t('Cómo va toda la plataforma: todos los studios, instancias y jugadores.'),
+    view.innerHTML = html`<div class="page">${head(t('Resumen de Kopi'), t('Cómo va toda la plataforma: todos los studios, instancias y jugadores.'),
       `<a class="btn" href="#/studios">${icon('building')}${t('Studios')}</a><a class="btn primary" href="#/broadcast">${icon('megaphone')}${t('Enviar un aviso')}</a>`)}
       ${o.maintenance.on ? html`<div class="note warn" style="margin-bottom:16px">${icon('wrench')}<span>${t('Modo mantenimiento activado: nadie puede jugar salvo el staff de cada instancia.')} <a href="#/moderation"><b>${t('Desactivar')}</b></a></span></div>` : ''}
       <div class="grid g4">
@@ -194,7 +194,7 @@
         ${stat('shield', t('Gente en el panel'), num(o.users), t('{n} entraron en 30 días', { n: num(o.activeUsers) }))}
         ${stat('hardDrive', t('Espacio usado'), size0(o.storage), t('{n} archivos subidos', { n: num(o.files) }))}
       </div>
-      <div class="card" style="margin-top:16px"><div class="card-head"><h3>${icon('activity')}${t('Jugadores a la vez en todo Onyx')}</h3><span class="grow"></span>
+      <div class="card" style="margin-top:16px"><div class="card-head"><h3>${icon('activity')}${t('Jugadores a la vez en todo Kopi')}</h3><span class="grow"></span>
         <small style="color:var(--muted)">${o.peak.peak ? t('Récord: {n} el {d}', { n: o.peak.peak, d: fmtDate(o.peak.day) }) : t('Últimos 30 días')}</small></div>${areaChart(o.chart)}</div>
       <div class="grid g-main" style="margin-top:16px">
         <div class="card" style="margin:0"><div class="card-head"><h3>${icon('star')}${t('Studios con más jugadores')}</h3><span class="grow"></span><a class="btn sm ghost" href="#/studios">${t('Ver todos')}</a></div>
@@ -211,7 +211,7 @@
     if (!isCreator()) return V.notFound(view);
     if (r && r.parts[1]) return studioDetail(view, r.parts[1]);
     const { studios } = await api('GET', '/onyx/studios');
-    view.innerHTML = html`<div class="page">${head(t('Studios'), t('Todos los studios de Onyx. Solo tú (Creador) puedes crear, suspender o poner límites.'), `<button class="btn primary" id="new">${icon('plus')}${t('Nuevo studio')}</button>`)}
+    view.innerHTML = html`<div class="page">${head(t('Studios'), t('Todos los studios de Kopi. Solo tú (Creador) puedes crear, suspender o poner límites.'), `<button class="btn primary" id="new">${icon('plus')}${t('Nuevo studio')}</button>`)}
       <div class="card"><table class="table"><thead><tr><th>${t('Studio')}</th><th>${t('Dueño')}</th><th class="r">${t('Jugando')}</th><th class="r">${t('Jugadores 30 d')}</th><th class="r">${t('Instancias')}</th><th class="r">${t('Espacio')}</th><th></th></tr></thead><tbody>
         ${studios.map(s => html`<tr class="click" data-open="${esc(s.id)}"><td><div style="display:flex;gap:10px;align-items:center">${studioAv(s)}<span><b>${esc(s.name)}</b><br><small style="color:var(--faint)">${t('Desde {d}', { d: fmtDate(s.created_at, { day: 'numeric', month: 'short', year: 'numeric' }) })}</small></span></div></td>
           <td>${s.owners.length ? esc(s.owners.join(', ')) : `<span class="badge warn">${t('Sin dueño')}</span>`}</td>
@@ -306,7 +306,7 @@
     if (su) su.onclick = () => modal((m, close) => {
       m.innerHTML = html`<div class="mh"><h3>${icon('ban')}${t('Suspender {s}', { s: esc(s.name) })}</h3></div><div class="mb">
         <p style="margin:0 0 12px">${t('Su equipo verá el motivo en el panel. Nadie podrá jugar sus instancias hasta que lo reactives.')}</p>
-        <div class="field"><span class="label">${t('Motivo')}</span><input class="input" id="rs" maxlength="200" placeholder="${t('Ej.: Incumple las normas de Onyx')}"></div></div>
+        <div class="field"><span class="label">${t('Motivo')}</span><input class="input" id="rs" maxlength="200" placeholder="${t('Ej.: Incumple las normas de Kopi')}"></div></div>
         <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn danger" id="ok">${icon('ban')}${t('Suspender')}</button></div>`;
       $('#no', m).onclick = close;
       $('#ok', m).onclick = () => { close(); patch({ suspended: true, reason: $('#rs', m).value }, t('Studio suspendido')); };
@@ -347,7 +347,7 @@
     await load();
   };
 
-  // ---------------------------------------------------------------- Buscar jugadores en todo Onyx
+  // ---------------------------------------------------------------- Buscar jugadores en todo Kopi
   V.players = async (view, r) => {
     if (!isCreator()) return V.notFound(view);
     const q0 = (r && r.query.get('q')) || '';
@@ -361,18 +361,18 @@
       box.innerHTML = players.length ? players.map(p => html`<div class="card player-card">
         <div class="card-head"><img class="head" src="https://mc-heads.net/avatar/${esc(p.uuid || p.name)}/40" alt="" width="40" height="40" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'av',textContent:'${esc(initials(p.name))}'}))">
           <div><h3 style="margin:0">${esc(p.name)} ${p.verified ? `<span class="badge ok">${icon('check')}${t('Premium')}</span>` : `<span class="badge mute">${t('Sin verificar')}</span>`}
-            ${p.bans.some(b => b.scope === 'global') ? `<span class="badge bad">${icon('shield')}${t('Baneado en Onyx')}</span>` : ''}</h3>
+            ${p.bans.some(b => b.scope === 'global') ? `<span class="badge bad">${icon('shield')}${t('Baneado en Kopi')}</span>` : ''}</h3>
             <small style="color:var(--muted)">${t('{n} partidas', { n: num(p.plays) })} · ${fmtDur(p.playTime)} · ${p.lastPlay ? t('jugó {t}', { t: timeAgo(p.lastPlay) }) : t('nunca ha jugado')}${p.referral ? ` · ${t('apoya a {s}', { s: esc(p.referral) })}` : ''}</small></div>
           <span class="grow"></span>
-          ${p.bans.some(b => b.scope === 'global') ? `<button class="btn sm" data-unban="${esc(p.key)}">${t('Quitar baneo global')}</button>` : `<button class="btn sm danger" data-ban="${esc(p.key)}">${icon('shield')}${t('Banear en todo Onyx')}</button>`}</div>
+          ${p.bans.some(b => b.scope === 'global') ? `<button class="btn sm" data-unban="${esc(p.key)}">${t('Quitar baneo global')}</button>` : `<button class="btn sm danger" data-ban="${esc(p.key)}">${icon('shield')}${t('Banear en todo Kopi')}</button>`}</div>
         ${p.instances.length ? html`<table class="table" style="margin-top:8px"><thead><tr><th>${t('Instancia')}</th><th>${t('Studio')}</th><th>${t('Cómo entró')}</th><th>${t('Última IP')}</th><th>${t('Desde')}</th></tr></thead><tbody>
           ${p.instances.map(i => html`<tr><td><b>${esc(i.name)}</b></td><td>${esc(i.studio)}</td><td>${i.via === 'code' ? `${t('Código')} <span class="mono">${esc(i.code || '')}</span>` : t('Lista manual')}</td>
             <td class="mono">${esc(i.ip || '—')}</td><td>${fmtDate(i.at)}</td></tr>`).join('')}</tbody></table>` : `<p class="help">${t('No tiene acceso a ninguna instancia.')}</p>`}
         ${p.bans.filter(b => b.scope !== 'global').length ? `<p class="help" style="margin-top:10px">${icon('ban')} ${t('Baneado en: {s}', { s: esc(p.bans.filter(b => b.scope !== 'global').map(b => b.scope.split(':')[1]).join(', ')) })}</p>` : ''}
       </div>`).join('') : html`<div class="card empty"><div class="ic">${icon('search')}</div><h4>${t('No hay nadie con ese nombre')}</h4><p>${t('Solo salen jugadores que han usado el launcher con el panel.')}</p></div>`;
       $$('[data-ban]', box).forEach(b => b.onclick = async () => {
-        if (!(await confirmBox({ title: t('¿Banear en todo Onyx?'), text: t('{n} no podrá entrar a ninguna instancia de ningún studio.', { n: esc(b.dataset.ban) }), ok: t('Banear'), danger: true, ico: 'shield' }))) return;
-        try { await api('POST', '/onyx/bans', { kind: 'name', value: b.dataset.ban }); toast(t('Baneado en todo Onyx')); load(q); } catch (e) { fail(e); }
+        if (!(await confirmBox({ title: t('¿Banear en todo Kopi?'), text: t('{n} no podrá entrar a ninguna instancia de ningún studio.', { n: esc(b.dataset.ban) }), ok: t('Banear'), danger: true, ico: 'shield' }))) return;
+        try { await api('POST', '/onyx/bans', { kind: 'name', value: b.dataset.ban }); toast(t('Baneado en todo Kopi')); load(q); } catch (e) { fail(e); }
       });
       $$('[data-unban]', box).forEach(b => b.onclick = async () => { try { await api('DELETE', `/onyx/bans/${encodeURIComponent(b.dataset.unban)}?kind=name`); toast(t('Baneo quitado')); load(q); } catch (e) { fail(e); } });
     };
@@ -386,18 +386,18 @@
   V.moderation = async (view) => {
     if (!isCreator()) return V.notFound(view);
     const [{ maintenance: mt }, { bans }] = await Promise.all([api('GET', '/onyx/settings'), api('GET', '/onyx/bans')]);
-    view.innerHTML = html`<div class="page">${head(t('Moderación'), t('Controles que afectan a todo Onyx.'))}
+    view.innerHTML = html`<div class="page">${head(t('Moderación'), t('Controles que afectan a todo Kopi.'))}
       <div class="card ${mt.on ? 'warn-card' : ''}"><div class="card-head"><h3>${icon('wrench')}${t('Modo mantenimiento')}</h3><span class="grow"></span>
         <label class="switch"><input type="checkbox" id="mt" ${mt.on ? 'checked' : ''}><span></span></label></div>
         <p class="sub">${t('Mientras esté activado, nadie puede jugar ninguna instancia (salvo el staff de cada una) y el launcher muestra este mensaje en la campana.')}</p>
-        <div class="field" style="margin-top:12px"><span class="label">${t('Mensaje para los jugadores')}</span><input class="input" id="mtm" maxlength="200" value="${esc(mt.message || '')}" placeholder="${t('Ej.: Estamos actualizando Onyx, volvemos en 15 minutos')}"></div>
+        <div class="field" style="margin-top:12px"><span class="label">${t('Mensaje para los jugadores')}</span><input class="input" id="mtm" maxlength="200" value="${esc(mt.message || '')}" placeholder="${t('Ej.: Estamos actualizando Kopi, volvemos en 15 minutos')}"></div>
         ${mt.on && mt.since ? `<p class="help">${t('Activado {t}', { t: timeAgo(mt.since) })}</p>` : ''}
         <button class="btn" id="mts" style="margin-top:6px">${icon('check')}${t('Guardar mensaje')}</button></div>
-      <div class="card"><h3>${icon('shield')}${t('Baneos en todo Onyx')}</h3><p class="sub">${t('Un nombre o IP de aquí no puede entrar a ninguna instancia de ningún studio.')}</p>
+      <div class="card"><h3>${icon('shield')}${t('Baneos en todo Kopi')}</h3><p class="sub">${t('Un nombre o IP de aquí no puede entrar a ninguna instancia de ningún studio.')}</p>
         <div class="ban-add"><select class="input" id="bk" aria-label="${t('Tipo')}"><option value="name">${t('Nombre')}</option><option value="ip">IP</option></select>
           <input class="input" id="bv" maxlength="45" placeholder="${t('Nombre de Minecraft o IP')}"><button class="btn danger" id="badd">${icon('ban')}${t('Banear')}</button></div>
         <div>${bans.length ? bans.map(b => html`<div class="list-row"><span class="av">${icon(b.kind === 'ip' ? 'globe' : 'user')}</span><span class="grow"><b class="${b.kind === 'ip' ? 'mono' : ''}">${esc(b.value)}</b><br><small style="color:var(--faint)">${timeAgo(b.created_at)}${b.by_name ? ' · ' + esc(b.by_name) : ''}</small></span>
-          <button class="btn sm" data-un="${esc(b.value)}" data-k="${b.kind}">${t('Quitar')}</button></div>`).join('') : `<p class="help">${t('Nadie baneado en todo Onyx.')}</p>`}</div></div></div>`;
+          <button class="btn sm" data-un="${esc(b.value)}" data-k="${b.kind}">${t('Quitar')}</button></div>`).join('') : `<p class="help">${t('Nadie baneado en todo Kopi.')}</p>`}</div></div></div>`;
     const save = async (on) => {
       try { await api('PATCH', '/onyx/settings', { maintenance: { on, message: $('#mtm', view).value } }); toast(on ? t('Mantenimiento activado') : t('Mantenimiento desactivado')); V.moderation(view); }
       catch (e) { fail(e); }
@@ -408,7 +408,7 @@
     };
     $('#mts', view).onclick = () => save($('#mt', view).checked);
     $('#badd', view).onclick = async () => {
-      try { await api('POST', '/onyx/bans', { kind: $('#bk', view).value, value: $('#bv', view).value }); toast(t('Baneado en todo Onyx')); V.moderation(view); } catch (e) { fail(e); }
+      try { await api('POST', '/onyx/bans', { kind: $('#bk', view).value, value: $('#bv', view).value }); toast(t('Baneado en todo Kopi')); V.moderation(view); } catch (e) { fail(e); }
     };
     $$('[data-un]', view).forEach(b => b.onclick = async () => { try { await api('DELETE', `/onyx/bans/${encodeURIComponent(b.dataset.un)}?kind=${b.dataset.k}`); V.moderation(view); } catch (e) { fail(e); } });
   };

@@ -1,4 +1,4 @@
-// Onyx Panel en Cloudflare Workers.
+// Kopi Panel en Cloudflare Workers.
 // En Cloudflare: Workers & Pages → Create → Import a repository → onyx-client → Advanced settings → Path = panel
 // La base de datos (D1) y el almacén de archivos (KV) se crean solos en el primer despliegue.
 {

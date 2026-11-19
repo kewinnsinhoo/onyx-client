@@ -11,7 +11,7 @@ const root = path.join(__dirname, '..');
 const pkgFile = path.join(root, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
 // El launcher se actualiza desde la release marcada como "latest" (así las releases de marca,
-// que viven en el mismo repo, nunca se confunden con Onyx). Se sube con el proveedor github.
+// que viven en el mismo repo, nunca se confunden con Kopi). Se sube con el proveedor github.
 pkg.build.publish = [
   { provider: 'generic', url: `https://github.com/${repo}/releases/latest/download` },
   { provider: 'github', owner, repo: name, releaseType: 'draft' }

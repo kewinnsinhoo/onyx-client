@@ -91,7 +91,7 @@
   V.wizard = () => {
     const d = {
       name: '', category: 'Evento', description: '', minecraft: '1.21.1', loader: { type: 'vanilla', version: 'latest' }, java: 'auto',
-      look: { background: null, icon: null, logo: null, accent: '#8e9bff', playColor: '#5b67e8', vignette: true },
+      look: { background: null, icon: null, logo: null, accent: '#f58ee0', playColor: '#c13fd6', vignette: true },
       access: { codes: true, list: false, premiumOnly: false, maxPlayers: null }
     };
     let names = '';

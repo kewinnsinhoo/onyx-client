@@ -1,4 +1,4 @@
-// Proceso principal de Onyx Client.
+// Proceso principal de Kopi Client.
 const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -19,6 +19,8 @@ const report = require('./report');
 
 // Un launcher de marca tiene su propia carpeta de ajustes y cuentas
 if (config.brand) app.setPath('userData', path.join(app.getPath('appData'), config.appName || `onyx-${config.brand.id}`));
+// Kopi Client (antes Onyx Client) sigue usando la carpeta de siempre: así nadie pierde cuentas ni ajustes
+else app.setPath('userData', path.join(app.getPath('appData'), 'Onyx Client'));
 const userData = app.getPath('userData');
 const ROOT = gameRoot();
 log.init(path.join(userData, 'logs'));
@@ -48,7 +50,7 @@ function createWindow() {
     titleBarStyle: isMac ? 'hidden' : undefined,
     trafficLightPosition: isMac ? { x: 16, y: 18 } : undefined,
     backgroundColor: '#000000',
-    title: config.appName || 'Onyx Client',
+    title: config.appName || 'Kopi Client',
     icon: path.join(__dirname, '..', 'renderer', 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
@@ -76,7 +78,7 @@ app.whenReady().then(() => {
   data.init(userData);
   panel.init(userData);
   instances.init(ROOT);
-  log.info(`${config.appName || 'Onyx Client'} ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}${config.brand ? ` (marca ${config.brand.id})` : ''}`);
+  log.info(`${config.appName || 'Kopi Client'} ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}${config.brand ? ` (marca ${config.brand.id})` : ''}`);
   // Un launcher de marca apoya a su studio desde el principio (referido)
   if (config.brand && config.brand.studio && !settingsStore.get().referral) {
     settingsStore.set({ referral: { code: config.brand.studio.toUpperCase(), name: config.brand.studioName || config.appName, studio: config.brand.studio, linkedAt: Date.now(), sent: false, auto: true } });
@@ -178,8 +180,8 @@ handle('win:maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximiz
 handle('win:close', () => win.close());
 handle('app:quit', () => app.quit());
 handle('app:info', async () => ({
-  name: config.appName || 'Onyx Client',
-  studio: config.studioName || 'Onyx Studios',
+  name: config.appName || 'Kopi Client',
+  studio: config.studioName || 'Kopi Studio',
   brand: config.brand ? await brandInfo() : null,
   version: app.getVersion(),
   core: '1.0.0',
@@ -300,7 +302,7 @@ handle('skins:screenshot', async (rect) => {
   const img = await win.webContents.capturePage(rect ? {
     x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height)
   } : undefined);
-  const dir = path.join(app.getPath('pictures'), 'Onyx Client');
+  const dir = path.join(app.getPath('pictures'), 'Kopi Client');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `skin-${Date.now()}.png`);
   fs.writeFileSync(file, img.toPNG());
@@ -315,7 +317,7 @@ handle('data:get', async (name) => {
   return data.getJson(name, { fallback: null });
 });
 
-// Avisos de la campana: los del panel (de Onyx y de los studios de tus instancias) + los de onyx-data
+// Avisos de la campana: los del panel (de Kopi y de los studios de tus instancias) + los de onyx-data
 async function notifications() {
   const base = await data.getJson('notifications.json', { fallback: [] }).catch(() => []);
   const list = Array.isArray(base) ? base : (base && base.items) || [];
@@ -347,7 +349,7 @@ handle('instances:update', (id) => instances.update(id, {
   progress: (p) => send('instances:progress', { id, ...p, updating: true })
 }).finally(() => send('instances:progress', { id, stage: 'exited', updating: true })));
 handle('instances:importPack', async (id) => {
-  const r = await dialog.showOpenDialog(win, { title: 'Instalar desde .onyxpack', filters: [{ name: 'Onyx Pack', extensions: ['onyxpack', 'zip'] }], properties: ['openFile'] });
+  const r = await dialog.showOpenDialog(win, { title: 'Instalar desde .onyxpack', filters: [{ name: 'Kopi Pack', extensions: ['onyxpack', 'zip'] }], properties: ['openFile'] });
   if (r.canceled || !r.filePaths[0]) return null;
   return instances.importPack(id, r.filePaths[0]);
 });

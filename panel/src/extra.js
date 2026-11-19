@@ -177,7 +177,7 @@ export async function runChecks(env, fetcher = fetch) {
     if (s.url) {
       const t0 = Date.now();
       try {
-        const r = await fetcher(s.url, { headers: { 'User-Agent': 'OnyxStatus/1.0' }, signal: AbortSignal.timeout(10000) });
+        const r = await fetcher(s.url, { headers: { 'User-Agent': 'KopiStatus/1.0' }, signal: AbortSignal.timeout(10000) });
         ok = r.ok ? 1 : 0;
       } catch { ok = 0; }
       ms = Date.now() - t0;

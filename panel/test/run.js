@@ -73,7 +73,7 @@ async function test(name, fn) {
   catch (e) { console.error('  ✗ ' + name + '\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 }
 
-console.log('Onyx Panel — pruebas');
+console.log('Kopi Panel — pruebas');
 let creator, other, iid, code1;
 
 await test('utilidades y modelo', async () => {
@@ -112,6 +112,11 @@ await test('login con Discord: el Creador recibe su studio', async () => {
   assert.strictEqual(me.data.user.role, 'creator');
   assert.strictEqual(me.data.studios[0].id, 'onyx-studios');
   assert.strictEqual(me.data.studios[0].role, 'owner');
+  assert.strictEqual(me.data.studios[0].name, 'Kopi Studio');
+  // Onyx pasó a llamarse Kopi: el nombre antiguo se cambia solo al entrar
+  await env.DB.prepare("UPDATE studios SET name = 'Onyx Studios' WHERE id = 'onyx-studios'").run();
+  await login('111', 'kew');
+  assert.strictEqual((await call('GET', '/api/me', { cookie: creator })).data.studios[0].name, 'Kopi Studio');
 });
 
 await test('sin sesión o sin invitación no se entra', async () => {
@@ -304,7 +309,7 @@ await test('eventos y calendario público', async () => {
   assert.strictEqual(mine.data.events.find(x => x.title === 'Dedsafio 4').instance_name, 'Dedsafio');
   const pub = await call('GET', '/api/public/events');
   assert.deepStrictEqual(pub.data.events.map(x => x.title), ['Dedsafio 4'], 'solo los públicos');
-  assert.strictEqual(pub.data.events[0].studio, 'Onyx Studios');
+  assert.strictEqual(pub.data.events[0].studio, 'Kopi Studio');
   assert.strictEqual(pub.headers.get('Access-Control-Allow-Origin'), '*');
   const upd = await call('PATCH', `/api/s/onyx-studios/events/${e.data.id}`, { cookie: creator, body: { title: 'Dedsafio 4: Final' } });
   assert.strictEqual(upd.status, 200);
@@ -392,7 +397,7 @@ await test('Creador: resumen, studios, límites, suspender, usuarios, jugadores'
   assert.strictEqual(cb.headers.get('Location'), '/#/login?error=blocked');
   await call('PATCH', '/api/onyx/users/222', { cookie: creator, body: { blocked: false } });
   other = await login('222', 'otro');
-  // buscar jugador en todo Onyx
+  // buscar jugador en todo Kopi
   const pl = (await call('GET', '/api/onyx/players?q=ana', { cookie: creator })).data.players;
   assert.ok(pl.some(x => x.key === 'ana'));
   // actividad del studio (solo admins) y global
@@ -409,7 +414,7 @@ await test('Creador: avisos del launcher, mantenimiento y baneo global', async (
   await call('POST', `/api/s/${nova.id}/notices`, { cookie: other, body: { title: 'Evento el sábado', kind: 'event' } });
   assert.strictEqual((await call('POST', '/api/onyx/notices', { cookie: creator, body: { title: 'x', url: 'http://inseguro' } })).status, 400);
   const pubAll = (await call('GET', '/api/public/notices')).data.notices;
-  assert.deepStrictEqual(pubAll.map(x => x.title), ['Nueva versión 1.3'], 'sin studios solo los de todo Onyx');
+  assert.deepStrictEqual(pubAll.map(x => x.title), ['Nueva versión 1.3'], 'sin studios solo los de todo Kopi');
   const pubNova = (await call('GET', `/api/public/notices?studios=${nova.id}`)).data.notices;
   assert.strictEqual(pubNova.length, 2);
   assert.strictEqual(pubNova.find(x => x.kind === 'event').author, 'Nova Estudios');
@@ -422,7 +427,7 @@ await test('Creador: avisos del launcher, mantenimiento y baneo global', async (
   assert.strictEqual(pm.data.message, 'Volvemos en 10 minutos');
   await call('PATCH', '/api/onyx/settings', { cookie: creator, body: { maintenance: { on: false } } });
   assert.strictEqual((await call('POST', '/api/l/play', { headers: z, body: { instance: iid } })).data.ok, true);
-  // baneo en todo Onyx
+  // baneo en todo Kopi
   await call('POST', '/api/onyx/bans', { cookie: creator, body: { kind: 'name', value: 'Zoe' } });
   assert.strictEqual((await call('POST', '/api/l/play', { headers: z, body: { instance: iid } })).data.reason, 'banned');
   assert.ok(!(await call('GET', '/api/l/instances', { headers: z })).data.instances.length);
@@ -438,7 +443,7 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
   assert.strictEqual((await call('GET', `/api/s/${nova.id}/brand`, { cookie: other })).data.allowed, false);
   assert.strictEqual((await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Nova Launcher' } })).status, 403);
   await call('PATCH', `/api/onyx/studios/${nova.id}`, { cookie: creator, body: { brandAllowed: true } });
-  assert.strictEqual((await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Onyx Fake' } })).status, 400, 'no puede llamarse Onyx');
+  assert.strictEqual((await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Kopi Fake' } })).status, 400, 'no puede llamarse Kopi');
   const sv = await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { name: 'Nova Launcher', accent: '#F59E0B', discord: 'http://inseguro', web: 'https://nova.gg' } });
   assert.strictEqual(sv.status, 201, JSON.stringify(sv.data));
   const id = sv.data.id;

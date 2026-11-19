@@ -159,7 +159,7 @@
       bindIn('#l-about', i => { d.about = i.value; });
       bindIn('#l-accent', i => { d.look.accent = i.value; });
       bindIn('#l-play', i => { d.look.playColor = i.value; });
-      $('#l-reset', el).onclick = () => { d.look.playColor = '#5b67e8'; $('#l-play', el).value = '#5b67e8'; changed(); };
+      $('#l-reset', el).onclick = () => { d.look.playColor = '#c13fd6'; $('#l-play', el).value = '#c13fd6'; changed(); };
       $$('[data-flag]', el).forEach(c => c.onchange = () => { d.look[c.dataset.flag] = c.checked; changed(); });
       const setSlot = (k, v) => {
         d.look[k] = v || null;

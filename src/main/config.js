@@ -14,7 +14,7 @@ try {
 }
 
 // Launcher de marca: brand.json lo pone la fábrica de launchers (scripts/brand.js).
-// Sin ese archivo, es el Onyx Client normal.
+// Sin ese archivo, es el Kopi Client normal.
 let brand = null;
 try {
   const b = JSON.parse(fs.readFileSync(path.join(ROOT, 'brand.json'), 'utf8'));

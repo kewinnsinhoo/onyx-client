@@ -78,7 +78,7 @@
 
     if (s === 'welcome') {
       left.innerHTML = html`<div class="ob-content ob-welcome">
-          <img class="wordmark" src="assets/logo-wordmark.png" alt="Onyx Client">
+          <img class="wordmark" src="assets/logo-wordmark.png" alt="Kopi Client">
           <h1>${t('Bienvenido')}</h1>
           <p class="ob-sub">${t('Las instancias de tu studio de Minecraft, listas para jugar en un clic.')}</p>
           <div><button class="btn btn-primary btn-lg" id="ob-start">${t('Empezar')}${icon('arrowRight')}</button></div>

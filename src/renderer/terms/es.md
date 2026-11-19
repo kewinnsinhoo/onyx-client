@@ -1,11 +1,11 @@
-# Términos y condiciones de uso de Onyx Client
+# Términos y condiciones de uso de Kopi Client
 
 **Última actualización:** 12/11/2026 · **Versión:** 1.0
 
 > PRODUCTO NO OFICIAL DE MINECRAFT. NO ESTÁ APROBADO NI ASOCIADO CON MOJANG O MICROSOFT.
 
 ## 1. Quiénes somos
-Onyx Client (el «Launcher») es un programa gratuito creado y mantenido por Onyx Studios (el «Estudio») para descargar, organizar y abrir instancias de Minecraft: Java Edition. Puedes contactar con nosotros a través de nuestro servidor de Discord.
+Kopi Client (el «Launcher») es un programa gratuito creado y mantenido por Kopi Studio (el «Estudio») para descargar, organizar y abrir instancias de Minecraft: Java Edition. Puedes contactar con nosotros a través de nuestro servidor de Discord.
 
 ## 2. Aceptación
 Al descargar, instalar o usar el Launcher aceptas estos términos. Si no estás de acuerdo, no lo uses. Si eres menor de edad, necesitas el permiso de tu madre, padre o tutor.

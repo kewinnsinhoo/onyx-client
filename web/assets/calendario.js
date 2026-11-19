@@ -1,4 +1,4 @@
-// Calendario público: lee los eventos publicados en el panel de Onyx.
+// Calendario público: lee los eventos publicados en el panel de Kopi.
 (function () {
   const API = (() => {
     const q = new URLSearchParams(location.search).get('api');
@@ -7,7 +7,7 @@
   const DAY = 864e5;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const okColor = (c) => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#8e9bff';
+  const okColor = (c) => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#f58ee0';
   const okUrl = (u) => /^https:\/\//.test(u || '') || /^http:\/\/localhost/.test(u || '') ? u : null;
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const startOfDay = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };

@@ -49,7 +49,7 @@ async function seed() {
   const run = (sql, ...a) => env.DB.prepare(sql).bind(...a).run();
   await run("INSERT INTO users (id, name, avatar, global_role, created_at) VALUES ('111', 'kew', NULL, 'creator', ?)", t);
   await run("INSERT INTO users (id, name, avatar, global_role, created_at) VALUES ('222', 'Luis Enrique', NULL, 'user', ?)", t);
-  await run("INSERT INTO studios (id, name, created_by, created_at) VALUES ('onyx-studios', 'Onyx Studios', '111', ?)", t - 40 * DAY);
+  await run("INSERT INTO studios (id, name, created_by, created_at) VALUES ('onyx-studios', 'Kopi Studio', '111', ?)", t - 40 * DAY);
   await run("INSERT INTO studios (id, name, created_by, created_at) VALUES ('nova-estudios', 'Nova Estudios', '111', ?)", t - 20 * DAY);
   await run("INSERT INTO members VALUES ('onyx-studios', '111', 'owner', ?)", t - 40 * DAY);
   await run("INSERT INTO members VALUES ('onyx-studios', '222', 'editor', ?)", t - 10 * DAY);
@@ -71,7 +71,7 @@ async function seed() {
       { path: 'config/sodium-options.json', url: '/m/0123456789abcdef0126/sodium-options.json', size: 1200, at: t - 3 * DAY },
       { path: 'config/voicechat/voicechat-client.properties', url: '/m/0123456789abcdef0127/vc.properties', size: 900, at: t - 3 * DAY },
       { path: 'config/voicechat/voicechat-server.properties', url: '/m/0123456789abcdef0128/vcs.properties', size: 1400, at: t - 3 * DAY },
-      { path: 'resourcepacks/Onyx-UI.zip', url: '/m/0123456789abcdef0129/onyx-ui.zip', size: 4200000, at: t - DAY },
+      { path: 'resourcepacks/Kopi-UI.zip', url: '/m/0123456789abcdef0129/onyx-ui.zip', size: 4200000, at: t - DAY },
       { path: 'options.txt', url: '/m/012345678900abcdef12/options.txt', size: 5300, at: t - 5 * DAY }
     ], dirs: ['shaderpacks'],
     server: { address: 'play.onyx.gg', autoJoin: true } });
@@ -93,13 +93,13 @@ async function seed() {
         'p' + n++, k % 3 ? 'ignite-extremo-3' : 'torneo-pvp', 'onyx-studios', 'p' + k, 'Jugador' + k, end ? st : t - 60e3, end || t - 20e3, end);
     }
   }
-  const ev = [['Final IGNITE', 'Serie', '#38bdf8', 2], ['Torneo PvP 1.8', 'Torneo', '#ef4444', 5], ['Squid Game Onyx', 'Squid Game', '#8b5cf6', 9], ['Directo de presentación', 'Directo', '#ec4899', 12]];
+  const ev = [['Final IGNITE', 'Serie', '#38bdf8', 2], ['Torneo PvP 1.8', 'Torneo', '#ef4444', 5], ['Squid Game Kopi', 'Squid Game', '#8b5cf6', 9], ['Directo de presentación', 'Directo', '#ec4899', 12]];
   for (const [i, [title, cat, color, days]] of ev.entries()) await run('INSERT INTO events (id, studio_id, instance_id, title, category, color, description, starts_at, ends_at, public, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)', 'e' + i, 'onyx-studios', i === 0 ? 'ignite-extremo-3' : null, title, cat, color, 'Evento de ejemplo', t + days * DAY + 3600e3 * 4, i === 2 ? t + (days + 2) * DAY : null, t);
   for (const [i, nm] of ['Mia_2010', 'Pixel', 'Dante', 'Zoe'].entries()) await run('INSERT INTO referrals VALUES (?, ?, ?, ?)', nm.toLowerCase(), nm, 'onyx-studios', t - i * 5 * 3600e3);
   // Herramientas del Creador: límites, avisos y actividad de ejemplo
   await run("UPDATE studios SET max_instances = 5, max_storage_mb = 500, note = 'Studio de Luis. Acordado: 5 instancias.' WHERE id = 'nova-estudios'");
   await run("INSERT OR IGNORE INTO members (studio_id, user_id, role, added_at) VALUES ('nova-estudios', '222', 'owner', ?)", t - 19 * DAY);
-  await run("INSERT INTO notices (id, studio_id, title, body, kind, url, starts_at, ends_at, created_by, created_at) VALUES ('n1', NULL, 'Onyx Client 1.3 ya está aquí', 'Avisos nuevos, carpetas en los archivos y más.', 'success', 'https://onyxclient.site', ?, NULL, '111', ?)", t - DAY, t - DAY);
+  await run("INSERT INTO notices (id, studio_id, title, body, kind, url, starts_at, ends_at, created_by, created_at) VALUES ('n1', NULL, 'Kopi Client 1.3 ya está aquí', 'Avisos nuevos, carpetas en los archivos y más.', 'success', 'https://onyxclient.site', ?, NULL, '111', ?)", t - DAY, t - DAY);
   await run("INSERT INTO notices (id, studio_id, title, body, kind, url, starts_at, ends_at, created_by, created_at) VALUES ('n2', 'onyx-studios', 'Final de IGNITE este sábado', 'A las 20:00. Entra 10 minutos antes.', 'event', NULL, ?, ?, '111', ?)", t - 3600e3, t + 5 * DAY, t);
   await run("INSERT INTO notices (id, studio_id, title, body, kind, url, starts_at, ends_at, created_by, created_at) VALUES ('n3', NULL, 'Mantenimiento el lunes', NULL, 'warn', NULL, ?, NULL, '111', ?)", t + 2 * DAY, t);
   const A = [

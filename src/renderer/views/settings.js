@@ -4,9 +4,10 @@
   const V = window.Views = window.Views || {};
 
   const THEMES = [
-    { id: 'onyx', name: 'Noche Índigo', bg: 'linear-gradient(135deg,#0b0e1b,#070912 60%,#1c2050)', s: 'rgba(160,172,255,.16)', a: 'linear-gradient(135deg,#9aa6ff,#5260dc)' },
-    { id: 'oled', name: 'OLED', bg: '#000', s: 'rgba(160,172,255,.12)', a: 'linear-gradient(135deg,#9aa6ff,#5260dc)' },
+    { id: 'onyx', name: 'Neón Kopi', bg: 'linear-gradient(135deg,#110a17,#0a0710 60%,#3a1442)', s: 'rgba(240, 170, 235,.16)', a: 'linear-gradient(135deg,#ffa6ea,#9b3fe0)' },
+    { id: 'oled', name: 'OLED', bg: '#000', s: 'rgba(240, 170, 235,.12)', a: 'linear-gradient(135deg,#ffa6ea,#9b3fe0)' },
     { id: 'amethyst', name: 'Amatista', bg: 'linear-gradient(135deg,#120b20,#0b0714 60%,#2f1652)', s: 'rgba(200,160,255,.16)', a: 'linear-gradient(135deg,#d3afff,#7c3aed)' },
+    { id: 'indigo', name: 'Noche Índigo', bg: 'linear-gradient(135deg,#0b0e1b,#070912 60%,#1c2050)', s: 'rgba(160,172,255,.16)', a: 'linear-gradient(135deg,#9aa6ff,#5260dc)' },
     { id: 'aurora', name: 'Aurora', bg: 'linear-gradient(135deg,#071816,#04100f 60%,#0d3b36)', s: 'rgba(120,240,220,.16)', a: 'linear-gradient(135deg,#7ff0dc,#0f8f84)' }
   ];
   const LANGS = [['es', 'Español'], ['ca', 'Català'], ['en', 'English'], ['fr', 'Français']];
@@ -93,13 +94,13 @@
         <div class="setting-row"><div class="lbl"><div>${t('Reducir animaciones')}</div></div>${toggle('reduceMotion', s.reduceMotion)}</div>
       </div>
       <div class="card"><h3>${t('Estado en Discord')}</h3>
-        <div class="setting-row"><div class="lbl"><div>${t('Mostrar mi actividad en Discord')}<div class="desc">${t('Tus amigos verán «Jugando a Onyx Client», la instancia a la que juegas y el tiempo. Necesitas tener Discord abierto en este PC.')}</div></div></div>${toggle('discordPresence', s.discordPresence !== false)}</div>
+        <div class="setting-row"><div class="lbl"><div>${t('Mostrar mi actividad en Discord')}<div class="desc">${t('Tus amigos verán «Jugando a Kopi Client», la instancia a la que juegas y el tiempo. Necesitas tener Discord abierto en este PC.')}</div></div></div>${toggle('discordPresence', s.discordPresence !== false)}</div>
         <div class="dc-preview ${s.discordPresence !== false ? '' : 'off'}" id="dc-preview">
           <div class="dc-k">${t('Jugando')}</div>
           <div class="dc-row"><img src="assets/icon.png" alt=""><div>
-            <div class="dc-n">Onyx Client</div>
+            <div class="dc-n">Kopi Client</div>
             <div class="dc-l">${t('En el menú')}</div>
-            <div class="dc-l">Onyx Client · v${esc(S.info.version || '')}</div>
+            <div class="dc-l">Kopi Client · v${esc(S.info.version || '')}</div>
             <div class="dc-t">${icon('gamepad')}0:14</div></div></div>
         </div>
       </div>
@@ -157,7 +158,7 @@
           <button class="toggle ${s.fastDownload !== false ? 'on' : ''}" data-tg="fastDownload"></button></div>
       </div>
       <div class="card"><h3>Java</h3>
-        <div class="setting-row"><div class="lbl"><div>${t('Ruta de Java')}<div class="desc">${t('Vacío = Onyx descarga automáticamente el Java correcto (recomendado).')}</div></div></div></div>
+        <div class="setting-row"><div class="lbl"><div>${t('Ruta de Java')}<div class="desc">${t('Vacío = Kopi descarga automáticamente el Java correcto (recomendado).')}</div></div></div></div>
         <input class="input mono" id="j-path" placeholder="${t('Automático')}" value="${esc(s.javaPath)}" spellcheck="false">
         <div class="setting-row" style="margin-top:6px"><div class="lbl">${t('Argumentos de Java (avanzado)')}</div></div>
         <input class="input mono" id="j-args" placeholder="-XX:+UseG1GC" value="${esc(s.jvmArgs)}" spellcheck="false">
@@ -238,7 +239,7 @@
     const B = i.brand;
     body.innerHTML = html`<div class="card"><div class="about">${brandMark('wordmark')}
         <div class="ver mono">${t('Versión')} v${esc(i.version)} · ${t('Compilación')} ${esc(i.build)} · Core ${esc(i.core)}</div>
-        <div class="by">${B ? t('Launcher de {s} · con la tecnología de Onyx Client', { s: esc(B.studioName || B.name) }) : t('Hecho por {s}', { s: esc(i.studio) })}</div>
+        <div class="by">${B ? t('Launcher de {s} · con la tecnología de Kopi Client', { s: esc(B.studioName || B.name) }) : t('Hecho por {s}', { s: esc(i.studio) })}</div>
         ${B && (B.web || B.store) ? `<div class="row" style="justify-content:center;margin:4px 0 6px">${B.web ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.web)}">${icon('globe')}${t('Web')}</button>` : ''}${B.store ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.store)}">${icon('external')}${t('Tienda')}</button>` : ''}</div>` : ''}
         <button class="btn btn-primary btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button></div></div>
       <div class="card"><h3>${t('Canal de actualizaciones')} <span class="info-i" title="${t('Beta recibe novedades antes, pero puede tener fallos.')}">i</span></h3>

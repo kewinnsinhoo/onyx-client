@@ -1,4 +1,4 @@
-// Configuración de Cloudflare (Workers con archivos estáticos) para la web de Onyx Client.
+// Configuración de Cloudflare (Workers con archivos estáticos) para la web de Kopi Client.
 // En Cloudflare: Advanced settings → Path = web
 {
   "name": "onyx-client",

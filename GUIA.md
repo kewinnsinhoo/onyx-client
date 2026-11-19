@@ -1,4 +1,4 @@
-# Guía de Onyx Client (todo gratis con GitHub)
+# Guía de Kopi Client (todo gratis con GitHub)
 
 En esta carpeta hay dos proyectos:
 
@@ -27,16 +27,16 @@ Repite esto con `onyx-client` y después con `onyx-data`:
 ## Paso 3 · Login premium con Microsoft (Azure, gratis)
 1. Entra en **portal.azure.com** con tu cuenta de Microsoft. No hace falta tarjeta.
 2. Busca **"Microsoft Entra ID"** → **Registros de aplicaciones** → **Nuevo registro**.
-   - Nombre: `Onyx Client`
+   - Nombre: `Kopi Client`
    - Tipos de cuenta: **"Solo cuentas personales de Microsoft"**
    - URI de redirección: elige **"Cliente público/nativo (móvil y escritorio)"** y pega:
      `https://login.microsoftonline.com/common/oauth2/nativeclient`
 3. Pulsa **Registrar** y copia el **"Id. de aplicación (cliente)"**.
 4. En **Autenticación**, activa **"Permitir flujos de clientes públicos" = Sí** y guarda.
-5. **Pide permiso a Mojang** en este formulario: **https://aka.ms/mce-reviewappid**. Pon el Client ID, el nombre `Onyx Client` y explica que es el launcher de tu estudio. Mientras no te aprueben, el login premium dará error; las cuentas offline sí funcionan.
+5. **Pide permiso a Mojang** en este formulario: **https://aka.ms/mce-reviewappid**. Pon el Client ID, el nombre `Kopi Client` y explica que es el launcher de tu estudio. Mientras no te aprueben, el login premium dará error; las cuentas offline sí funcionan.
 
 ## Paso 4 · Discord (gratis)
-1. Entra en **discord.com/developers/applications** → **New Application** → nombre `Onyx Client`.
+1. Entra en **discord.com/developers/applications** → **New Application** → nombre `Kopi Client`.
 2. En **OAuth2 → Redirects** añade exactamente: `http://127.0.0.1:53682/discord` y guarda.
 3. Copia el **Client ID** (está en OAuth2).
 4. Crea una invitación permanente de tu servidor de Discord (para el botón "Discord" del inicio).
@@ -57,9 +57,9 @@ Después, en GitHub Desktop: escribe un mensaje abajo a la izquierda (por ejempl
 1. Entra en `github.com/TU-USUARIO/onyx-client` → pestaña **Actions**. Si te lo pide, pulsa "I understand… enable them".
 2. Elige **"Publicar nueva versión"** → botón **Run workflow** → **Run workflow**.
 3. Tarda unos 10-20 minutos. Cuando termine, en la página del repo entra en **Releases**:
-   - Windows: `Onyx-Client-Setup-1.0.0.exe`
-   - Mac: `Onyx-Client-1.0.0-arm64.dmg` (Mac M1/M2/M3/M4) o `-x64.dmg` (Mac Intel)
-   - Linux: `Onyx-Client-1.0.0.AppImage`
+   - Windows: `Kopi-Client-Setup-1.0.0.exe`
+   - Mac: `Kopi-Client-1.0.0-arm64.dmg` (Mac M1/M2/M3/M4) o `-x64.dmg` (Mac Intel)
+   - Linux: `Kopi-Client-1.0.0.AppImage`
 
 Ese enlace de Releases es el que compartes con tus jugadores.
 
@@ -74,7 +74,7 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
 ---
 
 ## Instancias y códigos de acceso (`onyx-data`)
-**Código de prueba incluido:** `ONYX-DEMO-2026` → abre la instancia de ejemplo "Survival Onyx" (Minecraft 1.21.1 con Fabric).
+**Código de prueba incluido:** `KOPI-DEMO-2026` → abre la instancia de ejemplo "Survival Kopi" (Minecraft 1.21.1 con Fabric).
 
 ### Crear una instancia
 1. Copia `instances/ejemplo-survival.json` y renómbralo, por ejemplo `instances/eventos.json`.
@@ -82,11 +82,11 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
 ```json
 {
   "id": "eventos",
-  "name": "Eventos Onyx",
+  "name": "Eventos Kopi",
   "description": "Texto que verán los jugadores",
   "icon": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-icono.png",
   "banner": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-banner.png",
-  "studio": { "name": "Onyx Studios", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
+  "studio": { "name": "Kopi Studio", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
   "about": "Texto largo para la sección 'Sobre esta instancia'. Separa párrafos con una línea en blanco.",
   "premium": true,
   "minecraft": "1.21.1",
@@ -103,7 +103,7 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
 - `files` → mods, configs o resource packs. Para los mods, copia el enlace de descarga del archivo en modrinth.com. Si quitas un archivo de la lista, el launcher también lo borra de los jugadores. Los mods que ponga el propio jugador no se tocan.
 - Las imágenes las puedes subir a la carpeta `img/` del repo.
 - `"maintenance": "Volvemos a las 18:00"` bloquea la instancia temporalmente.
-- `studio` muestra "por Onyx Studios" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
+- `studio` muestra "por Kopi Studio" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
 - Si hay `server.address`, la instancia muestra los **jugadores conectados** en vivo (ej. 12 / 100).
 
 ### Packs `.onyxpack`

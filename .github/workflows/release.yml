@@ -1,4 +1,4 @@
-# Compila Onyx Client para Windows, Linux y macOS y lo publica en las Releases de ESTE repo.
+# Compila Kopi Client para Windows, Linux y macOS y lo publica en las Releases de ESTE repo.
 # Cómo usarlo: pestaña "Actions" → "Publicar nueva versión" → botón "Run workflow".
 # (Antes, sube el número de "version" en package.json, por ejemplo 1.3.0 → 1.3.1)
 #
@@ -61,7 +61,7 @@ jobs:
           elif gh release view "$V" > /dev/null 2>&1; then
             echo "::error::La versión $V ya está publicada. Sube la versión en package.json."; exit 1
           else
-            gh release create "$V" --draft --target "$GITHUB_SHA" --title "Onyx Client $V" --notes "Versión $V de Onyx Client."
+            gh release create "$V" --draft --target "$GITHUB_SHA" --title "Kopi Client $V" --notes "Versión $V de Kopi Client."
           fi
 
   compilar:

@@ -17,7 +17,7 @@ async function send({ message, screenshot, status, gameLog }, reportsDir) {
   if (config.reportWebhook) {
     const form = new FormData();
     form.append('payload_json', JSON.stringify({
-      username: 'Onyx Client · Informes',
+      username: 'Kopi Client · Informes',
       embeds: [{
         title: 'Nuevo informe',
         description: (message || '(sin descripción)').slice(0, 3500),

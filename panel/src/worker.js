@@ -1,4 +1,4 @@
-// Onyx Panel: servidor (Cloudflare Worker). Sirve la API del panel, la del launcher y los archivos subidos.
+// Kopi Panel: servidor (Cloudflare Worker). Sirve la API del panel, la del launcher y los archivos subidos.
 import {
   json, HttpError, fail, now, randomCode, randomToken, sha256, sha1Bytes, CODE_RE, normalizeCode, NAME_RE,
   playerKey, slugify, readJson, parseCookies, cookie, clientIp, str, url as cleanUrl, int
@@ -137,11 +137,13 @@ async function startSession(env, user, next) {
   ] });
 }
 
-// El Creador siempre tiene el studio principal "Onyx Studios"
+// El Creador siempre tiene el studio principal "Kopi Studio"
 async function ensureCreatorStudio(env, userId) {
   const row = await env.DB.prepare("SELECT id FROM studios WHERE id = 'onyx-studios'").first();
   const t = now();
-  if (!row) await env.DB.prepare("INSERT INTO studios (id, name, created_by, created_at) VALUES ('onyx-studios', 'Onyx Studios', ?, ?)").bind(userId, t).run();
+  if (!row) await env.DB.prepare("INSERT INTO studios (id, name, created_by, created_at) VALUES ('onyx-studios', 'Kopi Studio', ?, ?)").bind(userId, t).run();
+  // Onyx pasó a llamarse Kopi: el studio principal se renombra solo (si nadie le puso otro nombre)
+  else await env.DB.prepare("UPDATE studios SET name = 'Kopi Studio' WHERE id = 'onyx-studios' AND name = 'Onyx Studios'").run();
   await env.DB.prepare("INSERT OR IGNORE INTO members (studio_id, user_id, role, added_at) VALUES ('onyx-studios', ?, 'owner', ?)").bind(userId, t).run();
 }
 
@@ -729,7 +731,7 @@ async function launcherApi(req, env, u, path, m) {
     if (!g.ok) return json(g, 403);
     if ((await studioOf(row.studio_id)).suspended_at) return json(SUSPENDED, 403);
     const mt = await maintenance(env);
-    if (mt.on && !g.staff) return json({ ok: false, reason: 'maintenance', message: mt.message || 'Onyx está en mantenimiento. Vuelve en un rato.' }, 403);
+    if (mt.on && !g.staff) return json({ ok: false, reason: 'maintenance', message: mt.message || 'Kopi está en mantenimiento. Vuelve en un rato.' }, 403);
     await env.DB.prepare('UPDATE plays SET ended_at = ? WHERE instance_id = ? AND player_key = ? AND ended_at IS NULL').bind(t, row.id, P.key).run();
     const id = randomToken(12);
     await env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)')

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const UA = 'OnyxClient/1.0 (+https://github.com)';
+const UA = 'KopiClient/1.0 (+https://github.com)';
 
 async function fetchJson(url, opts = {}) {
   const res = await fetchRetry(url, opts);

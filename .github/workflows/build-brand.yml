@@ -4,7 +4,7 @@
 # Lo lanza el panel (Launchers → Compilar) o «Publicar nueva versión» con la opción de marcas.
 # La ficha de la marca (nombre, icono, colores...) es pública: la sirve el panel.
 #
-# Las releases de marca son "prerelease" y nunca "latest": así Onyx Client nunca se confunde
+# Las releases de marca son "prerelease" y nunca "latest": así Kopi Client nunca se confunde
 # y se actualiza a un launcher de marca.
 name: Launcher de marca
 run-name: Marca ${{ inputs.brand }}
@@ -75,7 +75,7 @@ jobs:
           NAME=$(jq -r .brand.name brand.json)
           if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create "$TAG" -R "$GITHUB_REPOSITORY" --prerelease --latest=false --target "$(git -C src rev-parse HEAD)" \
-              --title "$NAME" --notes "Instaladores de $NAME (con la tecnología de Onyx Client)." > /dev/null
+              --title "$NAME" --notes "Instaladores de $NAME (con la tecnología de Kopi Client)." > /dev/null
           fi
 
       - id: matrix

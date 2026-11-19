@@ -1,4 +1,4 @@
-// Fábrica de launchers de marca: convierte esta copia de Onyx Client en el launcher de un studio.
+// Fábrica de launchers de marca: convierte esta copia de Kopi Client en el launcher de un studio.
 // Uso (lo hace GitHub Actions en este repo, workflow «Launcher de marca»):
 //   node scripts/brand.js https://panel.onyxclient.site/api/public/brands/<id>/build
 //   node scripts/brand.js ./marca.json         (para probar en local)
@@ -55,7 +55,7 @@ async function main() {
   if (name.length < 2) throw new Error('La marca no tiene nombre');
   const slug = ascii(name);
 
-  // Imágenes: icono del programa (obligatorio para que no salga el de Onyx), logo y fondo
+  // Imágenes: icono del programa (obligatorio para que no salga el de Kopi), logo y fondo
   const brandDir = path.join(ROOT, 'src', 'renderer', 'brand');
   fs.mkdirSync(brandDir, { recursive: true });
   const iconTmp = path.join(brandDir, 'icon.png');
@@ -64,7 +64,7 @@ async function main() {
     if (!sz || sz.w !== sz.h || sz.w < 256) throw new Error('El icono tiene que ser un PNG cuadrado de al menos 256 px (mejor 512 o 1024)');
     fs.copyFileSync(iconTmp, path.join(ROOT, 'build', 'icon.png'));
     fs.copyFileSync(iconTmp, path.join(ROOT, 'src', 'renderer', 'assets', 'icon.png'));
-  } else console.warn('La marca no tiene icono: se usa el de Onyx');
+  } else console.warn('La marca no tiene icono: se usa el de Kopi');
   const ext = (u, def) => ((String(u || '').split('?')[0].match(/\.(png|webp|jpe?g|gif|webm|mp4)$/i) || [])[1] || def).toLowerCase();
   const logo = b.logo ? `brand/logo.${ext(b.logo, 'png')}` : null;
   const bg = b.background ? `brand/background.${ext(b.background, 'webp')}` : null;
@@ -103,7 +103,7 @@ async function main() {
   const bl = pkg.build;
   bl.appId = `site.onyxclient.brand.${b.id}`;
   bl.productName = name;
-  bl.copyright = `© ${b.studioName || name} · con la tecnología de Onyx Client`;
+  bl.copyright = `© ${b.studioName || name} · con la tecnología de Kopi Client`;
   bl.extraMetadata = { ...(bl.extraMetadata || {}), name: `onyx-${b.id}`, productName: name, description: `${name} · Minecraft launcher` };
   bl.files = [...new Set([...(bl.files || []), 'brand.json'])];
   bl.publish = [{ provider: 'generic', url: `https://github.com/${RELEASES}/releases/download/brand-${b.id}` }];

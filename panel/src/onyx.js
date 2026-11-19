@@ -1,4 +1,4 @@
-// Herramientas del Creador (dueño de Onyx) y piezas compartidas:
+// Herramientas del Creador (dueño de Kopi) y piezas compartidas:
 // registro de actividad, avisos del launcher, ajustes globales, límites y espacio de los studios.
 import { json, fail, now, str, int, url as cleanUrl, readJson, randomToken, NAME_RE, playerKey } from './util.js';
 import { peaksByDay } from './stats.js';
@@ -104,7 +104,7 @@ function cleanNotice(b, cur = {}) {
   return { title, body: 'body' in b ? str(b.body, 500).trim() : (cur.body || ''), kind, url: link, starts_at: starts, ends_at: ends };
 }
 
-// scope: null = todo Onyx (solo Creador) · 'id' = un studio
+// scope: null = todo Kopi (solo Creador) · 'id' = un studio
 export async function noticesApi({ env, user, isCreator, req }, studioId, id, m, { allowAudience = false } = {}) {
   const sel = 'SELECT n.*, s.name AS studio_name, u.name AS by_name FROM notices n LEFT JOIN studios s ON s.id = n.studio_id LEFT JOIN users u ON u.id = n.created_by';
   if (m === 'GET' && !id) {
@@ -146,7 +146,7 @@ export async function noticesApi({ env, user, isCreator, req }, studioId, id, m,
   fail(405, 'method', 'Método no permitido');
 }
 
-// Lo que ve el launcher: avisos de todo Onyx + los de los studios de sus instancias
+// Lo que ve el launcher: avisos de todo Kopi + los de los studios de sus instancias
 export async function publicNotices(env, studios, origin) {
   const t = now();
   const ids = studios.filter(s => /^[a-z0-9-]{1,60}$/.test(s)).slice(0, 50);
@@ -155,9 +155,9 @@ export async function publicNotices(env, studios, origin) {
     AND (n.studio_id IS NULL ${ids.length ? `OR n.studio_id IN (${ids.map(() => '?').join(',')})` : ''}) ORDER BY n.starts_at DESC LIMIT 30`)
     .bind(t, t, ...ids).all()).results;
   const abs = (u) => (u && u.startsWith('/m/') ? origin + u : u);
-  const out = rows.map(r => ({ id: r.id, title: r.title, body: r.body || '', kind: r.kind, url: abs(r.url), author: r.studio_name || 'Onyx', studio: r.studio_id, date: new Date(r.starts_at).toISOString(), until: r.ends_at }));
+  const out = rows.map(r => ({ id: r.id, title: r.title, body: r.body || '', kind: r.kind, url: abs(r.url), author: r.studio_name || 'Kopi', studio: r.studio_id, date: new Date(r.starts_at).toISOString(), until: r.ends_at }));
   const mt = await maintenance(env);
-  if (mt.on) out.unshift({ id: 'maintenance', title: mt.message || 'Onyx está en mantenimiento', body: '', kind: 'warn', author: 'Onyx', date: new Date(mt.since || t).toISOString(), pinned: true });
+  if (mt.on) out.unshift({ id: 'maintenance', title: mt.message || 'Kopi está en mantenimiento', body: '', kind: 'warn', author: 'Kopi', date: new Date(mt.since || t).toISOString(), pinned: true });
   return out;
 }
 
@@ -340,7 +340,7 @@ async function usersAdmin(c, uid, m) {
   fail(405, 'method', 'Método no permitido');
 }
 
-// Busca un jugador de Minecraft en todo Onyx
+// Busca un jugador de Minecraft en todo Kopi
 async function findPlayer(env, q) {
   q = String(q || '').trim();
   if (q.length < 2) return { players: [] };

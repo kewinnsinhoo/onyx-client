@@ -30,16 +30,16 @@
       document.body.classList.add('has-brand-bg');
     }
   }
-  // Logo de arriba: el del studio (si lo tiene) o su nombre escrito; en Onyx, el de Onyx
+  // Logo de arriba: el del studio (si lo tiene) o su nombre escrito; en Kopi, el de Kopi
   window.brandMark = (cls = '') => {
     const b = S.info && S.info.brand;
-    if (!b) return `<img class="${cls}" src="assets/logo-wordmark.png" alt="Onyx Client">`;
+    if (!b) return `<img class="${cls}" src="assets/logo-wordmark.png" alt="Kopi Client">`;
     return b.logo ? `<img class="${cls} brand-logo" src="${esc(b.logo)}" alt="${esc(b.name)}">` : `<b class="${cls} brand-name">${esc(b.name)}</b>`;
   };
 
   // ---------- utilidades de estado ----------
   function applySettings() {
-    document.documentElement.dataset.theme = ['onyx', 'oled', 'amethyst', 'aurora'].includes(S.settings.theme) ? S.settings.theme : 'onyx';
+    document.documentElement.dataset.theme = ['onyx', 'oled', 'amethyst', 'aurora', 'indigo'].includes(S.settings.theme) ? S.settings.theme : 'onyx';
     document.body.classList.toggle('reduce-motion', !!S.settings.reduceMotion);
     I18N.set(S.settings.language || 'es');
   }

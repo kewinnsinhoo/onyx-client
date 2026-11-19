@@ -21,7 +21,7 @@ function test(name, fn) {
   catch (e) { console.error('  ✗ ' + name + '\n    ' + e.message); process.exitCode = 1; }
 }
 
-console.log('Onyx Client — pruebas');
+console.log('Kopi Client — pruebas');
 
 test('reglas de Mojang (os / features)', () => {
   const win = { os: 'windows', arch: 'x64', release: '10.0' };
@@ -222,7 +222,7 @@ test('estado de Discord: textos y botones', () => {
   const ctx = { lang: 'es', version: '1.1.2', githubRepo: 'kewinnsinhoo/onyx-client', discordInvite: 'https://discord.gg/abc', openedAt: 1000 };
   const menu = P.buildActivity({ kind: 'menu', section: 'home' }, ctx);
   assert.strictEqual(menu.details, 'En el menú');
-  assert.strictEqual(menu.state, 'Onyx Client · v1.1.2');
+  assert.strictEqual(menu.state, 'Kopi Client · v1.1.2');
   assert.strictEqual(menu.timestamps.start, 1000);
   assert.strictEqual(menu.assets.large_image, P.LOGO_URL);
   assert.strictEqual(menu.buttons.length, 2);
@@ -230,15 +230,15 @@ test('estado de Discord: textos y botones', () => {
   assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'skins' }, { ...ctx, lang: 'en' }).details, 'Changing skin');
   assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'instance', name: 'Survival' }, { ...ctx, lang: 'fr' }).details, 'Regarde Survival');
   assert.strictEqual(P.buildActivity({ kind: 'menu', section: 'console' }, ctx).details, 'En el menú');
-  const inst = { id: 'sv', name: 'Survival Onyx', minecraft: '1.21.1', loader: { type: 'fabric' }, icon: 'https://x.y/i.png' };
+  const inst = { id: 'sv', name: 'Survival Kopi', minecraft: '1.21.1', loader: { type: 'fabric' }, icon: 'https://x.y/i.png' };
   const play = P.buildActivity({ kind: 'playing', instance: inst, startedAt: 5000 }, ctx);
-  assert.strictEqual(play.details, 'Survival Onyx');
+  assert.strictEqual(play.details, 'Survival Kopi');
   assert.strictEqual(play.state, 'Minecraft 1.21.1 · Fabric');
   assert.strictEqual(play.assets.large_image, 'https://x.y/i.png');
   assert.strictEqual(play.assets.small_image, P.LOGO_URL);
   assert.strictEqual(play.timestamps.start, 5000);
   const noIcon = P.buildActivity({ kind: 'launching', instance: { ...inst, icon: 'img/local.png', loader: { type: 'vanilla' } } }, { lang: 'ca' });
-  assert.strictEqual(noIcon.details, 'Iniciant Survival Onyx');
+  assert.strictEqual(noIcon.details, 'Iniciant Survival Kopi');
   assert.strictEqual(noIcon.state, 'Minecraft 1.21.1');
   assert.strictEqual(noIcon.assets.large_image, P.LOGO_URL);
   assert.strictEqual(noIcon.buttons, undefined);
@@ -353,7 +353,7 @@ console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' :
     rpc.start();
     const until = Date.now() + 3000;
     while (got.filter(g => g.op === OP.FRAME).length < 1 && Date.now() < until) await new Promise(r => setTimeout(r, 20));
-    rpc.setActivity({ details: 'Survival Onyx' });
+    rpc.setActivity({ details: 'Survival Kopi' });
     while (got.filter(g => g.op === OP.FRAME).length < 2 && Date.now() < until) await new Promise(r => setTimeout(r, 20));
     const hs = got.find(g => g.op === OP.HANDSHAKE);
     assert.ok(hs && hs.d.client_id === '123456789' && hs.d.v === 1, 'handshake');
@@ -361,7 +361,7 @@ console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' :
     const frames = got.filter(g => g.op === OP.FRAME).map(g => g.d);
     assert.strictEqual(frames[0].cmd, 'SET_ACTIVITY');
     assert.strictEqual(frames[0].args.activity.details, 'En el menú');
-    assert.strictEqual(frames[1].args.activity.details, 'Survival Onyx');
+    assert.strictEqual(frames[1].args.activity.details, 'Survival Kopi');
     assert.strictEqual(frames[0].args.pid, process.pid);
     assert.strictEqual(rpc.user.username, 'tester');
     passed++; console.log('  ✓ estado de Discord (conexión con Discord falso)');

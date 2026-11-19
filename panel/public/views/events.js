@@ -1,4 +1,4 @@
-// Eventos: calendario mensual del studio. Los públicos salen en la web de Onyx.
+// Eventos: calendario mensual del studio. Los públicos salen en la web de Kopi.
 (function () {
   const V = window.Views;
   const CATS = [['Evento', '#5b8def'], ['Torneo', '#ef4444'], ['Serie', '#38bdf8'], ['Squid Game', '#8b5cf6'], ['Directo', '#ec4899'], ['Otro', '#94a3b8']];
@@ -86,7 +86,7 @@
           <div class="field"><span class="label">${t('Instancia (opcional)')}</span><select class="input" id="e-i"><option value="">—</option>${instances.map(i => `<option value="${esc(i.id)}" ${e.instance_id === i.id ? 'selected' : ''}>${esc(i.data.name)}</option>`).join('')}</select></div>
           <div class="field"><span class="label">${t('Descripción')}</span><textarea class="input" id="e-d" maxlength="1000">${esc(e.description || '')}</textarea></div>
           <div class="field"><span class="label">${t('Imagen')}</span><div style="display:flex;gap:8px"><input class="input" id="e-img" placeholder="https://…" value="${esc(e.image || '')}"><button class="btn" id="e-up">${icon('upload')}</button></div></div>
-          <label class="check" style="margin-top:16px"><input type="checkbox" id="e-p" ${e.public ? 'checked' : ''}>${t('Mostrar en el calendario público de Onyx')}</label></div>
+          <label class="check" style="margin-top:16px"><input type="checkbox" id="e-p" ${e.public ? 'checked' : ''}>${t('Mostrar en el calendario público de Kopi')}</label></div>
           <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn primary" id="ok">${icon('check')}${ev ? t('Guardar') : t('Publicar')}</button></div>`;
         $('#x', m).onclick = $('#no', m).onclick = close;
         $('#e-c', m).onchange = (x) => { const c = CATS.find(([n]) => n === x.target.value); if (c) $('#e-col', m).value = c[1]; };

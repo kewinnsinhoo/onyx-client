@@ -75,21 +75,6 @@
     return `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
   };
 
-  // Logo de Onyx: gema facetada + palabra ONYX
-  window.onyxMark = function (cls = '') {
-    return `<svg class="${cls}" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <path d="M24 3 41 13v22L24 45 7 35V13z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
-      <path d="M24 3v13M7 13l11 6M41 13l-11 6M24 45V31M7 35l11-6M41 35l-11-6" stroke="currentColor" stroke-width="1.6" opacity=".55"/>
-      <path d="M18 19h12l-0 10H18z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" transform="rotate(0 24 24)"/>
-    </svg>`;
-  };
-  window.onyxWordmark = function (cls = '') {
-    return `<svg class="${cls}" viewBox="0 0 220 64" fill="none" aria-hidden="true">
-      <g transform="translate(0 6) scale(1.08)">${'<path d="M24 3 41 13v22L24 45 7 35V13z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M24 3v13M7 13l11 6M41 13l-11 6M24 45V31M7 35l11-6M41 35l-11-6" stroke="currentColor" stroke-width="1.6" opacity=".55"/><path d="M18 19h12v10H18z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>'}</g>
-      <text x="66" y="44" fill="currentColor" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="7">ONYX</text>
-      <text x="68" y="60" fill="currentColor" opacity=".55" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="8.5" font-weight="600" letter-spacing="7.6">CLIENT</text>
-    </svg>`;
-  };
 
   // Banderas simplificadas
   window.flag = function (lang) {

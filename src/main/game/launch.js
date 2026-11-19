@@ -46,7 +46,7 @@ function buildArguments(version, o, env = {}) {
     clientid: o.clientId || '0',
     user_type: o.userType || 'msa',
     user_properties: '{}',
-    version_type: o.versionType || 'Onyx Client',
+    version_type: o.versionType || 'Kopi Client',
     natives_directory: o.nativesDir,
     launcher_name: LAUNCHER_NAME,
     launcher_version: o.launcherVersion || '1.0.0',
@@ -132,7 +132,7 @@ async function prepare(root, { mc, loader, java: javaWanted }, { concurrency, pr
     const opts = { concurrency, onProgress: (d, t) => step('java', d, t) };
     if (forced && forced !== auto) {
       try { java = await ensureJava(root, forced, opts); }
-      catch (e) { if (onLog) onLog(`[Onyx] No se pudo preparar Java ${javaWanted} (${e.message}); se usa el automático.\n`); }
+      catch (e) { if (onLog) onLog(`[Kopi] No se pudo preparar Java ${javaWanted} (${e.message}); se usa el automático.\n`); }
     }
     if (!java) java = await ensureJava(root, auto, opts);
   }
@@ -208,7 +208,7 @@ async function launch(root, opts) {
   };
   child.stdout.on('data', pipe);
   child.stderr.on('data', pipe);
-  child.on('error', (e) => { pipe(`\n[Onyx] Error al iniciar Java: ${e.message}\n`); });
+  child.on('error', (e) => { pipe(`\n[Kopi] Error al iniciar Java: ${e.message}\n`); });
   child.on('close', (code) => { logStream.end(); onExit && onExit(code); });
   return child;
 }

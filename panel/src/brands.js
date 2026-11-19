@@ -4,7 +4,7 @@ import { json, fail, now, str, readJson, slugify, url as cleanUrl, color } from 
 import { audit } from './onyx.js';
 
 const ID_RE = /^[a-z][a-z0-9-]{1,31}$/;
-const RESERVED = new Set(['onyx', 'onyx-client', 'onyxclient', 'admin', 'panel', 'api', 'www', 'oficial', 'official']);
+const RESERVED = new Set(['kopi', 'kopi-client', 'kopiclient', 'onyx', 'onyx-client', 'onyxclient', 'admin', 'panel', 'api', 'www', 'oficial', 'official']);
 const repo = (env) => env.RELEASES_REPO || 'kewinnsinhoo/onyx-client';
 const httpsOnly = (v) => { const u = cleanUrl(v); return u && /^https:\/\//.test(u) ? u : null; };
 
@@ -14,7 +14,7 @@ export function cleanBrand(b, cur = {}) {
   if ('icon' in b) d.icon = cleanUrl(b.icon);
   if ('logo' in b) d.logo = cleanUrl(b.logo);
   if ('background' in b) d.background = cleanUrl(b.background);
-  if ('accent' in b) d.accent = color(b.accent, '#8e9bff');
+  if ('accent' in b) d.accent = color(b.accent, '#f58ee0');
   if ('accent2' in b) d.accent2 = color(b.accent2, null);
   if ('tagline' in b) d.tagline = str(b.tagline, 120).trim();
   if ('discord' in b) d.discord = httpsOnly(b.discord);
@@ -31,7 +31,7 @@ function publicBrand(row, studio, origin) {
   return {
     id: row.id, name: row.name, studio: row.studio_id, studioName: studio ? studio.name : null,
     icon: abs(d.icon), logo: abs(d.logo), background: abs(d.background),
-    accent: d.accent || '#8e9bff', accent2: d.accent2 || null, tagline: d.tagline || '',
+    accent: d.accent || '#f58ee0', accent2: d.accent2 || null, tagline: d.tagline || '',
     discord: d.discord || null, web: d.web || null, store: d.store || null, onlyStudio: d.onlyStudio !== false,
     version: row.built_version || null
   };
@@ -112,12 +112,12 @@ export async function studioBrandApi(c, sub, m) {
     return json(out);
   }
   c.need('admin');
-  if (!allowed) fail(403, 'brand_off', 'Tu studio todavía no tiene launcher propio. Pídeselo a Onyx Studios.');
+  if (!allowed) fail(403, 'brand_off', 'Tu studio todavía no tiene launcher propio. Pídeselo a Kopi Studio.');
   if (!sub && m === 'PUT') {
     const b = await readJson(c.req);
-    const d = cleanBrand(b, row ? JSON.parse(row.data) : { accent: '#8e9bff', onlyStudio: true });
+    const d = cleanBrand(b, row ? JSON.parse(row.data) : { accent: '#f58ee0', onlyStudio: true });
     if (!d.name || d.name.length < 2) fail(400, 'name', 'Ponle nombre a tu launcher');
-    if (/onyx/i.test(d.name) && !c.isCreator) fail(400, 'name', 'El nombre no puede llevar «Onyx»');
+    if (/kopi|onyx/i.test(d.name) && !c.isCreator) fail(400, 'name', 'El nombre no puede llevar «Kopi»');
     const t = now();
     if (row) {
       await env.DB.prepare('UPDATE brands SET name = ?, data = ?, updated_at = ? WHERE id = ?').bind(d.name, JSON.stringify(d), t, row.id).run();

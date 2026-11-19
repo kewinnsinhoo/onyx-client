@@ -1,13 +1,14 @@
-# Guía de Onyx Client (todo gratis con GitHub)
+# Guía de Kopi Client (todo gratis con GitHub)
 
 > **Resumen rápido (noviembre 2026)**
+> - **Onyx Client ahora se llama Kopi Client (de Kopi Studio), desde la 1.4.0.** Por dentro se mantienen algunos nombres antiguos a propósito, para que nadie pierda nada: la carpeta de ajustes (`Onyx Client`) y la del juego (`.onyxclient`), el id del studio principal (`onyx-studios`), los repos (`onyx-client`, `onyx-data`) y el dominio `onyxclient.site`.
 > - **Código y descargas:** todo en `kewinnsinhoo/onyx-client`. Se compila con GitHub Actions **en este mismo repo** (lo que acordamos con GitHub Support al recuperar la cuenta: nada de compilar el código desde otro repo ni de borrar ejecuciones).
-> - **Publicar una versión de Onyx:** sube `version` en `package.json`, sube los cambios y en `onyx-client` → Actions → **Publicar nueva versión** → Run workflow. Los launchers 1.2.x y 1.3.x se actualizan solos desde aquí.
+> - **Publicar una versión de Kopi:** sube `version` en `package.json`, sube los cambios y en `onyx-client` → Actions → **Publicar nueva versión** → Run workflow. Los launchers 1.2.x y 1.3.x se actualizan solos desde aquí.
 > - **Launchers de marca:** se crean y compilan desde el panel (Launchers). Se fabrican con **Launcher de marca** en este repo y se publican en la release `brand-<id>`.
 > - **Secretos:** `GITHUB_TOKEN` en Cloudflare `onyx-panel` (mandar fabricar marcas: token fine-grained de `onyx-client` con **Actions: lectura y escritura** y **Contents: lectura**).
 > - `onyx-client-releases` ya no se usa.
 > - Notificaciones, creadores, studios y términos del launcher: `web/data/` (se publican en `onyxclient.site/data/`).
-> - Instancias, códigos, eventos y referidos: en Onyx Panel. El sistema antiguo de `onyx-data` ya no se usa.
+> - Instancias, códigos, eventos y referidos: en Kopi Panel. El sistema antiguo de `onyx-data` ya no se usa.
 > - **Antes de hacer privado este repo** hay que mover las descargas fuera de GitHub (por ejemplo a Cloudflare R2): en un repo privado nadie podría descargar ni actualizar.
 
 
@@ -40,7 +41,7 @@ Repite esto con `onyx-client` y después con `onyx-data`:
    - Si te deja entrar y ves el buscador de arriba, sigue al punto 2.
    - Si sale un error (por ejemplo "Interaction required" o algo del inquilino "Microsoft Services"), tu cuenta todavía no tiene "directorio". Crea la **cuenta gratuita de Azure** en **azure.microsoft.com/free** con la misma cuenta de Microsoft. Pide teléfono y una **tarjeta de crédito o débito normal** (no prepago): solo es para verificar que eres una persona. Puede aparecer una retención temporal de 1 USD que luego se devuelve. Registrar la app no cuesta nada.
 2. Busca **"Microsoft Entra ID"** → **Registros de aplicaciones** → **Nuevo registro**.
-   - Nombre: `Onyx Client`
+   - Nombre: `Kopi Client`
    - Tipos de cuenta: **"Solo cuentas personales de Microsoft"**
    - URI de redirección: elige **"Cliente público/nativo (móvil y escritorio)"** y pega:
      `https://login.microsoftonline.com/common/oauth2/nativeclient`
@@ -49,11 +50,11 @@ Repite esto con `onyx-client` y después con `onyx-data`:
    - **"Id. de aplicación (cliente)"** → es el Client ID que va en el launcher.
    - **"Id. de directorio (inquilino)"** → lo pide el formulario de Mojang.
 4. En **Autenticación**, activa **"Permitir flujos de clientes públicos" = Sí** y guarda. No hace falta crear ningún "secreto".
-5. **Pide permiso a Mojang** en este formulario: **https://aka.ms/mce-reviewappid**. Acepta las condiciones y pon tu correo, el nombre `Onyx Client`, el Client ID y el Id. de directorio. Explica que es el launcher de tu estudio. Mojang revisa cada solicitud a mano y no da plazos. Mientras no te aprueben, el login premium muestra "Mojang aún no ha aprobado…". Las cuentas offline siguen funcionando.
+5. **Pide permiso a Mojang** en este formulario: **https://aka.ms/mce-reviewappid**. Acepta las condiciones y pon tu correo, el nombre `Kopi Client`, el Client ID y el Id. de directorio. Explica que es el launcher de tu estudio. Mojang revisa cada solicitud a mano y no da plazos. Mientras no te aprueben, el login premium muestra "Mojang aún no ha aprobado…". Las cuentas offline siguen funcionando.
 6. Puedes poner el Client ID en el launcher (paso 5) antes de que llegue la aprobación. Cuando Mojang te apruebe, el login funcionará solo, sin publicar otra versión.
 
 ## Paso 4 · Discord (gratis)
-1. Entra en **discord.com/developers/applications** → **New Application** → nombre `Onyx Client`.
+1. Entra en **discord.com/developers/applications** → **New Application** → nombre `Kopi Client`.
 2. En **OAuth2 → Redirects** añade exactamente: `http://127.0.0.1:53682/discord` y guarda.
 3. Copia el **Client ID** (está en OAuth2).
 4. Crea una invitación permanente de tu servidor de Discord (para el botón "Discord" del inicio).
@@ -74,9 +75,9 @@ Después, en GitHub Desktop: escribe un mensaje abajo a la izquierda (por ejempl
 1. Entra en `github.com/TU-USUARIO/onyx-client` → pestaña **Actions**. Si te lo pide, pulsa "I understand… enable them".
 2. Elige **"Publicar nueva versión"** → botón **Run workflow** → **Run workflow**.
 3. Tarda unos 10-20 minutos. Cuando termine, en la página del repo entra en **Releases**:
-   - Windows: `Onyx-Client-Setup-1.0.0.exe`
-   - Mac: `Onyx-Client-1.0.0-arm64.dmg` (Mac M1/M2/M3/M4) o `-x64.dmg` (Mac Intel)
-   - Linux: `Onyx-Client-1.0.0.AppImage`
+   - Windows: `Kopi-Client-Setup-1.0.0.exe`
+   - Mac: `Kopi-Client-1.0.0-arm64.dmg` (Mac M1/M2/M3/M4) o `-x64.dmg` (Mac Intel)
+   - Linux: `Kopi-Client-1.0.0.AppImage`
 
 Ese enlace de Releases es el que compartes con tus jugadores.
 
@@ -90,7 +91,7 @@ Para una versión beta usa un número como `1.1.0-beta.1`: solo la recibirán qu
 
 ---
 
-## Onyx Panel (panel.onyxclient.site)
+## Kopi Panel (panel.onyxclient.site)
 
 Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos se gestionan en el **panel**, sin tocar archivos. Lo de `onyx-data` sigue funcionando para las instancias antiguas.
 
@@ -103,7 +104,7 @@ Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos
 2. **Discord Developer Portal → tu aplicación → OAuth2 → Redirects** → añade `https://panel.onyxclient.site/auth/callback`.
 3. En la misma página copia el **Client Secret**. En Cloudflare → `onyx-panel` → **Configuración → Variables y secretos → Añadir** → tipo **Secreto**, nombre `DISCORD_CLIENT_SECRET`, pega el valor. (No lo pegues en ningún chat.)
 4. Añade otro **Secreto** llamado `CREATOR_DISCORD_IDS` con tu ID de Discord (Discord → Ajustes → Avanzado → Modo desarrollador; luego clic derecho en tu perfil → *Copiar ID*). Varios IDs se separan con comas.
-5. Abre `panel.onyxclient.site` y entra con Discord. Verás *Creador* en tu perfil y el studio **Onyx Studios** ya creado.
+5. Abre `panel.onyxclient.site` y entra con Discord. Verás *Creador* en tu perfil y el studio **Kopi Studio** ya creado.
 
 ### Uso
 
@@ -115,7 +116,7 @@ Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos
 - **Referidos**: el código de tu studio aparece en *Referidos*; los jugadores lo escriben en el launcher.
 
 ## Instancias y códigos de acceso (`onyx-data`)
-**Código de prueba incluido:** `ONYX-DEMO-2026` → abre la instancia de ejemplo "Survival Onyx" (Minecraft 1.21.1 con Fabric).
+**Código de prueba incluido:** `KOPI-DEMO-2026` → abre la instancia de ejemplo "Survival Kopi" (Minecraft 1.21.1 con Fabric).
 
 ### Crear una instancia
 1. Copia `instances/ejemplo-survival.json` y renómbralo, por ejemplo `instances/eventos.json`.
@@ -123,11 +124,11 @@ Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos
 ```json
 {
   "id": "eventos",
-  "name": "Eventos Onyx",
+  "name": "Eventos Kopi",
   "description": "Texto que verán los jugadores",
   "icon": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-icono.png",
   "banner": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/eventos-banner.png",
-  "studio": { "name": "Onyx Studios", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
+  "studio": { "name": "Kopi Studio", "logo": "https://raw.githubusercontent.com/TU-USUARIO/onyx-data/main/img/studio-logo.png" },
   "about": "Texto largo para la sección 'Sobre esta instancia'. Separa párrafos con una línea en blanco.",
   "premium": true,
   "minecraft": "1.21.1",
@@ -149,7 +150,7 @@ Desde la versión 1.2.0 las instancias, los códigos, los horarios y los eventos
 - `files` → mods, configs o resource packs. Para los mods, copia el enlace de descarga del archivo en modrinth.com. Si quitas un archivo de la lista, el launcher también lo borra de los jugadores. Los mods que ponga el propio jugador no se tocan.
 - Las imágenes las puedes subir a la carpeta `img/` del repo.
 - `"maintenance": "Volvemos a las 18:00"` bloquea la instancia temporalmente.
-- `studio` muestra "por Onyx Studios" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
+- `studio` muestra "por Kopi Studio" arriba de la instancia, y `about` es el texto de "Sobre esta instancia".
 - Si hay `server.address`, la instancia muestra los **jugadores conectados** en vivo (ej. 12 / 100).
 
 ### Packs `.onyxpack`

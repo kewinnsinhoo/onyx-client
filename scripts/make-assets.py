@@ -1,4 +1,4 @@
-# Genera la skin por defecto (original de Onyx) y los iconos de la app.
+# Genera la skin por defecto (original de Kopi) y los iconos de la app.
 import sys
 from PIL import Image, ImageDraw
 

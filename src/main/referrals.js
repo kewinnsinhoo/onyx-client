@@ -1,5 +1,5 @@
 // Sistema de referidos: el jugador apoya a un studio con su código.
-// - Con el panel de Onyx: los studios, el código (su id) y el ranking salen del panel, en vivo.
+// - Con el panel de Kopi: los studios, el código (su id) y el ranking salen del panel, en vivo.
 // - Sin panel: studios.json del repo onyx-data (y Supabase si está configurado, como antes).
 const data = require('./data');
 const panel = require('./panel');
