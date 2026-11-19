@@ -14,6 +14,7 @@ public final class Settings {
     public final boolean keepExisting;
     public final int timeoutMs;
     public final int cacheSeconds;
+    public final boolean mojangDirect;
 
     private static final String DEFAULT =
         "# Kopi Skins: las skins de los jugadores en servidores en modo offline.\n" +
@@ -21,6 +22,9 @@ public final class Settings {
         "\n" +
         "# Panel de Kopi (no lo cambies salvo que tengas tu propio panel)\n" +
         "panel=https://panel.onyxclient.site\n" +
+        "\n" +
+        "# Pedir la skin de los premium directamente a Mojang desde este servidor (recomendado)\n" +
+        "mojang-direct=true\n" +
         "\n" +
         "# Si el jugador ya trae skin (servidor en modo online o el proxy ya se la puso), no se toca\n" +
         "keep-existing=true\n" +
@@ -34,6 +38,7 @@ public final class Settings {
         keepExisting = !"false".equalsIgnoreCase(p.getProperty("keep-existing", "true").trim());
         timeoutMs = toInt(p.getProperty("timeout-ms"), 4000);
         cacheSeconds = toInt(p.getProperty("cache-seconds"), 300);
+        mojangDirect = !"false".equalsIgnoreCase(p.getProperty("mojang-direct", "true").trim());
     }
 
     private static int toInt(String v, int def) {
@@ -57,6 +62,6 @@ public final class Settings {
     }
 
     public SkinService service(java.util.function.Consumer<String> warn) {
-        return new SkinService(panel, timeoutMs, cacheSeconds, warn);
+        return new SkinService(panel, timeoutMs, cacheSeconds, mojangDirect, warn);
     }
 }

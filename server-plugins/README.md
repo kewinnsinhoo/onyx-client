@@ -3,7 +3,7 @@
 En los servidores en **modo offline** (`online-mode=false`) nadie ve las skins, porque el servidor no
 habla con Mojang. Kopi Skins pide al panel de Kopi la skin de cada jugador al entrar:
 
-- **Premium:** su skin real de Mojang.
+- **Premium:** su skin real, pedida a Mojang desde el propio servidor (Mojang bloquea a Cloudflare).
 - **No premium:** la skin que eligió en Kopi Client.
 
 | Archivo | Dónde va |
