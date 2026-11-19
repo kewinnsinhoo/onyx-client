@@ -152,7 +152,8 @@ async function syncSkin(account, key, skin) {
   const d = store.get();
   d.skins = d.skins || {};
   const k = keyOf(account);
-  const sum = skin ? crypto.createHash('sha256').update(skin.variant + ':' + skin.png).digest('hex') : 'none';
+  // «v2»: desde que el panel guarda la imagen para el mod de skins, todas se suben una vez más
+  const sum = skin ? 'v2:' + crypto.createHash('sha256').update(skin.variant + ':' + skin.png).digest('hex') : 'none';
   if (d.skins[k] === sum) return { unchanged: true };
   if (skin) await call(account, 'POST', 'skin', { key, png: skin.png, variant: skin.variant });
   else await call(account, 'DELETE', 'skin', { key });

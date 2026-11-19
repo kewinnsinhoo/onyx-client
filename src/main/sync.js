@@ -10,8 +10,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Carpetas que crea el propio launcher y no se borran nunca
-const ALWAYS_KEEP = ['logs', 'resources'];
+// Carpetas que crea el propio launcher y no se borran nunca (también el mod de skins de Kopi y su configuración)
+const ALWAYS_KEEP = ['logs', 'resources', 'CustomSkinLoader'];
+const KEEP_PREFIX = ['mods/kopi-skins-'];
 
 function norm(p) {
   const n = path.posix.normalize(String(p || '').replace(/\\/g, '/')).replace(/^\/+/, '').replace(/\/+$/, '');
@@ -68,7 +69,7 @@ function plan({ files, sync, local, state }) {
 
   const keepPath = (rel) => {
     if (wanted.has(rel) && modeFor(rel, pp) !== 'player') return true;
-    if (ALWAYS_KEEP.some(b => under(rel, b))) return true;
+    if (ALWAYS_KEEP.some(b => under(rel, b)) || KEEP_PREFIX.some(x => rel.startsWith(x))) return true;
     const m = modeFor(rel, pp);
     return m === 'player' || m === 'once';
   };

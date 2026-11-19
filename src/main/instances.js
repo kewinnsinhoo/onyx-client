@@ -6,7 +6,8 @@ const { JsonStore } = require('./store');
 const data = require('./data');
 const panel = require('./panel');
 const Sync = require('./sync');
-const { downloadAll } = require('./game/download');
+const { downloadAll, downloadFile, fetchJson } = require('./game/download');
+const skinmod = require('./skinmod');
 const game = require('./game/launch');
 const log = require('./logger');
 
@@ -15,6 +16,7 @@ const running = new Map();
 
 function init(gameRoot) {
   root = gameRoot;
+  skinmod.init(gameRoot);
   store = new JsonStore(path.join(root, 'instances.json'), { instances: [], dismissed: [] });
 }
 
@@ -202,6 +204,11 @@ async function syncFiles(inst, gameDir, concurrency, progress) {
   inst.managedFiles = p.state.managed;
 }
 
+// Skins de Kopi: el mod de skins para esta versión y este loader (si la instancia lo tiene activado)
+function skinMod(m, gameDir) {
+  return skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base() }, { fetchJson, downloadFile });
+}
+
 async function play(id, { account, settings, launcherVersion, progress, onLog, onExit, onStart }) {
   if (running.has(id)) throw new Error('Esta instancia ya se está ejecutando');
   const d = store.get();
@@ -230,6 +237,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         // Descarga anticipada: se deja todo listo para entrar al instante cuando abra
         await syncFiles(inst, gameDir, concurrency, progress);
         store.replace(d);
+        await skinMod(m, gameDir);
         await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
         const ready = new Error('Todo descargado. La instancia abre el {date}');
         ready.code = 'predownloaded'; ready.vars = e.vars;
@@ -244,6 +252,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   try {
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
+    await skinMod(m, gameDir);
     const started = Date.now();
     const child = await game.launch(root, {
       instance: gameInfo,

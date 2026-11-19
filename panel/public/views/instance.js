@@ -207,7 +207,9 @@
         <div class="card"><h3>${icon('globe')}${t('Servidor')}</h3><p class="sub">${t('Para mostrar los jugadores conectados y entrar directamente al pulsar Jugar.')}</p>
           <div class="row" style="margin-top:16px;align-items:end"><div class="field"><span class="label">${t('Dirección')}</span><input class="input" id="g-addr" placeholder="play.tuservidor.com" value="${esc(d.server.address)}"></div>
             <div class="field" style="max-width:140px"><span class="label">${t('Puerto')}</span><input class="input" id="g-port" type="number" value="${d.server.port}"></div>
-            <label class="check" style="height:40px"><input type="checkbox" id="g-auto" ${d.server.autoJoin ? 'checked' : ''}>${t('Entrar al servidor al abrir el juego')}</label></div></div>`;
+            <label class="check" style="height:40px"><input type="checkbox" id="g-auto" ${d.server.autoJoin ? 'checked' : ''}>${t('Entrar al servidor al abrir el juego')}</label></div></div>
+        <div class="card"><h3>${icon('user')}${t('Skins de Kopi')}</h3><p class="sub">${t('Con Fabric, Quilt, Forge o NeoForge, el launcher añade solo un mod para que todos vean las skins (premium y las de Kopi), aunque el servidor esté en modo offline. No hay que instalar nada en el servidor.')}</p>
+          <label class="check" style="margin-top:12px"><input type="checkbox" id="g-skins" ${d.kopiSkins !== false ? 'checked' : ''} ${d.loader.type === 'vanilla' ? 'disabled' : ''}>${d.loader.type === 'vanilla' ? t('No disponible en Vanilla (elige un loader)') : t('Activar las skins de Kopi en esta instancia')}</label></div>`;
       const lv = $('#g-lv', el);
       await versionSelect($('#g-mc', el), d.minecraft, false);
       const bindMc = () => { const s = $('#g-mc', el); s.onchange = s.oninput = () => { d.minecraft = s.value; d.loader.version = 'latest'; fillLoaderVersions(lv, d.loader.type, d.minecraft, 'latest'); changed(); }; };
@@ -220,6 +222,7 @@
       $('#g-addr', el).oninput = (e) => { d.server.address = e.target.value.trim(); changed(); };
       $('#g-port', el).oninput = (e) => { d.server.port = Number(e.target.value) || 25565; changed(); };
       $('#g-auto', el).onchange = (e) => { d.server.autoJoin = e.target.checked; changed(); };
+      $('#g-skins', el).onchange = (e) => { d.kopiSkins = e.target.checked; changed(); };
     }
 
     // Arranque

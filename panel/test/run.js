@@ -515,6 +515,12 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
 });
 
 await test('Kopi Skins: skins en los servidores (premium y no premium)', async () => {
+  // opción de la instancia (activada por defecto; las instancias antiguas sin el campo también)
+  assert.strictEqual(defaults().kopiSkins, true);
+  assert.strictEqual(sanitize({ kopiSkins: false }).kopiSkins, false);
+  const old = defaults(); delete old.kopiSkins;
+  assert.strictEqual(toManifest({ id: 'x', data: JSON.stringify(old), state: 'open' }, null, ORIGIN).kopiSkins, true);
+  assert.strictEqual(toManifest({ id: 'x', data: JSON.stringify(sanitize({ kopiSkins: false })), state: 'open' }, null, ORIGIN).kopiSkins, false);
   // PNG mínimo de 64×64 (solo cabecera: el panel comprueba firma y tamaño)
   const png = (w, h, extra = 0) => { const b = new Uint8Array(33 + extra); b.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]); const dv = new DataView(b.buffer); dv.setUint32(16, w); dv.setUint32(20, h); return Buffer.from(b).toString('base64'); };
   const pepe = await player('PepeOff', false);
@@ -530,6 +536,26 @@ await test('Kopi Skins: skins en los servidores (premium y no premium)', async (
   assert.strictEqual((await call('POST', '/api/l/skin', { headers: thief, body: { key: 'x'.repeat(32), png: png(64, 64, 1) } })).status, 403);
   assert.strictEqual((await call('POST', '/api/l/skin', { headers: pepe, body: { key, png: png(32, 32) } })).status, 400, 'tamaño no válido');
   assert.strictEqual((await call('POST', '/api/l/skin', { headers: pepe, body: { key: 'corta', png: png(64, 64) } })).status, 400, 'clave obligatoria');
+  // el mod del launcher (CustomSkinLoader) la pide por nombre y luego la imagen
+  const csl = await call('GET', '/csl/pepeoff.json');
+  assert.strictEqual(csl.status, 200);
+  assert.strictEqual(csl.data.username, 'PepeOff');
+  const hash = csl.data.skins.slim;
+  assert.match(hash, /^[0-9a-f]{64}$/);
+  const img = await worker.fetch(new Request(`${ORIGIN}/csl/textures/${hash}`), env, {});
+  assert.strictEqual(img.status, 200);
+  assert.strictEqual(img.headers.get('Content-Type'), 'image/png');
+  assert.strictEqual(Buffer.from(await img.arrayBuffer()).toString('base64'), png(64, 64));
+  assert.strictEqual((await call('GET', '/csl/nadie.json')).status, 404);
+  assert.strictEqual((await call('GET', '/csl/../../x')).status, 404);
+  // si MineSkin falla, la skin se guarda igual para el mod (y no para los plugins)
+  env.MINESKIN_FETCH = async () => new Response('{}', { status: 500 });
+  const lu = await player('LuOff', false);
+  const r = await call('POST', '/api/l/skin', { headers: lu, body: { key: 'l'.repeat(32), png: png(64, 64, 2), variant: 'classic' } });
+  assert.deepStrictEqual([r.status, r.data.server], [200, false]);
+  assert.ok((await call('GET', '/csl/LuOff.json')).data.skins.default);
+  assert.strictEqual((await call('GET', '/api/public/skin/LuOff')).status, 404);
+  delete env.MINESKIN_FETCH;
   // el servidor la pide por nombre
   const pub = await call('GET', '/api/public/skin/pepeoff');
   assert.strictEqual(pub.status, 200);
@@ -555,6 +581,7 @@ await test('Kopi Skins: skins en los servidores (premium y no premium)', async (
   // quitar la skin
   await call('DELETE', '/api/l/skin', { headers: pepe, body: { key } });
   assert.strictEqual((await call('GET', '/api/public/skin/PepeOff')).status, 404);
+  assert.strictEqual((await call('GET', '/csl/PepeOff.json')).status, 404);
 });
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

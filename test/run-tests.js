@@ -608,3 +608,76 @@ test('panel: errores legibles', () => {
   } catch (e) { console.error('  ✗ launcher ↔ panel\n    ' + (e.stack || e.message)); process.exitCode = 1; }
   finally { srv.kill(); }
 })();
+
+// Skins de Kopi: el mod CustomSkinLoader se pone solo según la versión y el loader
+(async () => {
+  try {
+    const skinmod = require('../src/main/skinmod');
+    const Sync = require('../src/main/sync');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-skins-'));
+    skinmod.init(tmp);
+    let latest = '15.0.0', calls = [], offline = false;
+    const fetchJson = async (url) => {
+      if (offline) throw new Error('sin conexión');
+      calls.push(url);
+      const q = new URL(url).searchParams;
+      const loader = JSON.parse(q.get('loaders'))[0], mc = JSON.parse(q.get('game_versions'))[0];
+      if (mc === '1.0') return [];
+      if (loader === 'quilt') return [];
+      return [{ version_number: `${latest}-${loader}`, version_type: 'release', files: [{ primary: true, url: `https://cdn.modrinth.com/csl-${loader}-${latest}.jar`, hashes: { sha1: 'x' }, size: 10 }] }];
+    };
+    const got = [];
+    const downloadFile = async (t) => { got.push(t.url); fs.mkdirSync(path.dirname(t.dest), { recursive: true }); fs.writeFileSync(t.dest, 'jar'); };
+    const deps = { fetchJson, downloadFile };
+    const panelBase = 'https://panel.onyxclient.site';
+    const g = path.join(tmp, 'instances', 'evento');
+    fs.mkdirSync(path.join(g, 'CustomSkinLoader'), { recursive: true });
+    fs.writeFileSync(path.join(g, 'CustomSkinLoader', 'CustomSkinLoader.json'), JSON.stringify({ enable: false, enableCape: true, loadlist: [{ name: 'Mojang', type: 'MojangAPI' }, { name: 'ElyBy', type: 'ElyByAPI' }] }));
+    const mods = () => fs.readdirSync(path.join(g, 'mods')).sort();
+
+    // Fabric 1.21.1: se baja la versión que toca y se configura Mojang → Kopi → lo demás
+    let r = await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
+    assert.strictEqual(r.status, 'ok');
+    assert.deepStrictEqual(mods(), ['kopi-skins-customskinloader-15.0.0-fabric.jar']);
+    assert.ok(calls[0].includes('/project/idMHQ4n2/version') && calls[0].includes('1.21.1'));
+    const cfg = JSON.parse(fs.readFileSync(path.join(g, 'CustomSkinLoader', 'CustomSkinLoader.json'), 'utf8'));
+    assert.strictEqual(cfg.enable, true);
+    assert.strictEqual(cfg.enableCape, true, 'respeta los demás ajustes');
+    assert.deepStrictEqual(cfg.loadlist.map(x => x.name), ['Mojang', 'Kopi', 'ElyBy']);
+    assert.strictEqual(cfg.loadlist[1].type, 'CustomSkinAPI');
+    assert.strictEqual(cfg.loadlist[1].root, 'https://panel.onyxclient.site/csl/');
+    // la segunda vez se recuerda la versión (sin preguntar a Modrinth)
+    await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
+    assert.strictEqual(calls.length, 1);
+    // sin conexión con Modrinth: se usa lo que se sabía
+    offline = true;
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps)).status, 'ok');
+    offline = false;
+    // versión nueva del mod: la vieja se quita
+    fs.unlinkSync(path.join(tmp, 'cache', 'kopi-skins.json')); latest = '15.1.0';
+    await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
+    assert.deepStrictEqual(mods(), ['kopi-skins-customskinloader-15.1.0-fabric.jar']);
+    // Quilt usa el de Fabric
+    r = await skinmod.ensure(g, { mc: '1.20.1', loader: { type: 'quilt' }, panelBase }, deps);
+    assert.ok(r.file.endsWith('-fabric.jar'));
+    // la sincronización del studio (modo reset) no lo borra
+    const p = Sync.plan({ files: [], sync: { mode: 'reset' }, local: ['mods/' + r.file, 'mods/otro.jar', 'CustomSkinLoader/CustomSkinLoader.json'], state: {} });
+    assert.deepStrictEqual(p.remove, ['mods/otro.jar']);
+    // Vanilla, desactivado o sin versión del mod: se quita y se juega igual
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'vanilla' }, panelBase }, deps)).status, 'off');
+    assert.deepStrictEqual(mods(), []);
+    await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'forge' }, panelBase }, deps);
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'forge' }, enabled: false, panelBase }, deps)).status, 'off');
+    assert.deepStrictEqual(mods(), []);
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.0', loader: { type: 'forge' }, panelBase }, deps)).status, 'unsupported');
+    // si el studio ya trae CustomSkinLoader, no se pone otro (dos copias harían fallar el juego)
+    fs.writeFileSync(path.join(g, 'mods', 'CustomSkinLoader_Universal-14.0.jar'), 'jar');
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'neoforge' }, panelBase }, deps)).status, 'studio');
+    assert.deepStrictEqual(mods(), ['CustomSkinLoader_Universal-14.0.jar']);
+    // un error nunca impide jugar
+    fs.unlinkSync(path.join(g, 'mods', 'CustomSkinLoader_Universal-14.0.jar'));
+    offline = true;
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.19.2', loader: { type: 'forge' }, panelBase }, deps)).status, 'error');
+    passed++; console.log('  ✓ skins de Kopi: el mod según versión y loader');
+  } catch (e) { console.error('  ✗ skins de Kopi\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();

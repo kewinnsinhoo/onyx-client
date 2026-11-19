@@ -9,7 +9,7 @@ import { ensureSchema } from './schema.js';
 import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
-import { uploadSkin, deleteSkin } from './skins.js';
+import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
 
@@ -47,6 +47,7 @@ async function route(req, env, ctx) {
   const m = req.method;
 
   if (p.startsWith('/m/')) return serveMedia(p, env);
+  if (p.startsWith('/csl/')) { await ensureSchema(env.DB); return cslApi(env, p.slice(5)); }
   // Página pública de descarga de un launcher de marca: panel.onyxclient.site/l/<id>
   if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
   if (p === '/auth/login') return authLogin(req, env, u);

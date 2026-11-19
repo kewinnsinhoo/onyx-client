@@ -135,15 +135,22 @@ export async function uploadSkin(env, P, b) {
   const row = await env.DB.prepare('SELECT * FROM skins WHERE name_key = ?').bind(key).first();
   if (row && row.owner_hash !== owner) fail(403, 'taken', 'Ese nombre ya tiene una skin de otro jugador');
   const pngHash = await sha256Bytes(bytes);
-  if (row && row.png_hash === pngHash && row.variant === variant) return json({ ok: true, unchanged: true });
+  if (row && row.png_hash === pngHash && row.variant === variant) {
+    if (!(await env.MEDIA.get('skinpng:' + pngHash, 'arrayBuffer'))) await env.MEDIA.put('skinpng:' + pngHash, bytes, { metadata: { type: 'image/png' } });
+    return json({ ok: true, unchanged: true, server: !!row.value });
+  }
   if (row && now() - row.updated_at < 20e3) fail(429, 'slow', 'Espera unos segundos antes de cambiar otra vez la skin');
 
-  const tex = await mineskin(env, bytes, variant, P.name);
+  // La imagen se guarda para el mod de skins del launcher (CustomSkinLoader). MineSkin solo hace falta
+  // para los plugins de servidor: si falla, la skin se sigue viendo con el mod.
+  await env.MEDIA.put('skinpng:' + pngHash, bytes, { metadata: { type: 'image/png' } });
+  let tex = { value: '', signature: '' };
+  try { tex = await mineskin(env, bytes, variant, P.name); } catch (e) { console.error('mineskin opcional', e.message); }
   const t = now();
   await env.DB.prepare(`INSERT INTO skins (name_key, name, owner_hash, png_hash, variant, value, signature, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(name_key) DO UPDATE SET name = excluded.name, png_hash = excluded.png_hash, variant = excluded.variant, value = excluded.value, signature = excluded.signature, updated_at = excluded.updated_at`)
     .bind(key, P.name, owner, pngHash, variant, tex.value, tex.signature, t, t).run();
-  return json({ ok: true });
+  return json({ ok: true, server: !!tex.value });
 }
 
 // La cuenta no premium vuelve a la skin por defecto
@@ -165,6 +172,25 @@ export async function publicSkin(env, name, debug = false) {
   }
   if (prem) return json({ name: prem.name, source: 'premium', value: prem.value, signature: prem.signature }, 200, cache);
   const row = await env.DB.prepare('SELECT name, variant, value, signature, updated_at FROM skins WHERE name_key = ?').bind(playerKey(name)).first();
-  if (row) return json({ name: row.name, source: 'kopi', variant: row.variant, value: row.value, signature: row.signature, updated: row.updated_at }, 200, cache);
+  if (row && row.value) return json({ name: row.name, source: 'kopi', variant: row.variant, value: row.value, signature: row.signature, updated: row.updated_at }, 200, cache);
   return json({ error: 'none' }, 404, cache);
+}
+
+// ---------------------------------------------------------------- mod del launcher (CustomSkinLoader, «CustomSkinAPI»)
+//   GET /csl/<nombre>.json      → { username, skins: { default|slim: <hash> } }   (404 si no tiene skin de Kopi)
+//   GET /csl/textures/<hash>    → la imagen PNG
+// El mod pide primero a Mojang (premium) desde el PC del jugador y después aquí (skins de Kopi).
+export async function cslApi(env, path) {
+  const cache = { ...CORS, 'Cache-Control': 'public, max-age=60' };
+  const tex = path.match(/^textures\/([0-9a-f]{64})$/);
+  if (tex) {
+    const png = await env.MEDIA.get('skinpng:' + tex[1], 'arrayBuffer');
+    if (!png) return new Response('Not found', { status: 404, headers: CORS });
+    return new Response(png, { headers: { ...CORS, 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } });
+  }
+  const m = path.match(/^([A-Za-z0-9_]{2,16})\.json$/);
+  if (!m) return json({ error: 'not_found' }, 404, cache);
+  const row = await env.DB.prepare('SELECT name, variant, png_hash FROM skins WHERE name_key = ?').bind(playerKey(m[1])).first();
+  if (!row) return json({ error: 'not_found' }, 404, cache);
+  return json({ username: row.name, skins: { [row.variant === 'slim' ? 'slim' : 'default']: row.png_hash } }, 200, cache);
 }

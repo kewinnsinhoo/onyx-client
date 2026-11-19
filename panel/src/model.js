@@ -29,6 +29,7 @@ export function defaults() {
     sync: { mode: 'keep', playerPaths: [{ path: 'options.txt', mode: 'once' }] },
     schedule: { predownload: false, opensAt: null, closesAt: null, kickOnClose: false },
     server: { address: '', port: 25565, autoJoin: false },
+    kopiSkins: true,          // el launcher pone CustomSkinLoader: se ven las skins (premium y de Kopi) en cualquier servidor
     lockedMessage: ''
   };
 }
@@ -55,6 +56,7 @@ export function sanitize(patch, current = defaults()) {
     if ('version' in p.loader) d.loader.version = /^[A-Za-z0-9._+-]{1,60}$/.test(String(p.loader.version)) ? String(p.loader.version) : 'latest';
     if (d.loader.type === 'vanilla') d.loader.version = 'latest';
   }
+  if ('kopiSkins' in p) d.kopiSkins = bool(p.kopiSkins);
   if ('java' in p) d.java = ['auto', '8', '17', '21', '25'].includes(String(p.java)) ? String(p.java) : 'auto';
   if (p.look) {
     const l = p.look, o = d.look;
@@ -147,6 +149,7 @@ export function toManifest(row, studio, origin) {
     loader: d.loader,
     java: d.java,
     server: d.server.address ? d.server : null,
+    kopiSkins: d.kopiSkins !== false,
     files: d.files.map(f => ({ path: f.path, url: abs(f.url), sha1: f.sha1 || undefined, size: f.size || undefined })),
     dirs: d.dirs || [],
     sync: d.sync,
