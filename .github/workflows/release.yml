@@ -6,7 +6,7 @@
 # Los launchers 1.2.x buscan actualizaciones aquí (proveedor github) y los 1.3.x también
 # (releases/latest/download), así que todos se actualizan solos.
 name: Publicar nueva versión
-run-name: Publicar ${{ github.ref_name }}${{ inputs.dry_run && ' (prueba)' || '' }}
+run-name: Publicar ${{ github.ref_name }}${{ inputs.solo_mac && ' (solo Mac)' || '' }}${{ inputs.dry_run && ' (prueba)' || '' }}
 
 on:
   workflow_dispatch:
@@ -19,6 +19,10 @@ on:
         description: 'Compilar también para Mac'
         type: boolean
         default: true
+      solo_mac:
+        description: 'Solo añadir Mac a una versión ya publicada'
+        type: boolean
+        default: false
       brands:
         description: 'Al terminar, recompilar los launchers de marca'
         type: boolean
@@ -47,8 +51,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           V: v${{ steps.v.outputs.version }}
+          SOLO_MAC: ${{ inputs.solo_mac }}
         run: |
-          if gh release view "$V" --json isDraft --jq .isDraft 2>/dev/null | grep -q true; then
+          if [ "$SOLO_MAC" = true ]; then
+            gh release view "$V" > /dev/null 2>&1 || { echo "::error::No existe $V: publícala primero."; exit 1; }
+            echo "Se añade Mac a $V."
+          elif gh release view "$V" --json isDraft --jq .isDraft 2>/dev/null | grep -q true; then
             echo "Ya hay un borrador de $V: se reutiliza."
           elif gh release view "$V" > /dev/null 2>&1; then
             echo "::error::La versión $V ya está publicada. Sube la versión en package.json."; exit 1
@@ -58,6 +66,7 @@ jobs:
 
   compilar:
     needs: preparar
+    if: ${{ !inputs.solo_mac }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,10 +95,10 @@ jobs:
         run: npx electron-builder --publish "$PUB"
 
   # Mac va aparte: a veces GitHub tarda en dar un Mac. Windows y Linux se publican sin esperarlo
-  # y los .dmg se añaden a la misma versión cuando terminen.
+  # y los archivos de Mac se añaden a la misma versión cuando terminen (aunque ya esté publicada).
   compilar-mac:
     needs: preparar
-    if: ${{ inputs.mac }}
+    if: ${{ inputs.mac || inputs.solo_mac }}
     runs-on: macos-latest
     continue-on-error: true
     timeout-minutes: 60
@@ -102,16 +111,29 @@ jobs:
           node-version: 20
       - run: node scripts/prepare-ci.js
       - run: npm install --no-audit --no-fund
-      - name: Compilar y subir
+      - name: Compilar
         env:
-          GH_TOKEN: ${{ !inputs.dry_run && github.token || '' }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          PUB: ${{ inputs.dry_run && 'never' || 'always' }}
-        run: npx electron-builder --mac --publish "$PUB"
+        run: npx electron-builder --mac --publish never
+      - name: Subir a la versión
+        if: ${{ !inputs.dry_run }}
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: v${{ needs.preparar.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          BIN=( *.dmg *.dmg.blockmap *.zip *.zip.blockmap )
+          [ ${#BIN[@]} -gt 0 ] || { echo "::error::No salió ningún archivo de Mac"; exit 1; }
+          # Primero los instaladores y después latest-mac.yml: nadie ve una actualización sin su archivo
+          gh release upload "$V" "${BIN[@]}" --clobber
+          gh release upload "$V" latest-mac.yml --clobber
+          printf '%s\n' "${BIN[@]}" latest-mac.yml
 
   publicar:
     needs: [preparar, compilar]
-    if: ${{ always() && !inputs.dry_run && needs.preparar.result == 'success' }}
+    if: ${{ always() && !inputs.dry_run && !inputs.solo_mac && needs.preparar.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
