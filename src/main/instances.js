@@ -195,6 +195,13 @@ function safeRel(p) {
   return n;
 }
 
+// Huella de lo que hay que descargar de una instancia (archivos, versión y loader): si cambia, hay algo nuevo
+function filesFp(m) {
+  m = m || {};
+  const files = (m.files || []).filter(f => f && f.path).map(f => [f.path, f.url, f.sha1 || '']).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  return require('crypto').createHash('sha1').update(JSON.stringify([files, m.minecraft, m.loader, m.dirs || [], m.sync || null])).digest('hex');
+}
+
 // Descarga mods/configs de la instancia y limpia según el modo de sincronización del studio.
 async function syncFiles(inst, gameDir, concurrency, progress) {
   const m = inst.manifest || {};
@@ -215,7 +222,43 @@ async function syncFiles(inst, gameDir, concurrency, progress) {
   }
   inst.syncState = p.state;
   inst.managedFiles = p.state.managed;
+  inst.syncedFp = filesFp(m); // ya está al día con esta versión de la instancia
 }
+
+// ---------------------------------------------------------------- siempre al día
+// En segundo plano: las instancias ya descargadas que el studio cambió se ponen al día solas
+// (archivos, mods bajo llave, versión de Minecraft y loader), para que al darle a Jugar no haya que esperar.
+const bgWork = new Map(); // id → promesa de la actualización en segundo plano
+function needsFreshen(i) {
+  return !!(i && i.syncState && i.manifest && !running.has(i.id) && !bgWork.has(i.id) && filesFp(i.manifest) !== i.syncedFp);
+}
+async function freshen(id, { account, settings, progress = () => {}, onLog = () => {} }) {
+  if (bgWork.has(id)) return bgWork.get(id);
+  const job = (async () => {
+    const d = store.get();
+    const inst = d.instances.find(x => x.id === id);
+    if (!inst || running.has(id)) return false;
+    try { await refreshManifest(inst, account); } catch (e) { if (e.removed) return false; }
+    if (!needsFreshenNow(inst)) return false;
+    const m = inst.manifest;
+    const gameDir = path.join(root, 'instances', id);
+    fs.mkdirSync(gameDir, { recursive: true });
+    await unlockMods(id, gameDir, progress);
+    try {
+      await syncFiles(inst, gameDir, 3, progress); // pocas descargas a la vez: que no moleste
+      store.replace(d);
+      await kopiMods(inst, m, gameDir);
+      await game.prepare(root, { mc: m.minecraft, loader: m.loader || { type: 'vanilla' }, java: m.java }, { concurrency: 3, progress, javaPath: settings && settings.javaPath, onLog });
+    } finally { await lockMods(id, gameDir); }
+    return true;
+  })().finally(() => bgWork.delete(id));
+  bgWork.set(id, job);
+  return job;
+}
+const needsFreshenNow = (i) => !!(i && i.syncState && i.manifest && !running.has(i.id) && filesFp(i.manifest) !== i.syncedFp);
+// Las que hay que poner al día, de una en una
+function staleIds() { return store.get().instances.filter(i => ofBrand(i.manifest) && needsFreshen(i)).map(i => i.id); }
+const busyBg = (id) => bgWork.get(id) || null;
 
 // Mods bajo llave (vault.js): se abren justo antes de jugar y se vuelven a guardar al cerrar el juego
 let leftovers = Promise.resolve(); // el cierre de lo que se quedó abierto al arrancar
@@ -277,6 +320,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
   const fromPanel = isPanel(inst);
+  if (bgWork.has(id)) { progress({ stage: 'files' }); await bgWork.get(id).catch(() => {}); } // termina lo que se estaba poniendo al día
   if (fromPanel) await refreshManifest(inst, account); // si ya no hay acceso, avisa aquí
   else await refreshManifest(inst).catch(() => {});
   const m = inst.manifest;
@@ -455,6 +499,7 @@ async function serverStatus(id) {
 // "Actualizar": vuelve a leer la instancia de GitHub y sincroniza sus archivos
 async function update(id, { settings, progress, account }) {
   if (running.has(id)) throw new Error('Cierra el juego antes de actualizar');
+  if (bgWork.has(id)) await bgWork.get(id).catch(() => {});
   const d = store.get();
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
@@ -472,6 +517,7 @@ async function update(id, { settings, progress, account }) {
 // "Borrar archivos": elimina los archivos descargados de la instancia (mundos incluidos) pero la deja en la lista
 function wipe(id) {
   if (running.has(id)) throw new Error('Cierra el juego antes de borrar los archivos');
+  if (bgWork.has(id)) throw new Error('Se está actualizando: espera un momento');
   const d = store.get();
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
@@ -496,4 +542,4 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

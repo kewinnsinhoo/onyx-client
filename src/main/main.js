@@ -147,6 +147,38 @@ function syncOfflineSkin(id) {
 
 // Trae del panel las instancias nuevas sin hacer esperar a la interfaz
 let panelSyncing = null;
+// Instancias siempre al día: de una en una, en segundo plano, sin molestar
+let bgRunning = false;
+async function bgFreshen() {
+  if (bgRunning) return;
+  const settings = settingsStore.get();
+  if (settings.autoUpdateInstances === false) return;
+  const ids = instances.staleIds();
+  if (!ids.length) return;
+  bgRunning = true;
+  try {
+    const account = await accounts.ensureFresh().catch(() => null);
+    for (const id of ids) {
+      if (settingsStore.get().autoUpdateInstances === false) break;
+      const name = (instances.get(id) || {}).name || id;
+      log.info(`[al día] Actualizando ${name} en segundo plano`);
+      send('instances:bg', { id, state: 'updating', done: 0, total: 0 });
+      let last = 0;
+      try {
+        const changed = await instances.freshen(id, {
+          account, settings,
+          progress: (p) => { const t = Date.now(); if (p.total && t - last > 400) { last = t; send('instances:bg', { id, state: 'updating', stage: p.stage, done: p.done, total: p.total }); } }
+        });
+        send('instances:bg', { id, state: changed ? 'done' : 'idle', list: instances.list() });
+      } catch (e) {
+        log.warn(`[al día] ${name}: ${e.message}`);
+        send('instances:bg', { id, state: 'error' });
+      }
+    }
+  } finally { bgRunning = false; }
+}
+setInterval(() => bgFreshen().catch(() => {}), 30 * 60e3); // y cada media hora
+
 function kickPanelSync(force = false) {
   if (panelSyncing || !panel.enabled()) return;
   const acc = panelAccount();
@@ -159,6 +191,7 @@ function kickPanelSync(force = false) {
         const removed = prev.filter(p => !list.some(i => i.id === p.id)).map(p => p.name);
         send('instances:changed', { list, removed });
       }
+      bgFreshen(); // lo que el studio cambió, se descarga ya en segundo plano
       return sendPendingReferral(acc);
     })
     .catch((e) => log.warn('[panel]', e.message))

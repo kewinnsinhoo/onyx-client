@@ -1139,3 +1139,14 @@ test('Novedades del launcher al día', () => {
     for (const it of e.items) assert.ok(it.length === 5 && it.every(x => typeof x === 'string' && x.trim()), `${e.v}: cada novedad en es, en, ca y fr`);
   }
 });
+
+// Instancias siempre al día: la huella cambia solo si cambia algo que hay que descargar
+test('Siempre al día: huella de la instancia', () => {
+  const I = require('../src/main/instances');
+  const m = { minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' }, files: [{ path: 'mods/a.jar', url: 'u1', sha1: 'x' }, { path: 'config/b.json', url: 'u2' }] };
+  const fp = I.filesFp(m);
+  assert.strictEqual(I.filesFp({ ...m, name: 'Otro nombre', news: [{ text: 'hola' }] }), fp, 'el nombre o las novedades no cuentan');
+  assert.strictEqual(I.filesFp({ ...m, files: m.files.slice().reverse() }), fp, 'el orden no cuenta');
+  assert.notStrictEqual(I.filesFp({ ...m, files: [{ path: 'mods/a.jar', url: 'u1', sha1: 'y' }, m.files[1]] }), fp, 'un mod actualizado sí');
+  assert.notStrictEqual(I.filesFp({ ...m, loader: { type: 'fabric', version: '0.16.9' } }), fp, 'otro loader sí');
+});

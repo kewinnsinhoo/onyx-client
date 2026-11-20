@@ -247,6 +247,12 @@
     ['Abrir de nuevo', 'Open again', 'Torna a obrir', 'Rouvrir'],
     ['¿No se abre? Iniciar sesión en una ventana del launcher', 'Not opening? Sign in in a launcher window', 'No s’obre? Inicia la sessió en una finestra del launcher', 'Rien ne s’ouvre ? Se connecter dans une fenêtre du launcher'],
     ['Rendimiento', 'Performance', 'Rendiment', 'Performances'],
+    // Siempre al día
+    ['Mantener las instancias al día', 'Keep instances up to date', 'Mantén les instàncies al dia', 'Garder les instances à jour'],
+    ['Descarga lo nuevo de tus instancias en segundo plano, para que al darle a Jugar no tengas que esperar.', 'Downloads what’s new in your instances in the background, so you don’t have to wait when you hit Play.', 'Descarrega les novetats de les teves instàncies en segon pla, perquè en prémer Jugar no hagis d’esperar.', 'Télécharge les nouveautés de tes instances en arrière-plan, pour ne pas attendre quand tu cliques sur Jouer.'],
+    ['El launcher descarga lo nuevo de la instancia para que al darle a Jugar no tengas que esperar.', 'The launcher downloads what’s new in the instance so you don’t have to wait when you hit Play.', 'El launcher descarrega les novetats de la instància perquè en prémer Jugar no hagis d’esperar.', 'Le launcher télécharge les nouveautés de l’instance pour ne pas attendre quand tu cliques sur Jouer.'],
+    ['Poniéndose al día en segundo plano', 'Updating in the background', 'Posant-se al dia en segon pla', 'Mise à jour en arrière-plan'],
+    ['Se está actualizando: espera un momento', 'It’s updating: wait a moment', 'S’està actualitzant: espera un moment', 'Mise à jour en cours : attends un instant'],
     // Novedades del launcher
     ['¡{app} se ha actualizado!', '{app} has been updated!', '{app} s’ha actualitzat!', '{app} a été mis à jour !'],
     ['Esto es lo nuevo:', 'Here’s what’s new:', 'Això és el que hi ha de nou:', 'Voici les nouveautés :'],

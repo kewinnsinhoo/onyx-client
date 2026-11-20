@@ -153,6 +153,8 @@
       <div class="card"><h3>${t('Descargas')}</h3>
         <div class="setting-row"><div class="lbl">${t('Descarga rápida')} <span class="info-i" title="${t('Descarga varios archivos a la vez. Desactívala si tu conexión es inestable.')}">i</span></div>
           <button class="toggle ${s.fastDownload !== false ? 'on' : ''}" data-tg="fastDownload"></button></div>
+        <div class="setting-row"><div class="lbl"><div>${t('Mantener las instancias al día')}<div class="desc">${t('Descarga lo nuevo de tus instancias en segundo plano, para que al darle a Jugar no tengas que esperar.')}</div></div></div>
+          <button class="toggle ${s.autoUpdateInstances !== false ? 'on' : ''}" data-tg="autoUpdateInstances"></button></div>
       </div>
       <div class="card"><h3>Java</h3>
         <div class="setting-row"><div class="lbl"><div>${t('Ruta de Java')}<div class="desc">${t('Vacío = Kopi descarga automáticamente el Java correcto (recomendado).')}</div></div></div></div>

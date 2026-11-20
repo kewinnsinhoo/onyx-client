@@ -928,3 +928,8 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .ch-item.sm { background: rgba(255, 255, 255, .03); border-color: var(--border); font-size: 12.5px; padding: 9px 12px; margin-bottom: 6px; animation: none; }
 .ch-item.sm .ch-ic { width: 26px; height: 26px; background: rgba(255, 255, 255, .05); color: var(--muted); }
 .modal.changes-modal .actions { margin-top: 18px; }
+
+/* ---------- Siempre al día ---------- */
+.bg-upd { display: inline-flex; align-items: center; gap: 9px; margin-top: 10px; padding: 7px 12px; border-radius: 999px; background: rgba(124, 180, 255, .1); border: 1px solid rgba(124, 180, 255, .22); color: #a9cdff; font-size: 12.5px; }
+.bg-upd b { color: #d6e7ff; }
+.spin-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(169, 205, 255, .3); border-top-color: #a9cdff; animation: spin .8s linear infinite; }

@@ -83,6 +83,7 @@ contextBridge.exposeInMainWorld('onyx', {
     remove: (id, del) => call('instances:remove', id, del),
     setMemory: (id, mb) => call('instances:setMemory', id, mb),
     seenNews: (id) => call('instances:seenNews', id),
+    onBackground: (cb) => on('instances:bg', cb),
     setPerfMode: (id, on) => call('instances:setPerfMode', id, on),
     play: (id) => call('instances:play', id),
     stop: (id) => call('instances:stop', id),

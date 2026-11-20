@@ -667,6 +667,13 @@
       if ((p.stage === 'running') !== (was === 'running')) renderChrome();
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: p }));
     });
+    // Instancias siempre al día: lo que se descarga en segundo plano
+    S.bg = {};
+    if (onyx.instances.onBackground) onyx.instances.onBackground((b) => {
+      if (b.state === 'updating') S.bg[b.id] = b; else delete S.bg[b.id];
+      if (b.list) { S.instances = b.list; renderChrome(); }
+      document.dispatchEvent(new CustomEvent('onyx:bg', { detail: b }));
+    });
     // El panel añadió o cambió instancias (lista manual, instancia pública, nueva portada...)
     if (onyx.instances.onChanged) onyx.instances.onChanged((payload) => {
       const list = Array.isArray(payload) ? payload : payload.list;

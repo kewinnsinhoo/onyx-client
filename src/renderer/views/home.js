@@ -227,6 +227,8 @@
               ? `<button class="play-big stop" id="ins-stop">${icon('stop')}${t('Detener')}</button>`
               : pre ? '' : `<button class="play-big" id="ins-play" ${p ? 'disabled' : ''}>${p ? icon('refresh', 'spin') : icon('play')}${p ? t('Preparando...') : t('Jugar')}</button>`}
           </div>
+          ${!p && S.bg && S.bg[id] ? html`<div class="bg-upd" title="${t('El launcher descarga lo nuevo de la instancia para que al darle a Jugar no tengas que esperar.')}">
+            <span class="spin-dot"></span><span>${t('Poniéndose al día en segundo plano')}${S.bg[id].total ? ` · <b id="bg-pct">${Math.round((S.bg[id].done / S.bg[id].total) * 100)}%</b>` : ''}</span></div>` : ''}
           ${p && !running ? html`<div class="prog"><div class="progress"><i id="ins-bar" style="width:${pct == null ? 8 : pct}%"></i></div>
             <div class="progress-label"><span id="ins-stage">${esc(App.stageText(p))}</span><span id="ins-pct">${pct == null ? '' : pct + '%'}</span></div></div>` : ''}
         </div>
@@ -368,6 +370,15 @@
     const off = smoothProgress(() => render(), update);
     const onNews = (e) => { if (e.detail && e.detail.id === id && alive) render(); }; // vistas: se quita el contador
     document.addEventListener('onyx:news', onNews);
-    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); if (audio) { audio.pause(); audio = null; } };
+    // Al día en segundo plano: el porcentaje cambia sin volver a dibujar todo
+    const onBg = (e) => {
+      const b = e.detail || {};
+      if (b.id !== id || !alive) return;
+      const pct = root.querySelector('#bg-pct');
+      if (b.state === 'updating' && pct && b.total) pct.textContent = Math.round((b.done / b.total) * 100) + '%';
+      else render();
+    };
+    document.addEventListener('onyx:bg', onBg);
+    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); if (audio) { audio.pause(); audio = null; } };
   };
 })();
