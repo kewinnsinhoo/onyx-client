@@ -18,13 +18,19 @@
   function musicMuted() { try { return localStorage.getItem('onyx-music-muted') === '1'; } catch { return false; } }
   function setMusicMuted(v) { try { localStorage.setItem('onyx-music-muted', v ? '1' : '0'); } catch { /* nada */ } }
   // Estado según el panel: bloqueada, aún no abre, cerrada
-  function stateOf(i) {
+  function rawState(i) {
     const now = Date.now(), sc = i.schedule || {};
     if (i.state === 'locked') return { k: 'locked', label: t('Bloqueada'), cls: 'danger' };
     if (sc.opensAt && now < sc.opensAt) return { k: 'soon', label: t('Abre el {date}', { date: fmtWhen(sc.opensAt) }), short: t('Próximamente'), cls: 'warn' };
     if (sc.closesAt && now > sc.closesAt) return { k: 'closed', label: t('Cerrada'), cls: 'danger' };
     return null;
   }
+  // El staff de la instancia entra igual: se avisa del estado, pero puede jugar
+  function stateOf(i) {
+    const st = rawState(i);
+    return st && i.staff ? { ...st, staff: true, cls: 'staff', short: t('Staff') } : st;
+  }
+  const blocks = (st) => !!st && !st.staff;
 
   // Estado de una instancia: sin progreso, preparando o jugando.
   function modeOf(id) {
@@ -104,7 +110,7 @@
     return html`<button class="kp-tile" data-id="${esc(i.id)}">
       <span class="img" style="${img ? `background-image:url('${esc(img)}')` : ''}">${img ? '' : `<b>${initials(i.name)}</b>`}
         ${p ? `<span class="badge accent">${icon(p.stage === 'running' ? 'play' : 'refresh', p.stage === 'running' ? '' : 'spin')}${esc(App.stageText(p))}</span>`
-          : st ? `<span class="badge ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(st.short || st.label)}</span>` : i.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : ''}</span>
+          : st ? `<span class="badge ${st.cls}">${icon(st.staff ? 'crown' : st.k === 'soon' ? 'clock' : 'lock')}${esc(st.short || st.label)}</span>` : i.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : ''}</span>
       <span class="nm">${esc(i.name)}</span>
       <span class="mt">${esc(i.minecraft || '')} · ${loaderLabel(i.loader)}</span>
     </button>`;
@@ -114,7 +120,7 @@
     const render = () => {
       const match = (i) => !q || i.name.toLowerCase().includes(q) || String(i.category || '').toLowerCase().includes(q);
       const all = S.instances.filter(match);
-      const open = all.filter(i => !stateOf(i)), wait = all.filter(i => stateOf(i));
+      const open = all.filter(i => !blocks(stateOf(i))), wait = all.filter(i => blocks(stateOf(i)));
       const kept = root.querySelector('#kp-q');
       const focus = kept && document.activeElement === kept;
       root.innerHTML = html`<div class="kp-list">
@@ -184,8 +190,9 @@
       const look = inst.look || {};
       const st = stateOf(inst);
       // Bloqueada o aún sin abrir, pero el studio deja descargarla antes
-      const pre = !!(st && (st.k === 'locked' || st.k === 'soon') && inst.schedule && inst.schedule.predownload);
-      const pill = st ? (st.k === 'locked' ? t('Instancia bloqueada') : st.k === 'closed' ? t('Instancia cerrada') : st.label) : '';
+      const pre = !!(blocks(st) && (st.k === 'locked' || st.k === 'soon') && inst.schedule && inst.schedule.predownload);
+      const pill = st ? (st.staff ? (st.k === 'locked' ? t('Bloqueada · entras como staff') : st.k === 'closed' ? t('Cerrada · entras como staff') : t('Sin abrir · entras como staff'))
+        : st.k === 'locked' ? t('Instancia bloqueada') : st.k === 'closed' ? t('Instancia cerrada') : st.label) : '';
       const bg = inst.bannerAnimated && !isVideo(inst.bannerAnimated) ? inst.bannerAnimated : inst.banner;
       const logo = inst.logoAnimated || inst.logo;
       const accent = okColor(look.accent), playColor = okColor(look.playColor);
@@ -198,7 +205,7 @@
             ${look.hideAuthor ? '' : `<div class="studio">${studio.logo ? `<img src="${esc(studio.logo)}" alt="">` : `<span class="ph">${initials(studio.name)}</span>`}
               <span>${t('por')} <b>${esc(studio.name || '')}</b></span></div>`}
             <div class="grow"></div>
-            ${st ? `<span class="state-pill ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(pill)}</span>` : ''}
+            ${st ? `<span class="state-pill ${st.cls}">${icon(st.staff ? 'crown' : st.k === 'soon' ? 'clock' : 'lock')}${esc(pill)}</span>` : ''}
             ${look.music && look.music.url ? `<button class="round" id="ins-music" title="${t('Música')}">${icon(musicMuted() ? 'volumeOff' : 'volume')}</button>` : ''}
             <button class="round" id="ins-folder" title="${t('Abrir carpeta')}">${icon('folder')}</button>
             <button class="round sq" id="ins-more" title="${t('Más opciones')}">${icon('more')}</button>

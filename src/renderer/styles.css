@@ -795,3 +795,7 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .kc-rar.mine i { background: linear-gradient(135deg, #ffa6ea, #c13fd6); color: #e879f9; }
 .kc-ingame { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; color: var(--text-2); font-size: 12.5px; }
 .kc-ingame svg { width: 14px; height: 14px; flex: none; margin-top: 2px; color: #f5b3ff; }
+
+/* Staff de la instancia: está bloqueada/sin abrir/cerrada para los demás, pero tú entras */
+.ihero .state-pill.staff { color: #ffd98a; background: rgba(251, 191, 90, .16); border: 1px solid rgba(251, 191, 90, .45); box-shadow: 0 0 24px -8px rgba(251, 191, 90, .5); }
+.badge.staff { background: rgba(251, 191, 90, .14); color: #ffd98a; border-color: transparent; }

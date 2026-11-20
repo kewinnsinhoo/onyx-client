@@ -121,8 +121,10 @@ export function sanitize(patch, current = defaults()) {
   return d;
 }
 
-// Manifiesto que descarga el launcher (mismo formato que onyx-data + extras del panel)
-export function toManifest(row, studio, origin) {
+// Manifiesto que descarga el launcher (mismo formato que onyx-data + extras del panel).
+// playerKey (opcional): el jugador que lo pide; «staff: true» si está en la whitelist de staff
+// (así el launcher le deja jugar aunque la instancia esté bloqueada, sin abrir o cerrada).
+export function toManifest(row, studio, origin, playerKey = null) {
   const d = JSON.parse(row.data);
   const abs = (u) => (u && u.startsWith('/m/') ? origin + u : u);
   const l = d.look;
@@ -155,7 +157,8 @@ export function toManifest(row, studio, origin) {
     sync: d.sync,
     state: row.state,
     schedule: d.schedule,
-    maintenance: row.state === 'locked' ? (d.lockedMessage || true) : null
+    maintenance: row.state === 'locked' ? (d.lockedMessage || true) : null,
+    staff: !!(playerKey && ((d.access && d.access.staff) || []).some(n => String(n).toLowerCase() === playerKey))
   };
 }
 

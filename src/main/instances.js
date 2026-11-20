@@ -56,6 +56,7 @@ function view(i) {
     state: m.state || 'open',
     schedule: m.schedule ? { opensAt: m.schedule.opensAt || null, closesAt: m.schedule.closesAt || null, predownload: !!m.schedule.predownload } : null,
     lockedMessage: typeof m.maintenance === 'string' ? m.maintenance : null,
+    staff: !!m.staff, // en la whitelist de staff del studio: puede jugar aunque esté bloqueada
     addedAt: i.addedAt,
     lastPlayed: i.lastPlayed || null,
     playTime: i.playTime || 0,

@@ -244,6 +244,13 @@ await test('launcher: puerta de juego (lleno, bloqueada, staff, premium, latidos
   assert.strictEqual(beatStaff.data.kick, false);
   const locked = await call('POST', '/api/l/play', { headers: k, body: { instance: iid } });
   assert.strictEqual(locked.data.reason, 'locked');
+  // el launcher sabe quién es staff: a él le enseña «Jugar» aunque esté bloqueada; a los demás, no
+  const forStaff = (await call('GET', '/api/l/instances', { headers: s })).data.instances.find(i => i.id === iid);
+  assert.deepStrictEqual([forStaff.state, forStaff.staff], ['locked', true]);
+  assert.strictEqual((await call('GET', `/api/l/instance/${iid}`, { headers: s })).data.instance.staff, true);
+  assert.strictEqual((await call('GET', `/api/l/instance/${iid}`, { headers: k })).data.instance.staff, false);
+  const staffLocked = await call('POST', '/api/l/play', { headers: s, body: { instance: iid } });
+  assert.strictEqual(staffLocked.data.ok, true, 'el staff entra aunque esté bloqueada');
   assert.strictEqual(locked.data.message, 'Volvemos a las 18:00');
   await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { premiumOnly: true } } } });
   assert.strictEqual((await call('POST', '/api/l/play', { headers: a, body: { instance: iid } })).data.reason, 'premium');

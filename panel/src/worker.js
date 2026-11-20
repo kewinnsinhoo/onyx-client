@@ -791,7 +791,7 @@ async function launcherApi(req, env, u, path, m) {
       await env.DB.prepare("INSERT INTO access (instance_id, player_key, player_name, uuid, via, code, last_ip, created_at) VALUES (?, ?, ?, ?, 'code', ?, ?, ?)")
         .bind(row.id, P.key, P.name, P.uuid, code, ip, now()).run();
     }
-    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin), already: !!already });
+    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key), already: !!already });
   }
 
   if (parts[0] === 'instances' && m === 'GET') {
@@ -800,7 +800,7 @@ async function launcherApi(req, env, u, path, m) {
       (i.hidden = 0 AND (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1))
       OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.staff') s WHERE lower(s.value) = ?))`).bind(P.key, P.key).all()).results;
     const out = [];
-    for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin));
+    for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin, P.key));
     return json({ instances: out });
   }
 
@@ -811,7 +811,7 @@ async function launcherApi(req, env, u, path, m) {
     const staff = data.access.staff.some(n => n.toLowerCase() === P.key);
     if (!has && !data.access.public && !staff) fail(403, 'no_access', 'Ya no tienes acceso a esta instancia');
     if (await isBanned(row)) fail(403, 'banned', 'No puedes entrar a esta instancia');
-    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin) });
+    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key) });
   }
 
   if (parts[0] === 'play' && m === 'POST') {
