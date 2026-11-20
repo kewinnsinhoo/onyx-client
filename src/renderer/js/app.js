@@ -255,7 +255,7 @@
       <div class="dr-me"><div class="dr-skin">${Skin3D.head(skinOf(acc), 112, 0)}<button class="dr-swap" title="${t('Cambiar de cuenta')}">${icon('refresh')}</button></div>
         <b>${esc(acc ? acc.name : t('Sin cuenta'))}</b><small>${acc ? (acc.type === 'msa' ? 'Microsoft' : t('Sin premium')) : ''}</small></div>
       <nav class="dr-list">
-        ${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
+        ${item('profile', 'idcard', 'Mi perfil')}${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
         ${item('help', 'alert', 'Ayuda y comentarios')}${item('about', 'info', 'Acerca de')}
         ${item('accounts', 'refresh', 'Cambiar de cuenta')}${item('logout', 'logout', 'Cerrar sesión')}
       </nav>
@@ -386,7 +386,7 @@
     });
   }
 
-  const SECTION = { home: 'Inicio', instances: 'Instancias', instance: 'Instancias', gallery: 'Galería', creators: 'Creadores', skins: 'Skins', settings: 'Ajustes', console: 'Consola' };
+  const SECTION = { home: 'Inicio', instances: 'Instancias', instance: 'Instancias', gallery: 'Galería', creators: 'Creadores', profile: 'Mi perfil', skins: 'Skins', settings: 'Ajustes', console: 'Consola' };
 
   function renderChrome() {
     const tb = $('#titlebar');
@@ -412,7 +412,7 @@
     const sb = $('#sidebar');
     const curInst = r === 'instance' && S.route.params ? S.route.params.id : null;
     const tileBg = (i) => i.icon || i.banner;
-    const inMenu = ['instances', 'skins', 'gallery', 'creators', 'settings'].includes(r) || (r === 'instance' && !S.instances.find(i => i.id === curInst));
+    const inMenu = ['instances', 'profile', 'skins', 'gallery', 'creators', 'settings'].includes(r) || (r === 'instance' && !S.instances.find(i => i.id === curInst));
     sb.innerHTML = html`
       <button class="sb-home ${r === 'home' ? 'active' : ''}" data-go="home" title="${t('Inicio')}">${icon('home')}</button>
       <span class="nav-sep"></span>

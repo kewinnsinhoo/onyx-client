@@ -22,7 +22,7 @@
       source: 'panel', category: 'Serie', banner: q.get('look') ? '../../web/img/arte-3.webp' : null, logo: q.get('look') ? 'assets/logo-wordmark.png' : null,
       look: q.get('look') ? { accent: '#f59e0b', playColor: '#ea580c', vignette: true, snow: true, music: { url: 'x.mp3', volume: 30, loop: true }, sponsor: { name: 'HostNova', url: 'https://example.com' } } : {},
       schedule: q.get('soon') ? { opensAt: Date.now() + 2 * 864e5, predownload: true } : null },
-    { id: 'torneo', name: q.get('pre') ? 'dedsafio' : 'Torneo PvP', category: q.get('pre') ? 'Serie' : 'Torneo', studio: { name: 'Kopi Studio', logo: q.get('pre') ? 'assets/logo-wordmark.png' : null }, banner: q.get('pre') ? '../../web/img/arte-3.webp' : null, schedule: q.get('pre') ? { predownload: true } : null, minecraft: '1.8.9', loader: { type: 'vanilla' }, premium: false, addedAt: Date.now() - 3e8, state: 'locked', lockedMessage: 'Volvemos a las 18:00', source: 'panel', staff: !!q.get('staff') },
+    { id: 'torneo', name: q.get('pre') ? 'dedsafio' : 'Torneo PvP', category: q.get('pre') ? 'Serie' : 'Torneo', studio: { name: 'Kopi Studio', logo: q.get('pre') ? 'assets/logo-wordmark.png' : null }, banner: q.get('pre') ? '../../web/img/arte-3.webp' : null, schedule: q.get('pre') ? { predownload: true } : null, minecraft: '1.8.9', loader: { type: 'vanilla' }, premium: false, addedAt: Date.now() - 3e8, state: 'locked', lockedMessage: 'Volvemos a las 18:00', source: 'panel', staff: !!q.get('staff'), playTime: 2.1e6 },
     { id: 'eventos', name: 'Eventos Kopi', description: '', minecraft: '1.20.4', loader: { type: 'vanilla' }, premium: true, addedAt: Date.now() - 2e8 }
   ];
   window.onyx = {
@@ -45,6 +45,7 @@
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
     },
+    profile: { card: () => wait(null, 300) },
     capes: {
       kopi: () => wait({ owned: (q.has('capes') ? q.get('capes') : 'kopi,fire').split(',').filter(Boolean), worn: kopiWorn }),
       kopiWear: (id) => { kopiWorn = id || null; return wait({ ok: true, worn: kopiWorn }); }

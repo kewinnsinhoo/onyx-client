@@ -1,5 +1,5 @@
 // Proceso principal de Kopi Client.
-const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -321,6 +321,17 @@ handle('capes:kopiWear', async (id) => {
   const acc = panelAccount();
   if (!acc) throw new Error('Inicia sesión para continuar');
   return panel.wearKopiCape(acc, accounts.skinKeyOf(acc.id), id);
+});
+// Perfil: la tarjeta como imagen (se guarda en Imágenes/Kopi Client y, si se pide, se copia)
+handle('profile:card', async (rect, copy) => {
+  const img = await win.webContents.capturePage({ x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) });
+  if (copy) { clipboard.writeImage(img); return null; }
+  const dir = path.join(app.getPath('pictures'), 'Kopi Client');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `perfil-${Date.now()}.png`);
+  fs.writeFileSync(file, img.toPNG());
+  shell.showItemInFolder(file);
+  return file;
 });
 handle('skins:screenshot', async (rect) => {
   const img = await win.webContents.capturePage(rect ? {

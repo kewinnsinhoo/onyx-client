@@ -65,6 +65,9 @@ contextBridge.exposeInMainWorld('onyx', {
     setCape: (id) => call('skins:setCape', id),
     screenshot: (rect) => call('skins:screenshot', rect)
   },
+  profile: {
+    card: (rect, copy) => call('profile:card', rect, copy)
+  },
   capes: {
     kopi: () => call('capes:kopi'),
     kopiWear: (id) => call('capes:kopiWear', id)
