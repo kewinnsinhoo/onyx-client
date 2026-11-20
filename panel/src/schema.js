@@ -286,7 +286,16 @@ CREATE TABLE guard_live (
   focus_at INTEGER                   -- alguien está mirando a este jugador en grande
 );
 CREATE INDEX guard_live_studio ON guard_live(studio_id);
-CREATE TABLE guard_watch (studio_id TEXT PRIMARY KEY, at INTEGER NOT NULL)`
+CREATE TABLE guard_watch (studio_id TEXT PRIMARY KEY, at INTEGER NOT NULL)`,
+  `-- KopiGuard: el plugin del servidor (movimiento y combate). Cada instancia tiene una clave para su servidor.
+CREATE TABLE guard_keys (
+  key TEXT PRIMARY KEY,
+  instance_id TEXT NOT NULL UNIQUE,
+  studio_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  used_at INTEGER
+);
+ALTER TABLE plays ADD COLUMN snap TEXT     -- detección del servidor que espera foto y vídeo del launcher`
 ];
 
 export function statements(sql) {

@@ -3,10 +3,11 @@
 // detalle de cada detección con sus botones: revisar, descartar, sancionar y expulsar.
 (function () {
   const V = window.Views;
-  const TYPES = [['', 'grid', 'Todos'], ['mod', 'package', 'Mod'], ['pack', 'image', 'Paquete'], ['file', 'file', 'Archivo'], ['program', 'cpu', 'Programa']];
+  const TYPES = [['', 'grid', 'Todos'], ['mod', 'package', 'Mod'], ['pack', 'image', 'Paquete'], ['file', 'file', 'Archivo'], ['program', 'cpu', 'Programa'], ['move', 'move', 'Movimiento'], ['combat', 'crosshair', 'Combate']];
   const STATUS = [['', 'Todos'], ['new', 'Nuevo'], ['reviewed', 'Revisado'], ['dismissed', 'Descartado'], ['sanctioned', 'Sancionado']];
   const SEV = { high: ['danger', 'Alta'], medium: ['warn', 'Media'], low: ['info', 'Baja'] };
   const ST = { new: ['accent', 'Nuevo'], reviewed: ['ok', 'Revisado'], dismissed: ['mute', 'Descartado'], sanctioned: ['danger', 'Sancionado'] };
+  const CHECK_NAME = { fly: 'Vuelo', speed: 'Velocidad', reach: 'Alcance', cps: 'Clics por segundo', aura: 'Golpes a varios a la vez' };
   const TYPE_NAME = Object.fromEntries(TYPES.slice(1).map(([k, i, l]) => [k, [i, l]]));
   const day = (v, end) => { if (!v) return ''; const d = new Date(v + 'T00:00:00'); if (end) d.setHours(23, 59, 59, 999); return String(d.getTime()); };
   const head = (name) => `<span class="g-head"><span>${initials(name)}</span><img src="https://mc-heads.net/avatar/${encodeURIComponent(name)}/28" alt="" loading="lazy" onerror="this.remove()"></span>`;
@@ -121,6 +122,14 @@
             <div class="g-tags"><span class="badge g-type t-${e.type}">${icon(TYPE_NAME[e.type][0])}${esc(t(TYPE_NAME[e.type][1]))}</span>${badge(SEV[e.severity])}${badge(ST[e.status])}${e.kicked ? `<span class="badge danger solid">${icon('logout')}${t('Expulsado')}</span>` : ''}</div>
             <h4 class="g-title">${esc(e.detail)}</h4>
             ${(d.items || []).length > 1 ? html`<ul class="g-items">${d.items.map(x => `<li class="mono">${esc(x)}</li>`).join('')}</ul>` : ''}
+            ${d.server ? html`<div class="g-sec"><span class="label">${icon('server')}${t('Lo vio el servidor')}</span>
+              <div class="g-kv"><span>${t('Prueba')}</span><b>${esc(t(CHECK_NAME[d.server.check] || d.server.check))}</b></div>
+              ${d.server.vl != null ? `<div class="g-kv"><span>${t('Nivel')}</span><b>${esc(String(d.server.vl))}</b></div>` : ''}
+              ${d.server.ping != null ? `<div class="g-kv"><span>${t('Ping')}</span><b>${esc(String(d.server.ping))} ms</b></div>` : ''}
+              ${d.server.tps != null ? `<div class="g-kv"><span>TPS</span><b>${esc(String(d.server.tps))}</b></div>` : ''}
+              ${d.server.world ? `<div class="g-kv"><span>${t('Dónde')}</span><code>${esc(d.server.world)} · ${esc([d.server.x, d.server.y, d.server.z].join(', '))}</code></div>` : ''}
+              ${d.server.info ? `<div class="g-kv"><span>${t('Más')}</span><span>${esc(d.server.info)}</span></div>` : ''}
+              <div class="g-kv"><span>Kopi Client</span><b>${d.kopi ? t('Sí') : t('No (no hay foto ni vídeo)')}</b></div></div>` : ''}
             ${p ? html`<div class="g-sec"><span class="label">${t('Datos técnicos')}</span>
               <div class="g-kv"><span>${t('Programa')}</span><b>${esc(p.name)}</b></div>
               ${p.path ? `<div class="g-kv"><span>${t('Ruta')}</span><code>${esc(p.path)}</code></div>` : ''}

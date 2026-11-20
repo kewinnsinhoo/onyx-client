@@ -765,3 +765,15 @@ a.g-shot:hover { border-color: var(--accent); }
 .st-tip b { color: var(--text); }
 .st-tip b::first-letter { text-transform: uppercase; }
 .st-tip.on { opacity: 1; transform: none; }
+
+.g-type.t-move { background: rgba(56, 189, 248, .14); color: #6cc9f5; }
+.g-type.t-combat { background: rgba(251, 146, 60, .15); color: #fdab6b; }
+.g-sec .label { display: inline-flex; align-items: center; gap: 7px; }
+.g-sec .label svg { width: 15px; height: 15px; color: var(--accent); }
+.g-steps { margin: 14px 0 8px; padding-left: 20px; display: grid; gap: 12px; font-size: 13.5px; }
+.g-steps li::marker { color: var(--accent); font-weight: 800; }
+.g-steps li > .btn { margin-left: 8px; vertical-align: middle; }
+.g-steps code { background: var(--card-2); padding: 1px 6px; border-radius: 6px; font-size: 12.5px; }
+.g-key { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--input); border: 1px solid var(--line); }
+.g-key code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: none !important; padding: 0 !important; font-size: 12.5px; }
+.g-keyfoot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 6px; }

@@ -70,6 +70,7 @@
     'cape.give': ['gift', '{user} regaló la capa {target} a {names}'],
     'guard.sanction': ['ban', '{user} sancionó a {target} (KopiGuard)'],
     'guard.kick': ['logout', '{user} expulsó a {target} (KopiGuard)'],
+    'guard.key': ['server', '{user} creó otra clave del servidor para {target} (KopiGuard)'],
     'cape.take': ['sparkles', '{user} quitó la capa {target} a {name}']
   };
   window.activityText = (a) => {

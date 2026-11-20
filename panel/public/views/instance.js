@@ -272,6 +272,8 @@
               <div><span class="badge g-type t-pack">${icon('image')}${t('Paquete')}</span><span>${t('Alguien añade un paquete de texturas o de shaders.')}</span></div>
               <div><span class="badge g-type t-file">${icon('file')}${t('Archivo')}</span><span>${t('Alguien cambia un archivo de la instancia o añade uno en config.')}</span></div>
               <div><span class="badge g-type t-program">${icon('cpu')}${t('Programa')}</span><span>${t('Alguien tiene abierto un autoclicker u otro programa de trampas.')}</span></div>
+              <div><span class="badge g-type t-move">${icon('move')}${t('Movimiento')}</span><span>${t('Con el plugin del servidor: alguien vuela o va demasiado rápido.')}</span></div>
+              <div><span class="badge g-type t-combat">${icon('crosshair')}${t('Combate')}</span><span>${t('Con el plugin del servidor: golpea desde muy lejos, a varios a la vez o hace demasiados clics.')}</span></div>
             </div>
             <div class="g-extra"><span>${icon('camera')}${t('Cada detección importante llega con una foto y un vídeo de 10 s del juego.')}</span><span>${icon('video')}${t('En Cámaras ves en directo el juego de quien esté jugando.')}</span></div>
             ${off ? `<p class="help" style="margin-top:12px">${t('En Vanilla solo se vigilan los programas y los paquetes (no hay mods).')}</p>` : ''}</div>
@@ -280,11 +282,41 @@
             <div class="set"><div class="t"><b>${t('Permitir paquetes de texturas y shaders')}</b><small>${t('No avisa si alguien añade uno (por ejemplo, si dejas usar los suyos).')}</small></div>${sw('gd-packs', g.packsOk)}</div>
             <div class="field" style="margin-top:12px"><span class="label">${t('Avisar en un canal de Discord (opcional)')}</span><span class="help">${t('Pega el enlace de un webhook de Discord: cada detección llegará también allí.')}</span>
               <input class="input mono" id="gd-hook" placeholder="https://discord.com/api/webhooks/…" value="${esc(g.webhook || '')}"></div></div>
+          <div class="card ${g.enabled ? '' : 'g-dim'}" id="gd-srv"><div class="skel" style="height:120px"></div></div>
           <p class="help g-note">${icon('info')}${t('Los jugadores lo aceptan en los términos del launcher. De los programas abiertos, el launcher solo avisa de los de trampas, nunca envía la lista completa.')}</p>`;
+        serverCard($('#gd-srv', el)).catch(() => { $('#gd-srv', el).remove(); });
         $('#gd-on', el).onchange = (e) => { g.enabled = e.target.checked; changed(); draw(); };
         $('#gd-kick', el).onchange = (e) => { g.autoKick = e.target.checked; changed(); };
         $('#gd-packs', el).onchange = (e) => { g.packsOk = e.target.checked; changed(); };
         $('#gd-hook', el).oninput = (e) => { g.webhook = e.target.value.trim(); changed(); };
+      };
+      draw();
+    }
+
+    // KopiGuard: el plugin del servidor y su clave
+    const PLUGIN_URL = 'https://github.com/kewinnsinhoo/onyx-client/releases?q=kopi-guard&expanded=true';
+    async function serverCard(box) {
+      if (!can('admin') && !(S.me && S.me.user.role === 'creator')) { box.remove(); return; }
+      let k = await sapi('GET', `/guard/key/${encodeURIComponent(id)}`), shown = false;
+      const draw = () => {
+        box.innerHTML = html`<div class="card-head"><div><h3>${icon('server')}${t('Plugin del servidor')}</h3>
+            <p class="sub">${t('Para pillar vuelo, velocidad, alcance, autoclicker y golpes a varios a la vez. Funciona en Paper, Purpur, Folia y Arclight (1.16.5 o más nuevo). No cuenta los empujones, explosiones, caídas, slime, tridente ni élitros.')}</p></div>
+            <span class="grow"></span><span class="badge ${k.usedAt ? 'ok' : 'mute'}">${k.usedAt ? t('Conectado {t}', { t: timeAgo(k.usedAt) }) : t('Sin conectar')}</span></div>
+          <ol class="g-steps">
+            <li>${t('Descarga el plugin y ponlo en la carpeta <b>plugins</b> del servidor.')} <a class="btn sm" href="${PLUGIN_URL}" target="_blank" rel="noopener">${icon('download')}KopiGuard.jar</a></li>
+            <li>${t('Reinicia el servidor y escribe en la consola:')}<div class="g-key"><code class="mono">${shown ? esc(`kopiguard key ${k.key}`) : 'kopiguard key ••••••••••••••••••••••••'}</code>
+              <button class="btn ghost sm" id="gk-show">${icon(shown ? 'eyeOff' : 'eye')}${shown ? t('Ocultar') : t('Mostrar')}</button>
+              <button class="btn sm" id="gk-copy">${icon('copy')}${t('Copiar')}</button></div></li>
+            <li>${t('Comprueba que va con <code>kopiguard test</code>.')}</li>
+          </ol>
+          <div class="g-keyfoot"><span class="help">${t('La clave es como una contraseña: no la compartas. Si se filtra, crea otra.')}</span><span class="grow"></span>
+            <button class="btn ghost sm" id="gk-new">${icon('refresh')}${t('Crear otra clave')}</button></div>`;
+        $('#gk-show', box).onclick = () => { shown = !shown; draw(); };
+        $('#gk-copy', box).onclick = () => copy(`kopiguard key ${k.key}`);
+        $('#gk-new', box).onclick = async () => {
+          if (!(await confirmBox({ title: t('¿Crear otra clave?'), text: t('La clave actual deja de funcionar: tendrás que poner la nueva en el servidor.'), ok: t('Crear otra'), ico: 'refresh' }))) return;
+          try { k = await sapi('POST', `/guard/key/${encodeURIComponent(id)}`, {}); shown = true; draw(); toast(t('Clave nueva creada')); } catch (e) { fail(e); }
+        };
       };
       draw();
     }

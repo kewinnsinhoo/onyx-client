@@ -1,8 +1,10 @@
-// Kopi Skins: la parte común (common/src) se compila dentro de cada plugin.
+// Plugins de servidor de Kopi:
+// - Kopi Skins (paper, velocity, bungee): la parte común (common/src) se compila dentro de cada uno.
+// - KopiGuard (guard): el anticheat del servidor. Sus cuentas (core) se prueban sin servidor: gradle :guard:check
 subprojects {
     apply plugin: 'java'
     group = 'site.onyxclient'
-    version = '1.0.1'
+    version = name == 'guard' ? '1.0.0' : '1.0.1'
 
     repositories {
         mavenCentral()
@@ -10,7 +12,7 @@ subprojects {
         maven { url = 'https://oss.sonatype.org/content/repositories/snapshots/' }
     }
 
-    sourceSets.main.java.srcDirs += rootProject.file('common/src')
+    if (name != 'guard') sourceSets.main.java.srcDirs += rootProject.file('common/src')
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
@@ -22,8 +24,18 @@ subprojects {
     }
 
     jar {
-        archiveFileName = "KopiSkins-${project.name.capitalize()}-${project.version}.jar"
+        archiveFileName = project.name == 'guard' ? "KopiGuard-${project.version}.jar" : "KopiSkins-${project.name.capitalize()}-${project.version}.jar"
     }
+}
+
+project(':guard') {
+    dependencies { compileOnly 'com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT' }
+    // Las pruebas de las cuentas (vuelo, velocidad, alcance, clics…): un main sin librerías
+    tasks.register('engineTest', JavaExec) {
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = 'site.onyxclient.kopiguard.core.EngineTest'
+    }
+    check.dependsOn 'engineTest'
 }
 
 project(':paper') {

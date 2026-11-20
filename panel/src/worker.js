@@ -12,7 +12,7 @@ import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
 import { statsApi } from './studio-stats.js';
-import { guardReport, guardApi, guardMedia, guardFrame, camWanted } from './guard.js';
+import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport } from './guard.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
@@ -66,6 +66,8 @@ async function route(req, env, ctx) {
   if (p === '/auth/dev' && env.DEV_LOGIN === '1') return authDev(req, env, u);
 
   if (p.startsWith('/api/l/')) return launcherApi(req, env, u, p.slice(7), m, ctx);
+  // El plugin KopiGuard del servidor (se identifica con la clave de su instancia)
+  if (p === '/api/srv/guard' && m === 'POST') return serverReport(env, ctx, await readJson(req, 16 * 1024));
   if (p.startsWith('/api/public/')) return publicApi(req, env, u, p.slice(12).split('/').filter(Boolean), m);
   if (p.startsWith('/api/')) {
     if (m !== 'GET' && m !== 'HEAD') checkOrigin(req, u);
@@ -865,7 +867,9 @@ async function launcherApi(req, env, u, path, m, ctx) {
       if (await isBanned(row)) kick = true;
       else if (!staff && data.schedule.kickOnClose && ((data.schedule.closesAt && t > data.schedule.closesAt) || row.state === 'locked')) kick = true;
     }
-    return json({ ok: true, kick, cam: kick ? null : await camWanted(env, pl) });
+    // El plugin del servidor vio algo: el launcher manda foto y vídeo para esa detección
+    if (pl.snap) await env.DB.prepare('UPDATE plays SET snap = NULL WHERE id = ?').bind(pl.id).run();
+    return json({ ok: true, kick, cam: kick ? null : await camWanted(env, pl), snap: kick ? null : pl.snap || null });
   }
 
   fail(404, 'not_found', 'Ruta no encontrada');

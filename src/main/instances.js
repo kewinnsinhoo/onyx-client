@@ -357,7 +357,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         });
       }
       // el latido también dice si alguien del studio quiere ver la cámara
-      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick, (r) => { if (guardRun && 'cam' in r) guardRun.cam(r.cam); });
+      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick, (r) => { if (!guardRun) return; if ('cam' in r) guardRun.cam(r.cam); if (r.snap) guardRun.snap(r.snap); });
     }
   } catch (e) {
     if (session) panel.endPlay(account, session.play).catch(() => {});

@@ -1,3 +1,3 @@
-// Kopi Skins: plugins de servidor (Paper, Velocity y BungeeCord). Se compila con GitHub Actions.
+// Plugins de servidor de Kopi: Kopi Skins (Paper, Velocity, BungeeCord) y KopiGuard. Se compilan con GitHub Actions.
 rootProject.name = 'kopi-skins'
-include 'paper', 'velocity', 'bungee'
+include 'paper', 'velocity', 'bungee', 'guard'

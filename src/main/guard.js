@@ -122,7 +122,7 @@ function matchPrograms(procs, programs) {
 // opts: { gameDir, manifest, managed, initial (lo de foreign() antes de esconder los mods),
 //         report(events) → Promise<{ kick, ids }>, upload(eventId, 'shot'|'video', Buffer), sendFrame(b64|''|null, hd) → Promise<{ cam }>,
 //         capture: { shot(), video(ms), frame(hd), close() } (capture.js), onKick(), timers?, list? }
-// Devuelve { stop(), cam(modo) }: cam('grid'|'live'|null) lo llama el latido cuando alguien quiere ver la cámara.
+// Devuelve { stop(), cam(modo), snap(id) }: los llama el latido (alguien quiere ver la cámara / el servidor vio algo).
 function start(opts) {
   const g = (opts.manifest && opts.manifest.guard) || {};
   if (!g.enabled) return { stop() {}, cam() {} };
@@ -236,8 +236,20 @@ function start(opts) {
     })();
   }
 
+  // 5) el plugin del servidor vio algo (vuelo, alcance…): foto y vídeo para esa detección del panel
+  const snapped = new Set();
+  function snap(eventId) {
+    if (stopped || !cap || !opts.upload || !eventId || snapped.has(eventId) || snapped.size >= 6) return;
+    snapped.add(eventId);
+    const shot = Promise.resolve().then(() => cap.shot()).catch(() => null);
+    const video = Promise.resolve().then(() => cap.video(T.video)).catch(() => null);
+    shot.then(b => b && opts.upload(eventId, 'shot', b)).catch(() => {});
+    video.then(v => v && opts.upload(eventId, 'video', v)).catch(() => {});
+  }
+
   return {
     cam,
+    snap,
     stop() {
       if (stopped) return;
       stopped = true; camMode = null;

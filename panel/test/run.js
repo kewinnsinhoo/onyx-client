@@ -995,4 +995,47 @@ await test('Estadísticas del studio: jugadores, horas, nuevos, vuelven, mapa de
   assert.strictEqual((await call('GET', '/api/s/onyx-studios/stats', { cookie: other })).status, 403);
 });
 
+await test('KopiGuard: plugin del servidor (clave, avisos, foto del launcher)', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Servidor' } });
+  const gid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, guard: { enabled: false } } } });
+  // la clave: solo admins; la misma hasta que se pide otra
+  let k = await call('GET', `/api/s/onyx-studios/guard/key/${gid}`, { cookie: creator });
+  assert.ok(/^kg_[0-9a-f]{64}$/.test(k.data.key));
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/key/${gid}`, { cookie: creator })).data.key, k.data.key);
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/key/${gid}`, { cookie: other })).status, 403);
+  const send = (body) => call('POST', '/api/srv/guard', { body: { key: k.data.key, ...body } });
+  assert.strictEqual((await call('POST', '/api/srv/guard', { body: { key: 'kg_' + 'x'.repeat(30), check: 'fly', player: 'A' } })).status, 401);
+  // con KopiGuard apagado no se guarda nada
+  assert.strictEqual((await send({ check: 'fly', player: 'Volador', detail: 'Vuela' })).data.ignored, 'off');
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { data: { guard: { enabled: true } } } });
+  assert.strictEqual((await send({ ping: true })).data.instance.length > 0, true, '/kopiguard test');
+  // un jugador sin Kopi Client: se guarda sin partida
+  let r = await send({ check: 'speed', player: 'Rapido', detail: 'Va demasiado rápido: 14,2 bloques/s (máx. 9,5)', severity: 'medium', data: { vl: 12, ping: 40, tps: 20, world: 'world', x: 1, y: 64, z: 2 } });
+  assert.deepStrictEqual([r.data.saved, r.data.kopi], [1, false]);
+  assert.strictEqual((await send({ check: 'speed', player: 'Rapido', detail: 'Va demasiado rápido: 14,2 bloques/s (máx. 9,5)' })).data.ignored, 'same');
+  assert.strictEqual((await send({ check: 'nada', player: 'Rapido', detail: 'x' })).status, 400);
+  // un jugador con Kopi Client: la detección es de su partida y el launcher manda foto y vídeo
+  const p = await player('Volador', false);
+  const play = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
+  r = await send({ check: 'fly', player: 'Volador', detail: 'Vuela sin élitros ni permiso', severity: 'high', data: { vl: 30 } });
+  assert.deepStrictEqual([r.data.saved, r.data.kopi], [1, true]);
+  const list = (await call('GET', `/api/s/onyx-studios/guard?instance=${gid}`, { cookie: creator })).data;
+  const ev = list.events.find(e => e.player === 'Volador');
+  assert.deepStrictEqual([ev.type, ev.severity, !!ev.media], ['move', 'high', true]);
+  assert.strictEqual(list.types.move, 2);
+  let beat = (await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data;
+  assert.strictEqual(beat.snap, ev.id, 'el latido pide la foto de esa detección');
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data.snap, null, 'una sola vez');
+  const up = await call('POST', `/api/l/guard/media?play=${play.play}&event=${ev.id}&kind=shot`, { headers: { ...p, 'Content-Type': 'application/octet-stream' }, raw: new Uint8Array([0xff, 0xd8, 0xff, 1]) });
+  assert.strictEqual(up.status, 200);
+  const det = (await call('GET', `/api/s/onyx-studios/guard/${ev.id}`, { cookie: creator })).data.event;
+  assert.strictEqual(det.data.server.vl, 30);
+  assert.strictEqual(det.media.shot, true);
+  // otra clave: la vieja deja de valer
+  const k2 = await call('POST', `/api/s/onyx-studios/guard/key/${gid}`, { cookie: creator, body: {} });
+  assert.notStrictEqual(k2.data.key, k.data.key);
+  assert.strictEqual((await send({ ping: true })).status, 401);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

@@ -1030,7 +1030,9 @@ test('panel: errores legibles', () => {
     await new Promise(r => setTimeout(r, 150));
     put('mods/killaura.jar');
     run.cam('grid'); // alguien abre la página de cámaras
+    run.snap('srv1'); run.snap('srv1'); // el servidor vio algo (dos latidos con lo mismo: una sola foto)
     await new Promise(r => setTimeout(r, 150));
+    assert.deepStrictEqual(uploads.filter(u => u[0] === 'srv1').map(u => u[1]).sort(), ['shot', 'video']);
     run.stop();
     await new Promise(r => setTimeout(r, 50));
     // foto y vídeo de cada detección importante, subidos con el id que da el panel

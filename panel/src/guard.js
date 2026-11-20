@@ -11,7 +11,7 @@
 import { json, fail, now, str, int, randomToken, NAME_RE, readJson } from './util.js';
 import { audit } from './onyx.js';
 
-export const TYPES = ['mod', 'pack', 'file', 'program'];
+export const TYPES = ['mod', 'pack', 'file', 'program', 'move', 'combat']; // move y combat: los manda el plugin del servidor
 export const SEVERITIES = ['high', 'medium', 'low'];
 export const STATUSES = ['new', 'reviewed', 'dismissed', 'sanctioned'];
 const WEBHOOK_RE = /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+$/;
@@ -165,12 +165,12 @@ export async function guardFrame(env, P, b) {
   return json({ ok: true, cam });
 }
 
-const TYPE_NAME = { mod: 'Mod', pack: 'Paquete', file: 'Archivo', program: 'Programa' };
+const TYPE_NAME = { mod: 'Mod', pack: 'Paquete', file: 'Archivo', program: 'Programa', move: 'Movimiento', combat: 'Combate' };
 const SEV_COLOR = { high: 0xef4444, medium: 0xf59e0b, low: 0x60a5fa };
 async function discord(hook, instance, player, events) {
   const embeds = events.slice(0, 10).map(e => ({
     title: `KopiGuard · ${TYPE_NAME[e.type]}${e.autoKick ? ' · expulsado' : ''}`,
-    description: clip(e.detail, 300) + (e.data.items.length > 1 ? `\n${e.data.items.slice(1, 6).map(x => '• ' + clip(x, 120)).join('\n')}` : ''),
+    description: clip(e.detail, 300) + ((e.data.items || []).length > 1 ? `\n${e.data.items.slice(1, 6).map(x => '• ' + clip(x, 120)).join('\n')}` : ''),
     color: SEV_COLOR[e.severity],
     fields: [{ name: 'Jugador', value: clip(player, 40), inline: true }, { name: 'Instancia', value: clip(instance, 60), inline: true },
       ...(e.data.process ? [{ name: 'Programa', value: clip(e.data.process.name, 100), inline: true }] : [])],
@@ -180,6 +180,72 @@ async function discord(hook, instance, player, events) {
 }
 
 // ---------------------------------------------------------------- studio
+// ---------------------------------------------------------------- plugin del servidor → panel
+// POST /api/srv/guard  { key, player, uuid, check, detail, severity, data: { vl, ping, tps, world, x, y, z } }
+// El plugin (Paper/Purpur/Arclight) vigila movimiento y combate. Si el jugador juega con Kopi Client,
+// la detección va a su partida y el launcher manda foto y vídeo del momento.
+const SRV_CHECKS = { fly: 'move', speed: 'move', reach: 'combat', cps: 'combat', aura: 'combat' };
+const SRV_PER_HOUR = 300;
+export async function serverReport(env, ctx, b) {
+  const key = String(b.key || '');
+  const k = /^kg_[A-Za-z0-9_-]{20,64}$/.test(key) ? await env.DB.prepare('SELECT * FROM guard_keys WHERE key = ?').bind(key).first() : null;
+  if (!k) fail(401, 'key', 'Clave del servidor no válida');
+  const row = await env.DB.prepare('SELECT * FROM instances WHERE id = ? AND deleted_at IS NULL').bind(k.instance_id).first();
+  const data = row ? JSON.parse(row.data) : null;
+  const g = data && data.guard;
+  const t = now();
+  if (!k.used_at || k.used_at < t - 60e3) await env.DB.prepare('UPDATE guard_keys SET used_at = ? WHERE key = ?').bind(t, key).run();
+  if (!g || !g.enabled) return json({ ok: true, ignored: 'off' });
+  if (b.ping) return json({ ok: true, instance: data.name }); // /kopiguard test
+  const type = SRV_CHECKS[b.check];
+  const name = clip(b.player, 16).trim();
+  if (!type || !/^[A-Za-z0-9_]{2,16}$/.test(name)) fail(400, 'data', 'Aviso no válido');
+  const detail = clip(b.detail, 300).trim();
+  if (!detail) fail(400, 'data', 'Aviso no válido');
+  const severity = SEVERITIES.includes(b.severity) ? b.severity : 'medium';
+  const pkey = name.toLowerCase();
+  const recent = await env.DB.prepare("SELECT COUNT(*) AS n FROM guard_events WHERE instance_id = ? AND created_at > ? AND type IN ('move', 'combat')").bind(k.instance_id, t - 3600e3).first();
+  if ((recent.n || 0) >= SRV_PER_HOUR) return json({ ok: true, ignored: 'limit' });
+  const same = await env.DB.prepare('SELECT 1 FROM guard_events WHERE instance_id = ? AND player_key = ? AND type = ? AND detail = ? AND created_at > ?').bind(k.instance_id, pkey, type, detail, t - 120e3).first();
+  if (same) return json({ ok: true, ignored: 'same' });
+  // ¿Está jugando con Kopi Client ahora mismo? Entonces la detección es de su partida
+  const play = await env.DB.prepare('SELECT * FROM plays WHERE instance_id = ? AND player_key = ? AND ended_at IS NULL AND last_seen > ? ORDER BY started_at DESC LIMIT 1').bind(k.instance_id, pkey, t - 90e3).first();
+  let media = null;
+  if (play && severity !== 'low') {
+    const used = await env.DB.prepare('SELECT COUNT(*) AS n FROM guard_events WHERE play_id = ? AND media IS NOT NULL').bind(play.id).first();
+    if ((used.n || 0) < 6) media = '{}';
+  }
+  const d = b.data && typeof b.data === 'object' ? b.data : {};
+  const num = (v, dig = 2) => Number.isFinite(Number(v)) ? Math.round(Number(v) * 10 ** dig) / 10 ** dig : null;
+  const extra = { server: { check: String(b.check), vl: num(d.vl, 1), ping: num(d.ping, 0), tps: num(d.tps, 1), world: clip(d.world, 60), x: num(d.x, 1), y: num(d.y, 1), z: num(d.z, 1), info: clip(d.info, 200) }, kopi: !!play };
+  const id = randomToken(12);
+  await env.DB.prepare(`INSERT INTO guard_events (id, studio_id, instance_id, play_id, player_key, player_name, type, severity, detail, data, status, kicked, media, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', 0, ?, ?)`)
+    .bind(id, k.studio_id, k.instance_id, play ? play.id : null, pkey, play ? play.player_name : name, type, severity, detail, JSON.stringify(extra), media, t).run();
+  if (media) await env.DB.prepare('UPDATE plays SET snap = ? WHERE id = ?').bind(id, play.id).run(); // el siguiente latido pide la foto
+  if (g.webhook) {
+    const send = discord(g.webhook, data.name, name, [{ type, severity, detail, data: { items: [] } }]).catch(() => {});
+    if (ctx && ctx.waitUntil) ctx.waitUntil(send); else await send;
+  }
+  return json({ ok: true, saved: 1, kopi: !!play });
+}
+
+// La clave del servidor de una instancia (la crea si no hay). POST = una nueva (la anterior deja de valer).
+async function serverKey(c, instanceId, m, need) {
+  need('admin');
+  const { env, studio, user } = c;
+  const inst = await env.DB.prepare('SELECT id, data FROM instances WHERE id = ? AND studio_id = ? AND deleted_at IS NULL').bind(str(instanceId, 60), studio.id).first();
+  if (!inst) fail(404, 'instance', 'Instancia no encontrada');
+  let k = await env.DB.prepare('SELECT * FROM guard_keys WHERE instance_id = ?').bind(inst.id).first();
+  if (!k || m === 'POST') {
+    const key = 'kg_' + randomToken(32);
+    await env.DB.prepare('INSERT INTO guard_keys (key, instance_id, studio_id, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(instance_id) DO UPDATE SET key = excluded.key, created_at = excluded.created_at, used_at = NULL').bind(key, inst.id, studio.id, now()).run();
+    if (m === 'POST') await audit(env, user, studio.id, 'guard.key', JSON.parse(inst.data).name, { instance: inst.id });
+    k = { key, used_at: null };
+  }
+  return json({ key: k.key, usedAt: k.used_at || null });
+}
+
 const rowOut = (r, names) => ({
   id: r.id, at: r.created_at, instance: r.instance_id, instanceName: names[r.instance_id] || r.instance_id,
   type: r.type, severity: r.severity, player: r.player_name, detail: r.detail, status: r.status, kicked: !!r.kicked,
@@ -247,6 +313,7 @@ async function liveApi(c, play, m, need, sub) {
 export async function guardApi(c, id, m, need, sub, extra) {
   const { env, studio, user } = c;
   if (id === 'live') return liveApi(c, sub, m, need, extra);
+  if (id === 'key') return serverKey(c, sub, m, need);
   if (!id && m === 'GET') {
     const q = c.u.searchParams;
     // filtros: [condición, valores]. El de tipo va aparte: las pestañas cuentan con todos los demás filtros

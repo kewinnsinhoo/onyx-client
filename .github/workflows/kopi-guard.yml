@@ -1,0 +1,57 @@
+# Compila el plugin KopiGuard (anticheat del servidor) desde server-plugins/guard, pasa sus pruebas
+# y, si se pide, lo publica en la release «kopi-guard-v<versión>» de ESTE repo.
+# La release es "prerelease" y nunca "latest": así nunca se confunde con el launcher.
+name: KopiGuard (plugin del servidor)
+run-name: KopiGuard${{ inputs.publish && ' (publicar)' || ' (prueba)' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publicar el .jar en una release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compilar y probar
+        run: gradle -p server-plugins :guard:build --no-daemon
+      - name: Archivos
+        run: |
+          mkdir -p out
+          cp server-plugins/guard/build/libs/KopiGuard-*.jar out/
+          cp out/KopiGuard-*.jar out/KopiGuard.jar
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kopi-guard
+          path: out/*.jar
+      - name: Publicar
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          V=$(grep -m1 "VERSION = \"" server-plugins/guard/src/main/java/site/onyxclient/kopiguard/paper/KopiGuardPaper.java | sed 's/.*"\(.*\)".*/\1/')
+          TAG="kopi-guard-v$V"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --latest=false --target "$GITHUB_SHA" --title "KopiGuard (servidor) $V" \
+              --notes "Plugin del anticheat KopiGuard para Paper, Purpur, Folia y Arclight (1.16.5 o más nuevo). Va en la carpeta plugins/. Instrucciones: panel de Kopi → instancia → Protección → Plugin del servidor."
+          fi
+          gh release upload "$TAG" out/*.jar --clobber

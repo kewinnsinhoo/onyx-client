@@ -1,0 +1,23 @@
+name: KopiGuard
+version: '${version}'
+main: site.onyxclient.kopiguard.paper.KopiGuardPaper
+api-version: '1.13'
+folia-supported: true
+description: El anticheat de Kopi en el servidor (vuelo, velocidad, alcance, clics y golpes a varios). Avisa en el panel de Kopi.
+author: Kopi Studio
+website: https://onyxclient.site
+commands:
+  kopiguard:
+    description: KopiGuard (clave, prueba, avisos, estado)
+    usage: /kopiguard key <clave> | test | alerts | status <jugador> | reload
+    aliases: [kg]
+permissions:
+  kopiguard.admin:
+    description: Usar /kopiguard key, test, status y reload
+    default: op
+  kopiguard.alerts:
+    description: Ver los avisos de KopiGuard en el chat
+    default: op
+  kopiguard.bypass:
+    description: KopiGuard no vigila a este jugador
+    default: false
