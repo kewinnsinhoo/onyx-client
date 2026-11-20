@@ -99,7 +99,7 @@ jobs:
   compilar-mac:
     needs: preparar
     if: ${{ inputs.mac || inputs.solo_mac }}
-    runs-on: macos-latest
+    runs-on: macos-15 # «macos-latest» (macOS 26) se quedó sin Macs libres el 20/11/2026
     continue-on-error: true
     timeout-minutes: 60
     permissions:
