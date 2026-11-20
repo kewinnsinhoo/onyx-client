@@ -1,6 +1,6 @@
 # Kopi Client Terms and Conditions
 
-**Last updated:** 20/11/2026 · **Version:** 1.2
+**Last updated:** 20/11/2026 · **Version:** 1.3
 
 > NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
@@ -33,6 +33,7 @@ Some studios turn on KopiGuard in their instances to stop cheating. Those instan
 - Sends these reports to the instance's studio, with your player name and the instance's mod list.
 - When it detects something important, it takes a screenshot and records a short video (about 10 seconds) of the Minecraft window and sends them to the studio. They are deleted automatically after 30 days.
 - Lets the studio's team watch the Minecraft window live while you play. Only the game window: never the rest of your screen or the sound. It is not recorded: the panel only keeps the latest image while you play.
+- If the studio's server has the KopiGuard plugin, the server also checks how you move and fight (for example, whether you fly or hit from too far away) and reports it to the studio. If you play with the Launcher, a screenshot and a short video are taken at that moment, just like other detections.
 
 The studio can review the reports, close your game or ban you from its instance. Each studio is responsible for how it uses these reports. If you do not agree, do not play instances with KopiGuard.
 

@@ -217,7 +217,14 @@ Para que se cuenten solos:
 - **Foto y vídeo (1.7.0):** cada detección importante (no las leves, y como mucho 6 por partida) llega con una foto y un vídeo de 10 s **solo de la ventana de Minecraft** (sin sonido). Se ven en el detalle de la detección y se borran solos a los 30 días (se guardan en el KV `MEDIA`).
 - **Cámaras en directo (1.7.0):** menú **Cámaras** del panel (editores, administradores y dueño). Cuadrícula de quien está jugando en instancias con KopiGuard (imagen nueva cada ~5 s) y, al pulsar a alguien, se le ve en grande (~1–2 imágenes por segundo, más nítidas), con **Guardar captura**, **Pantalla completa** y **Expulsar**. La primera imagen tarda hasta 20 s (llega con el latido). No se graba nada: el panel solo guarda la última imagen de cada partida y la borra al acabar. El launcher solo manda imágenes mientras alguien mira.
   - En Mac hace falta que el jugador dé permiso para grabar la pantalla; si no, sale «Este equipo no permite capturar el juego». En Linux con Wayland no hay capturas.
-- **Pendiente:** el plugin del servidor para movimientos raros (sin contar empujones, explosiones, caídas, slime, tridente ni élitros).
+- **Plugin del servidor (KopiGuard 1.0.0, launcher 1.7.4):** `server-plugins/guard`. Vuelo, velocidad, alcance, clics y golpes a varios; no cuenta empujones, explosiones, cargas de viento, caídas, slime, tridente, élitros, agua, escaleras, vehículos, /fly ni lag. Cada instancia tiene una clave (panel → Protección → Plugin del servidor; tabla `guard_keys`). Avisa a `POST /api/srv/guard`; si el jugador juega con Kopi Client, la detección va a su partida y el siguiente latido pide foto y vídeo al launcher (`plays.snap`). Release: `kopi-guard-v1.0.0` (workflow «KopiGuard (plugin del servidor)»). Más en `server-plugins/README.md`.
+
+## Estadísticas del panel (desde la 1.7.4)
+
+- Menú **Estadísticas** (cualquier miembro del studio). 7, 30 o 90 días y por instancia; todo en la hora de quien mira.
+- Jugadores distintos, horas jugadas, jugadores nuevos (su primera partida) y los que vuelven (del periodo anterior), con flechas que comparan con el periodo anterior.
+- Jugadores cada día (también como tabla), mapa de calor de a qué hora juega la gente con «la hora con más gente» (buena para eventos), horas por instancia y los 10 que más juegan.
+- El cálculo está en `panel/src/studio-stats.js` (`computeStats`, probado con datos fijos).
 - Está explicado en los términos del launcher (punto 8), en los 4 idiomas.
 
 ## Cosas a saber

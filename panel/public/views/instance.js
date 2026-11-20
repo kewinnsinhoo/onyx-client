@@ -294,7 +294,7 @@
     }
 
     // KopiGuard: el plugin del servidor y su clave
-    const PLUGIN_URL = 'https://github.com/kewinnsinhoo/onyx-client/releases?q=kopi-guard&expanded=true';
+    const PLUGIN_URL = 'https://github.com/kewinnsinhoo/onyx-client/releases/download/kopi-guard-v1.0.0/KopiGuard.jar';
     async function serverCard(box) {
       if (!can('admin') && !(S.me && S.me.user.role === 'creator')) { box.remove(); return; }
       let k = await sapi('GET', `/guard/key/${encodeURIComponent(id)}`), shown = false;

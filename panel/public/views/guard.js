@@ -95,6 +95,7 @@
 
   // Foto y vídeo de la detección (el launcher los sube justo después de avisar)
   function mediaBlock(e) {
+    if (e.data && e.data.server && !e.data.kopi) return ''; // lo vio el servidor y no jugaba con Kopi Client: no hay foto
     const m = e.media, base = `/api/s/${encodeURIComponent(S.studio.id)}/guard/${encodeURIComponent(e.id)}`;
     if (!m) return `<div class="g-sec g-media">${icon('image')}<div><b>${t('Sin captura')}</b><small>${t('Las detecciones leves (y a partir de la sexta de una partida) no llevan foto ni vídeo.')}</small></div></div>`;
     if (!m.shot && !m.video) return `<div class="g-sec g-media">${icon('image')}<div><b>${t('Captura y vídeo')}</b><small>${t('Todavía no han llegado. Si el jugador tenía el juego minimizado, no habrá.')}</small></div></div>`;

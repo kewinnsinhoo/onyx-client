@@ -134,6 +134,8 @@ async function seed() {
       ['g4', 'dante', 'Dante', 'file', 'medium', 'Archivo cambiado: config/sodium-options.json', { items: ['config/sodium-options.json'], mods }, 'reviewed', 0, 180],
       ['g5', 'pixel', 'Pixel', 'program', 'medium', 'Programa abierto: Process Hacker', { process: { name: 'ProcessHacker.exe', path: 'C:\\Program Files\\Process Hacker 2\\ProcessHacker.exe', hash: '41c0a7e2f9b3d018' }, mods }, 'dismissed', 0, 400],
       ['g6', 'griefer99', 'griefer99', 'program', 'high', 'Cheat Engine abierto', { process: { name: 'cheatengine-x86_64.exe', path: 'C:\\Program Files\\Cheat Engine 7.5\\cheatengine-x86_64.exe', hash: 'c0ffee1234abcd99' }, mods }, 'sanctioned', 1, 1500],
+      ['g8', 'elrayo', 'ElRayo', 'move', 'high', 'Vuela: sube 6,4 bloques sin apoyo (un salto llega a 1,6)', { server: { check: 'fly', vl: 14, ping: 62, tps: 19.9, world: 'world', x: 212.4, y: 96.2, z: -48.7, info: 'subida' }, kopi: false }, 'new', 0, 2],
+      ['g9', 'nico77', 'Nico77', 'combat', 'medium', 'Golpea desde 4,9 bloques (máx. 3,7)', { server: { check: 'reach', vl: 4, ping: 45, tps: 20, world: 'world', x: 10.2, y: 64, z: 33.1, info: 'ping 45' }, kopi: false }, 'new', 0, 25],
       ['g7', 'mia_2010', 'Mia_2010', 'file', 'low', 'Archivo nuevo en config: config/journeymap/', { items: ['config/journeymap/journeymap.core.config'], mods }, 'new', 0, 2900]
     ];
     for (const [id, key, name, type, sev, detail, data, st, kicked, mins] of G)
