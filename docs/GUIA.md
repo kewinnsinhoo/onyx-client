@@ -204,6 +204,19 @@ Para que se cuenten solos:
   - **Mientras se juega (1.5.3, Fabric 0.14 o más nuevo):** la carpeta `mods/` sigue vacía. Los mods se abren en una carpeta temporal del sistema con nombre al azar (y cada mod con nombre al azar), Fabric los carga desde ahí (`-Dfabric.addMods`, que no sale en los registros) y al cerrar el juego se borra. En Forge/NeoForge/Quilt, mientras se juega están en `mods/` como siempre.
   - **Lo que no se puede evitar:** mientras el juego está abierto, los mods tienen que estar sin cifrar (Minecraft los necesita). Es una protección muy fuerte contra quien busca en la carpeta, pero ningún launcher puede impedirlo al 100 %.
 
+## KopiGuard: el anticheat (desde la 1.6.0)
+
+- **Se activa en cada instancia:** Kopi Panel → editor de la instancia → pestaña **Protección**. Opciones: expulsar al momento a quien use un programa de trampas, permitir paquetes de texturas/shaders y avisar en un canal de Discord (webhook).
+- **Qué vigila el launcher mientras se juega** (y la instancia lleva la etiqueta «KopiGuard» en el launcher):
+  - **Mod:** mods que no son del studio (al empezar o añadidos durante la partida). Los mods de Kopi (skins, rendimiento) no cuentan.
+  - **Paquete:** paquetes de texturas o de shaders que no son del studio (si no se permiten).
+  - **Archivo:** un archivo del studio cambiado durante la partida, o uno nuevo en `config/`. Lo que escribe el propio juego (opciones, servidores, registros, capturas, mundos) no cuenta, y se espera 1 minuto a que el juego termine de arrancar.
+  - **Programa:** autoclickers, grabadores de macros, Cheat Engine, inyectores, editores de procesos… Solo se envían los que coinciden con la lista (`PROGRAMS` en `panel/src/guard.js`, se amplía sin sacar otra versión del launcher). Las ventanas de navegadores, Discord, OBS, etc. no cuentan aunque digan «auto clicker».
+- **Página KopiGuard del panel:** números, pestañas por tipo y estado, gravedad, búsqueda, instancia y fechas. Al pulsar una detección se abre el detalle (datos técnicos, mods cargados) con **Revisar**, **Descartar**, **Sancionar** (ban en esa instancia y se le cierra el juego) y **Expulsar** (solo si está jugando).
+- **Límites:** como mucho 60 detecciones por partida y la misma cosa una vez cada 10 minutos. Los latidos pasan a ser cada 20 s para expulsar más rápido.
+- **Pendiente (próximas fases):** captura y vídeo corto del juego, cámaras en directo y el plugin del servidor para movimientos raros (sin contar empujones, explosiones, caídas, slime, tridente ni élitros).
+- Está explicado en los términos del launcher (punto 8), en los 4 idiomas.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

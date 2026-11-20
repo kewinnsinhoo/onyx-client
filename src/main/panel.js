@@ -148,6 +148,8 @@ const startPlay = (account, id) => call(account, 'POST', 'play', { instance: id 
 const beat = (account, play) => call(account, 'POST', 'beat', { play });
 const endPlay = (account, play) => call(account, 'POST', 'end', { play });
 const referral = (account, studio) => call(account, 'POST', 'referral', { studio });
+// KopiGuard: avisos de lo que se vio durante la partida → { saved, kick }
+const guardReport = (account, play, events) => call(account, 'POST', 'guard', { play, events });
 
 // Kopi Skins: sube la skin de una cuenta no premium para que se vea en los servidores con el plugin.
 // Solo si cambió desde la última vez. skin = { png (base64), variant } o null para quitarla.
@@ -205,4 +207,4 @@ function heartbeat(account, play, everySec, onKick) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, guardReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

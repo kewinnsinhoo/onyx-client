@@ -68,6 +68,8 @@
     'brand.build': ['rocket', '{user} mandó compilar el launcher {target}'],
     'brand.rebuild': ['rocket', '{user} mandó recompilar todos los launchers de marca'],
     'cape.give': ['gift', '{user} regaló la capa {target} a {names}'],
+    'guard.sanction': ['ban', '{user} sancionó a {target} (KopiGuard)'],
+    'guard.kick': ['logout', '{user} expulsó a {target} (KopiGuard)'],
     'cape.take': ['sparkles', '{user} quitó la capa {target} a {name}']
   };
   window.activityText = (a) => {

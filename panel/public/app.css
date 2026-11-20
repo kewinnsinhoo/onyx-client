@@ -586,3 +586,82 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .gate .idline > span { width: 100%; font-size: 12px; color: var(--muted); }
 .gate .idline code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 14px; letter-spacing: .02em; }
 @media (max-width: 480px) { .gate .idline code { font-size: 12.5px; letter-spacing: 0; } }
+
+/* ---------- KopiGuard ---------- */
+.badge.danger { background: var(--bad-bg); color: var(--bad); }
+.badge.danger.solid { background: rgba(229, 72, 95, .9); color: #fff; }
+.badge.accent { background: var(--accent-soft); color: var(--accent); }
+.badge.info { background: rgba(96, 165, 250, .13); color: #7cb4ff; }
+.g-page .page-head h1 { display: flex; align-items: center; gap: 10px; }
+.g-page .page-head h1 svg { width: 24px; height: 24px; color: var(--accent); }
+.g-stat .v { font-size: 30px; }
+.g-stat small { color: var(--faint); font-size: 12px; margin-top: -2px; }
+.g-card { padding: 16px; }
+.g-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.g-bar .seg button svg { width: 14px; height: 14px; }
+.g-bar .seg .n { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--card-2); color: var(--muted); }
+.g-bar .seg button.on .n { background: var(--accent-soft); color: var(--accent); }
+.seg.sm button { height: 30px; padding: 0 11px; font-size: 12.5px; }
+.g-bar .input { width: auto; }
+.g-sel { min-width: 160px; height: 38px; }
+.g-search { position: relative; flex: 1; min-width: 220px; }
+.g-search .input { width: 100%; }
+.g-search svg { position: absolute; left: 12px; top: 50%; width: 15px; height: 15px; margin-top: -7.5px; color: var(--faint); pointer-events: none; }
+.g-search .input { padding-left: 36px; height: 38px; }
+.g-date { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.g-date .input { width: 150px; height: 38px; }
+.g-table { margin: 6px -4px 0; overflow-x: auto; }
+.g-row { cursor: pointer; }
+.g-row:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.g-row td { vertical-align: middle; }
+.nowrap { white-space: nowrap; }
+.g-inst { color: var(--accent); font-weight: 600; }
+.g-type { gap: 5px; }
+.g-type svg { width: 12px; height: 12px; }
+.g-type.t-mod { background: rgba(229, 72, 95, .14); color: #ff7a8f; }
+.g-type.t-pack { background: rgba(167, 139, 250, .14); color: #b9a4ff; }
+.g-type.t-file { background: rgba(245, 158, 11, .14); color: #f7b955; }
+.g-type.t-program { background: rgba(239, 68, 68, .18); color: #ff6b6b; }
+.g-player { display: inline-flex; align-items: center; gap: 8px; }
+.g-player b { font-weight: 600; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.g-head { position: relative; width: 26px; height: 26px; border-radius: 7px; overflow: hidden; flex: none; display: grid; place-items: center; background: var(--grad); color: #fff; font-size: 10px; font-weight: 800; }
+.g-head img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.g-detail { max-width: 460px; }
+.g-more { color: var(--faint); font-size: 12.5px; }
+.g-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px 2px; color: var(--faint); font-size: 12.5px; }
+.g-note { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.g-note svg { width: 15px; height: 15px; flex: none; }
+/* detalle: panel lateral */
+.backdrop:has(.g-drawer) { place-items: stretch end; padding: 0; }
+.modal.g-drawer { width: min(520px, 100vw); height: 100vh; max-height: 100vh; border-radius: 0; border-width: 0 0 0 1px; display: flex; flex-direction: column; animation: g-slide .22s cubic-bezier(.2, .8, .2, 1); }
+@keyframes g-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.g-drawer .g-dbody { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+.g-who { display: flex; align-items: center; gap: 12px; }
+.g-who .g-head { width: 42px; height: 42px; border-radius: 11px; font-size: 13px; }
+.g-who b { display: block; font-size: 16px; }
+.g-who small { color: var(--muted); font-size: 12.5px; }
+.g-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.g-title { margin: 0; font-size: 17px; line-height: 1.35; }
+.g-items { margin: 0; padding: 10px 12px 10px 28px; border-radius: 12px; background: var(--card-2); font-size: 12.5px; display: grid; gap: 4px; }
+.g-sec { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--card-2) 60%, transparent); display: grid; gap: 8px; }
+.g-sec .label { font-weight: 700; font-size: 13px; }
+.g-kv { display: grid; grid-template-columns: 80px 1fr; gap: 10px; font-size: 13px; }
+.g-kv span { color: var(--muted); }
+.g-kv code { font-size: 12px; word-break: break-all; color: var(--text); }
+.g-mods { display: block; }
+.g-mods summary { cursor: pointer; list-style: none; display: flex; align-items: center; }
+.g-mods summary::-webkit-details-marker { display: none; }
+.g-mods summary::after { content: "▾"; margin-left: auto; color: var(--faint); transition: transform .15s; }
+.g-mods[open] summary::after { transform: rotate(180deg); }
+.g-mods .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.g-media { grid-template-columns: auto 1fr; align-items: center; color: var(--muted); }
+.g-media svg { width: 22px; height: 22px; color: var(--accent); }
+.g-media b { display: block; color: var(--text); font-size: 13px; }
+.g-media small { font-size: 12px; }
+.modal .mf.g-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.g-actions .btn { padding: 0 10px; justify-content: center; }
+
+.g-list { display: grid; gap: 8px; margin-top: 14px; }
+.g-list > div { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--card-2); font-size: 13px; color: var(--text-2, var(--text)); }
+.g-list .badge { min-width: 92px; justify-content: center; }
+.card.g-dim { opacity: .55; }

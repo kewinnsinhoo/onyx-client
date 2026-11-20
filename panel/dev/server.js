@@ -99,6 +99,26 @@ async function seed() {
         'p' + n++, k % 3 ? 'ignite-extremo-3' : 'torneo-pvp', 'onyx-studios', 'p' + k, 'Jugador' + k, end ? st : t - 60e3, end || t - 20e3, end);
     }
   }
+  // KopiGuard: activado en IGNITE con algunas detecciones de ejemplo
+  {
+    const row = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first();
+    const d = JSON.parse(row.data); d.guard = { enabled: true, autoKick: true, packsOk: false, webhook: '' };
+    await run("UPDATE instances SET data = ? WHERE id = 'ignite-extremo-3'", JSON.stringify(d));
+    await run("INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES ('pg1', 'ignite-extremo-3', 'onyx-studios', 'steve_pro', 'Steve_Pro', ?, ?, NULL)", t - 40 * 60e3, t - 10e3);
+    const mods = ['kopi-skins-csl.jar', 'sodium-fabric-0.6.jar', 'lithium-fabric-0.14.jar', 'fabric-api-0.116.jar', 'ignite-core-3.2.jar', 'voicechat-2.5.jar'];
+    const G = [
+      ['g1', 'steve_pro', 'Steve_Pro', 'program', 'high', 'Autoclicker abierto: OP Auto Clicker', { process: { name: 'OP AutoClicker.exe', path: 'C:\\Users\\steve\\Downloads\\OP AutoClicker.exe', hash: '9f2c41ab07de55c1' }, mods }, 'new', 1, 6],
+      ['g2', 'steve_pro', 'Steve_Pro', 'mod', 'high', 'Mod añadido: mods/wurst-7.46.jar', { items: ['mods/wurst-7.46.jar', 'mods/xaeros-minimap.jar', 'mods/freecam.jar'], mods }, 'new', 0, 9],
+      ['g3', 'luna_mc', 'Luna_MC', 'pack', 'medium', 'Paquete añadido: resourcepacks/xray-ultimate.zip', { items: ['resourcepacks/xray-ultimate.zip'], mods }, 'new', 0, 50],
+      ['g4', 'dante', 'Dante', 'file', 'medium', 'Archivo cambiado: config/sodium-options.json', { items: ['config/sodium-options.json'], mods }, 'reviewed', 0, 180],
+      ['g5', 'pixel', 'Pixel', 'program', 'medium', 'Programa abierto: Process Hacker', { process: { name: 'ProcessHacker.exe', path: 'C:\\Program Files\\Process Hacker 2\\ProcessHacker.exe', hash: '41c0a7e2f9b3d018' }, mods }, 'dismissed', 0, 400],
+      ['g6', 'griefer99', 'griefer99', 'program', 'high', 'Cheat Engine abierto', { process: { name: 'cheatengine-x86_64.exe', path: 'C:\\Program Files\\Cheat Engine 7.5\\cheatengine-x86_64.exe', hash: 'c0ffee1234abcd99' }, mods }, 'sanctioned', 1, 1500],
+      ['g7', 'mia_2010', 'Mia_2010', 'file', 'low', 'Archivo nuevo en config: config/journeymap/', { items: ['config/journeymap/journeymap.core.config'], mods }, 'new', 0, 2900]
+    ];
+    for (const [id, key, name, type, sev, detail, data, st, kicked, mins] of G)
+      await run('INSERT INTO guard_events (id, studio_id, instance_id, play_id, player_key, player_name, type, severity, detail, data, status, kicked, handled_by, handled_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        id, 'onyx-studios', 'ignite-extremo-3', key === 'steve_pro' ? 'pg1' : null, key, name, type, sev, detail, JSON.stringify(data), st, kicked, st === 'new' ? null : 'kew', st === 'new' ? null : t - (mins - 5) * 60e3, t - mins * 60e3);
+  }
   const ev = [['Final IGNITE', 'Serie', '#38bdf8', 2], ['Torneo PvP 1.8', 'Torneo', '#ef4444', 5], ['Squid Game Kopi', 'Squid Game', '#8b5cf6', 9], ['Directo de presentación', 'Directo', '#ec4899', 12]];
   for (const [i, [title, cat, color, days]] of ev.entries()) await run('INSERT INTO events (id, studio_id, instance_id, title, category, color, description, starts_at, ends_at, public, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)', 'e' + i, 'onyx-studios', i === 0 ? 'ignite-extremo-3' : null, title, cat, color, 'Evento de ejemplo', t + days * DAY + 3600e3 * 4, i === 2 ? t + (days + 2) * DAY : null, t);
   for (const [i, nm] of ['Mia_2010', 'Pixel', 'Dante', 'Zoe'].entries()) await run('INSERT INTO referrals VALUES (?, ?, ?, ?)', nm.toLowerCase(), nm, 'onyx-studios', t - i * 5 * 3600e3);

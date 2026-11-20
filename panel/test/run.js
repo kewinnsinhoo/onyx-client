@@ -800,4 +800,96 @@ await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () =>
   for (const k of keys) assert.ok(sb.I18N.has(k), 'falta traducir: ' + k);
 });
 
+await test('KopiGuard: avisos del launcher, Discord, expulsar y sancionar', async () => {
+  // una instancia nueva para no mezclar con las otras pruebas
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Guardia' } });
+  const gid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true } } } });
+  const p = await player('Tramposo', false);
+  // apagado: el launcher no recibe nada y los avisos se ignoran
+  let man = (await call('GET', `/api/l/instance/${gid}`, { headers: p })).data.instance;
+  assert.strictEqual(man.guard, null);
+  let play = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
+  assert.strictEqual(play.beatEvery, 60);
+  assert.strictEqual((await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'mod', detail: 'x' }] } })).data.ignored, true);
+  // encender KopiGuard (con expulsión automática y aviso a Discord)
+  const hook = 'https://discord.com/api/webhooks/123/abc_DEF';
+  let r = await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { data: { guard: { enabled: true, autoKick: true, webhook: hook } } } });
+  assert.deepStrictEqual(r.data.data.guard, { enabled: true, autoKick: true, packsOk: false, webhook: hook });
+  r = await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { data: { guard: { webhook: 'https://evil.example/x' } } } });
+  assert.strictEqual(r.data.data.guard.webhook, '', 'solo webhooks de Discord');
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { data: { guard: { webhook: hook } } } });
+  man = (await call('GET', `/api/l/instance/${gid}`, { headers: p })).data.instance;
+  assert.strictEqual(man.guard.enabled, true);
+  assert.ok(man.guard.programs.some(x => x.m === 'autoclicker'));
+  assert.ok(!JSON.stringify(man).includes('webhooks'), 'el webhook no sale nunca hacia el launcher');
+  play = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
+  assert.strictEqual(play.beatEvery, 20, 'latidos más seguidos con KopiGuard');
+  // el launcher avisa: un mod añadido (Discord recibe el aviso)
+  const sent = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, o) => { if (String(url).startsWith('https://discord.com/')) { sent.push(JSON.parse(o.body)); return new Response('', { status: 204 }); } return realFetch(url, o); };
+  try {
+    r = await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'mod', severity: 'high', detail: 'Mod añadido: mods/xray.jar', items: ['mods/xray.jar', 'mods/otro.jar'], mods: ['sodium.jar'] }] } });
+    assert.deepStrictEqual([r.data.saved, r.data.kick], [1, false]);
+    assert.strictEqual(sent.length, 1);
+    assert.match(sent[0].embeds[0].title, /KopiGuard · Mod/);
+    assert.strictEqual(sent[0].allowed_mentions.parse.length, 0);
+    // la misma detección otra vez (en 10 min): no se repite
+    r = await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'mod', severity: 'high', detail: 'Mod añadido: mods/xray.jar' }] } });
+    assert.strictEqual(r.data.saved, 0);
+    // tipos raros o sin texto: fuera
+    r = await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'otro', detail: 'x' }, { type: 'file', detail: '' }] } });
+    assert.strictEqual(r.data.saved, 0);
+    // un autoclicker con expulsión automática: el siguiente latido le saca
+    r = await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'program', severity: 'high', detail: 'Autoclicker', process: { name: 'GT Auto Clicker.exe', path: 'C:\\x\\GT Auto Clicker.exe', hash: 'ff04406b7a33cfa2' } }] } });
+    assert.deepStrictEqual([r.data.saved, r.data.kick], [1, true]);
+    assert.match(sent[1].embeds[0].title, /expulsado/);
+  } finally { globalThis.fetch = realFetch; }
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data.kick, true);
+  // otro jugador no puede avisar con una partida ajena
+  const q = await player('Honrado', false);
+  assert.strictEqual((await call('POST', '/api/l/guard', { headers: q, body: { play: play.play, events: [{ type: 'mod', detail: 'x' }] } })).status, 404);
+
+  // la página del studio: lista, filtros, números
+  let list = (await call('GET', '/api/s/onyx-studios/guard', { cookie: creator })).data;
+  assert.strictEqual(list.events.length, 2);
+  assert.deepStrictEqual(list.types, { mod: 1, program: 1 });
+  assert.deepStrictEqual([list.stats.guarded, list.stats.total, list.stats.kicks24h], [1, 2, 1]);
+  assert.strictEqual(list.events.find(e => e.type === 'mod').extra, 1, '«y 1 más»');
+  assert.ok(list.instances.some(i => i.id === gid && i.guarded));
+  list = (await call('GET', '/api/s/onyx-studios/guard?type=program', { cookie: creator })).data;
+  assert.deepStrictEqual([list.events.length, list.events[0].kicked], [1, true]);
+  assert.deepStrictEqual(list.types, { mod: 1, program: 1 }, 'las pestañas cuentan sin el filtro de tipo');
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/guard?q=xray', { cookie: creator })).data.events.length, 1);
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/guard?q=nadie', { cookie: creator })).data.events.length, 0);
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard?from=${Date.now() + 864e5}`, { cookie: creator })).data.events.length, 0);
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/guard', { cookie: other })).status, 403);
+  // detalle: datos técnicos y mods cargados
+  const progId = list.events[0].id;
+  const det = (await call('GET', `/api/s/onyx-studios/guard/${progId}`, { cookie: creator })).data.event;
+  assert.strictEqual(det.data.process.name, 'GT Auto Clicker.exe');
+  assert.strictEqual(det.others, 1);
+  const modId = (await call('GET', '/api/s/onyx-studios/guard?type=mod', { cookie: creator })).data.events[0].id;
+  assert.deepStrictEqual((await call('GET', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator })).data.event.data.mods, ['sodium.jar']);
+  // revisar y descartar
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator, body: { action: 'reviewed' } })).data.status, 'reviewed');
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/guard?status=reviewed', { cookie: creator })).data.events.length, 1);
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator, body: { action: 'dismissed' } })).data.status, 'dismissed');
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator, body: { action: 'otra' } })).status, 400);
+  // expulsar a mano: solo si está jugando
+  await call('POST', '/api/l/end', { headers: p, body: { play: play.play } });
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator, body: { action: 'kick' } })).data.error, 'not_playing');
+  const play2 = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play2.play } })).data.kick, false, 'una partida nueva empieza limpia');
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${modId}`, { cookie: creator, body: { action: 'kick' } })).data.kicked, true);
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play2.play } })).data.kick, true);
+  // sancionar: baneado en esa instancia (ya no puede entrar)
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/${progId}`, { cookie: creator, body: { action: 'sanction' } })).data.status, 'sanctioned');
+  const banned = await call('POST', '/api/l/play', { headers: p, body: { instance: gid } });
+  assert.deepStrictEqual([banned.status, banned.data.reason || banned.data.error], [403, 'banned']);
+  assert.ok((await call('GET', `/api/s/onyx-studios/instances/${gid}/bans`, { cookie: creator })).data.bans.some(b => b.value === 'tramposo'));
+  assert.ok(JSON.stringify((await call('GET', '/api/s/onyx-studios/activity', { cookie: creator })).data).includes('guard.sanction'));
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

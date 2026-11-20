@@ -251,7 +251,29 @@ CREATE TABLE cape_worn (
   cape_id TEXT NOT NULL,
   owner_hash TEXT,                   -- cuentas no premium: la clave secreta de su launcher (como la skin)
   updated_at INTEGER NOT NULL
-)`
+)`,
+  `-- KopiGuard: detecciones del anticheat (el launcher avisa mientras se juega)
+CREATE TABLE guard_events (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL,
+  instance_id TEXT NOT NULL,
+  play_id TEXT,
+  player_key TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  type TEXT NOT NULL,                -- mod | pack | file | program
+  severity TEXT NOT NULL,            -- high | medium | low
+  detail TEXT NOT NULL,
+  data TEXT,                         -- JSON: items, mods cargados, programa (nombre, ruta, huella)
+  status TEXT NOT NULL DEFAULT 'new',-- new | reviewed | dismissed | sanctioned
+  kicked INTEGER NOT NULL DEFAULT 0,
+  handled_by TEXT,
+  handled_at INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX guard_studio ON guard_events(studio_id, created_at);
+CREATE INDEX guard_play ON guard_events(play_id);
+CREATE INDEX guard_player ON guard_events(instance_id, player_key);
+ALTER TABLE plays ADD COLUMN kick_reason TEXT`
 ];
 
 export function statements(sql) {

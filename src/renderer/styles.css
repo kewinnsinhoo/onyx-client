@@ -804,6 +804,7 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .dropdown .dd-item .dd-state { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--muted); }
 .dropdown .dd-item .dd-state.on { color: #7ee2a8; }
 .badge.perf { background: rgba(126, 226, 168, .12); color: #7ee2a8; border-color: transparent; }
+.badge.guard { background: rgba(96, 165, 250, .13); color: #8fc1ff; border-color: transparent; cursor: help; }
 .modal.perf-modal .m-ico { background: rgba(126, 226, 168, .14); color: #7ee2a8; }
 .perf-list { width: 100%; display: grid; gap: 8px; margin: 0 0 4px; text-align: left; }
 .perf-list div { display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .03); border: 1px solid var(--border); }

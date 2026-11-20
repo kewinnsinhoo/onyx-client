@@ -1,6 +1,6 @@
 # Términos y condiciones de uso de Kopi Client
 
-**Última actualización:** 12/11/2026 · **Versión:** 1.0
+**Última actualización:** 20/11/2026 · **Versión:** 1.1
 
 > PRODUCTO NO OFICIAL DE MINECRAFT. NO ESTÁ APROBADO NI ASOCIADO CON MOJANG O MICROSOFT.
 
@@ -14,7 +14,7 @@ Al descargar, instalar o usar el Launcher aceptas estos términos. Si no estás 
 1. La descarga, instalación y actualización del Launcher.
 2. El inicio de sesión con cuentas de Microsoft y cuentas offline.
 3. El acceso a instancias mediante códigos de acceso.
-4. Las funciones de skins, capas, galería, referidos e informes.
+4. Las funciones de skins, capas, galería, referidos e informes, y el anticheat KopiGuard.
 5. Los archivos que el Launcher guarda en tu equipo.
 
 Estos términos no sustituyen al EULA de Minecraft, al Contrato de servicios de Microsoft ni a las Directrices de uso de Minecraft, que también debes cumplir.
@@ -41,17 +41,25 @@ Las instancias pueden incluir mods, configuraciones u otros archivos de sus resp
 - **Referidos:** si vinculas un estudio, guardamos tu UUID, tu nombre de jugador y el código del estudio para contar apoyos.
 - **Discord:** si lo vinculas, solo leemos tu nombre de usuario y avatar para mostrarlos en el Launcher.
 
-## 8. Compatibilidad
+## 8. KopiGuard (anticheat de los studios)
+Algunos studios activan KopiGuard en sus instancias para evitar trampas. Esas instancias llevan la etiqueta «KopiGuard» en el Launcher. Solo funciona en ellas y solo mientras juegas. Mientras está activo, el Launcher:
+- Comprueba que los mods, los paquetes de texturas y shaders y los archivos de la instancia son los que puso el studio, y avisa si se añade o se cambia alguno.
+- Busca, entre los programas abiertos en tu equipo, los que sirven para hacer trampas (autoclickers, grabadores de macros, inyectores…). Solo envía los que coinciden con esa lista (su nombre, su ruta y una huella del programa); nunca envía la lista completa de lo que tienes abierto.
+- Envía estos avisos al studio de la instancia, con tu nombre de jugador y la lista de mods de la instancia.
+
+El studio puede revisar los avisos, cerrarte la partida o banearte de su instancia. Cada studio es responsable de cómo usa estos avisos. Si no estás de acuerdo, no juegues en instancias con KopiGuard.
+
+## 9. Compatibilidad
 El Launcher funciona en Windows, macOS y Linux. El rendimiento depende de tu equipo, tu conexión y las instancias que uses.
 
-## 9. Actualizaciones
+## 10. Actualizaciones
 El Launcher se actualiza automáticamente desde nuestro repositorio oficial. Podemos cambiar o retirar funciones en cualquier momento.
 
-## 10. Garantía y responsabilidad
+## 11. Garantía y responsabilidad
 El Launcher se ofrece «tal cual», sin garantías. En la medida permitida por la ley, el Estudio no se hace responsable de pérdidas de datos, mundos o progreso. Haz copias de seguridad de lo que te importe.
 
-## 11. Suspensión
+## 12. Suspensión
 Podemos limitar el acceso a instancias o servicios del Estudio si se incumplen estos términos.
 
-## 12. Cambios
+## 13. Cambios
 Podemos actualizar estos términos. La versión vigente es siempre la que aparece en el Launcher.

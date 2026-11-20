@@ -10,6 +10,7 @@ const { downloadAll, downloadFile, fetchJson } = require('./game/download');
 const skinmod = require('./skinmod');
 const perfmode = require('./perfmode');
 const vault = require('./vault');
+const guard = require('./guard');
 const game = require('./game/launch');
 const log = require('./logger');
 
@@ -66,6 +67,7 @@ function view(i) {
     playTime: i.playTime || 0,
     memoryMb: i.memoryMb || null,
     perfMode: !!i.perfMode,
+    guard: !!(m.guard && m.guard.enabled), // KopiGuard: el studio vigila las trampas en esta instancia
     running: running.has(i.id)
   };
 }
@@ -306,6 +308,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   }
 
   let stopBeat = () => {};
+  let stopGuard = () => {};
   let kicked = false;
   let launched = false;
   try {
@@ -313,6 +316,9 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
     await kopiMods(inst, m, gameDir);
+    // KopiGuard: lo que no es del studio se mira antes de esconder los mods
+    const guardOn = !!(session && m.guard && m.guard.enabled);
+    const guardFirst = guardOn ? guard.foreign(gameDir, inst.managedFiles, { packsOk: !!m.guard.packsOk }) : null;
     gameInfo.jvmProps = await hideMods(id, gameDir, gameInfo.loader);
     const started = Date.now();
     const child = await game.launch(root, {
@@ -321,6 +327,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
       onExit: (code) => {
         running.delete(id);
         stopBeat();
+        stopGuard();
         const d2 = store.get();
         const i2 = d2.instances.find(x => x.id === id);
         if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
@@ -331,11 +338,20 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     running.set(id, child);
     launched = true;
     if (session) {
-      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, () => {
+      const kick = () => {
+        if (kicked) return;
         kicked = true;
         log.info(`[panel] El studio cerró ${id}: se cierra el juego`);
         stop(id);
-      });
+      };
+      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick);
+      if (guardOn) {
+        log.info(`[KopiGuard] Vigilando ${id}`);
+        stopGuard = guard.start({
+          gameDir, manifest: m, managed: inst.managedFiles, initial: guardFirst, onKick: kick,
+          report: (events) => panel.guardReport(account, session.play, events)
+        });
+      }
     }
   } catch (e) {
     if (session) panel.endPlay(account, session.play).catch(() => {});

@@ -11,6 +11,7 @@ import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
+import { guardReport, guardApi } from './guard.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
@@ -62,7 +63,7 @@ async function route(req, env, ctx) {
   if (p === '/auth/logout' && m === 'POST') return authLogout(req, env);
   if (p === '/auth/dev' && env.DEV_LOGIN === '1') return authDev(req, env, u);
 
-  if (p.startsWith('/api/l/')) return launcherApi(req, env, u, p.slice(7), m);
+  if (p.startsWith('/api/l/')) return launcherApi(req, env, u, p.slice(7), m, ctx);
   if (p.startsWith('/api/public/')) return publicApi(req, env, u, p.slice(12).split('/').filter(Boolean), m);
   if (p.startsWith('/api/')) {
     if (m !== 'GET' && m !== 'HEAD') checkOrigin(req, u);
@@ -283,6 +284,7 @@ async function studioApi(c, parts, m) {
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m, sub, d);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
+  if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r));
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
   if (a === 'activity' && m === 'GET') {
@@ -713,7 +715,7 @@ async function serveMedia(p, env) {
 }
 
 // ---------------------------------------------------------------- API del launcher
-async function launcherApi(req, env, u, path, m) {
+async function launcherApi(req, env, u, path, m, ctx) {
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
   const ip = clientIp(req);
 
@@ -771,6 +773,8 @@ async function launcherApi(req, env, u, path, m) {
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
+  // KopiGuard: el launcher avisa de lo que ha visto mientras se juega
+  if (parts[0] === 'guard' && m === 'POST') return guardReport(env, ctx, P, await readJson(req, 256 * 1024));
 
   if (parts[0] === 'redeem' && m === 'POST') {
     const b = await readJson(req);
@@ -831,7 +835,8 @@ async function launcherApi(req, env, u, path, m) {
     await env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind(id, row.id, row.studio_id, P.key, P.name, t, t).run();
     if (has) await env.DB.prepare('UPDATE access SET last_ip = ? WHERE instance_id = ? AND player_key = ?').bind(ip, row.id, P.key).run();
-    return json({ ok: true, play: id, staff: !!g.staff, beatEvery: 60 });
+    // con KopiGuard, latidos más seguidos: una expulsión se nota en menos de 20 s
+    return json({ ok: true, play: id, staff: !!g.staff, beatEvery: data.guard && data.guard.enabled ? 20 : 60 });
   }
 
   if ((parts[0] === 'beat' || parts[0] === 'end') && m === 'POST') {
@@ -844,6 +849,7 @@ async function launcherApi(req, env, u, path, m) {
     // ¿Hay que sacarle? (instancia cerrada con "sacar al cerrar", baneado o bloqueada sin ser staff)
     const row = await env.DB.prepare('SELECT * FROM instances WHERE id = ?').bind(pl.instance_id).first();
     let kick = !row || !!row.deleted_at;
+    if (pl.kick_reason) kick = true; // expulsado desde KopiGuard (o sancionado)
     if (row && !kick) {
       const data = JSON.parse(row.data);
       const staff = data.access.staff.some(n => n.toLowerCase() === P.key);

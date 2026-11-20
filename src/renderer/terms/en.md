@@ -1,6 +1,6 @@
 # Kopi Client Terms and Conditions
 
-**Last updated:** 12/11/2026 · **Version:** 1.0
+**Last updated:** 20/11/2026 · **Version:** 1.1
 
 > NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
@@ -11,7 +11,7 @@ Kopi Client (the "Launcher") is a free program made and maintained by Kopi Studi
 By downloading, installing or using the Launcher you accept these terms. If you are a minor, you need permission from a parent or guardian.
 
 ## 3. Scope
-These terms cover installing and updating the Launcher, signing in with Microsoft or offline accounts, accessing instances with access codes, and the skins, capes, gallery, referral and report features. They do not replace the Minecraft EULA, the Microsoft Services Agreement or the Minecraft Usage Guidelines, which you must also follow.
+These terms cover installing and updating the Launcher, signing in with Microsoft or offline accounts, accessing instances with access codes, the skins, capes, gallery, referral and report features, and the KopiGuard anticheat. They do not replace the Minecraft EULA, the Microsoft Services Agreement or the Minecraft Usage Guidelines, which you must also follow.
 
 ## 4. Accounts
 - **Microsoft accounts:** you sign in on Microsoft's official page. The Studio never sees your password. Session tokens are stored encrypted on your device only.
@@ -26,8 +26,16 @@ Instances may include mods and files by their respective authors, downloaded fro
 ## 7. Data
 Settings, encrypted accounts, instances, screenshots and logs stay on your device. Reports are only sent when you press "Send" and include a screenshot of the Launcher, recent logs and basic system information — never tokens or passwords. Referrals store your UUID, player name and the studio code. Discord linking only reads your username and avatar.
 
-## 8. Warranty
+## 8. KopiGuard (studio anticheat)
+Some studios turn on KopiGuard in their instances to stop cheating. Those instances show a "KopiGuard" label in the Launcher. It only works in them and only while you play. While it is on, the Launcher:
+- Checks that the instance's mods, resource packs, shaders and files are the ones the studio provided, and reports any that are added or changed.
+- Looks among the programs open on your device for cheating tools (autoclickers, macro recorders, injectors…). It only sends the ones that match that list (their name, path and a fingerprint of the program); it never sends the full list of what you have open.
+- Sends these reports to the instance's studio, with your player name and the instance's mod list.
+
+The studio can review the reports, close your game or ban you from its instance. Each studio is responsible for how it uses these reports. If you do not agree, do not play instances with KopiGuard.
+
+## 9. Warranty
 The Launcher is provided "as is" without warranties. To the extent allowed by law, the Studio is not liable for lost data, worlds or progress.
 
-## 9. Changes
+## 10. Changes
 We may update these terms. The current version is always the one shown in the Launcher.

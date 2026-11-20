@@ -252,6 +252,8 @@
     { id: 'instances', i: 'grid', t: 'Instancias', match: ['instances', 'instance'] },
     { id: 'events', i: 'calendar', t: 'Eventos' },
     { id: 'launchers', i: 'rocket', t: 'Launchers' },
+    { h: 'Jugadores' },
+    { id: 'guard', i: 'shield', t: 'KopiGuard' },
     { h: 'Studio' },
     { id: 'team', i: 'users', t: 'Equipo' },
     { id: 'notices', i: 'megaphone', t: 'Avisos' },

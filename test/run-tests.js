@@ -580,8 +580,11 @@ test('panel: errores legibles', () => {
     // Lista, jugar, latido y fin
     assert.ok((await panel.listInstances(acc)).some(i => i.id === 'ignite-extremo-3'));
     const s = await panel.startPlay(acc, 'ignite-extremo-3');
-    assert.ok(s.ok && s.play && s.beatEvery === 60);
+    assert.ok(s.ok && s.play && s.beatEvery === 20, 'IGNITE tiene KopiGuard: latidos cada 20 s');
     assert.strictEqual((await panel.beat(acc, s.play)).kick, false);
+    // KopiGuard: el aviso llega al panel (la instancia de ejemplo expulsa con programas de trampas)
+    const gr = await panel.guardReport(acc, s.play, [{ type: 'mod', severity: 'high', detail: 'Mod añadido: mods/prueba.jar', mods: ['sodium.jar'] }]);
+    assert.deepStrictEqual([gr.saved, gr.kick], [1, false]);
     assert.ok((await panel.endPlay(acc, s.play)).ok);
     const locked = await panel.startPlay(acc, 'torneo-pvp').catch(e => e);
     assert.strictEqual(locked.code, 'no_access');
@@ -962,4 +965,71 @@ test('panel: errores legibles', () => {
     assert.throws(() => vault._openBuffer(vault._sealBuffer(Buffer.from('hola'), k), crypto.randomBytes(32)));
     passed++; console.log('  ✓ mods bajo llave: cifrados al no jugar, idénticos al abrir');
   } catch (e) { console.error('  ✗ mods bajo llave\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();
+
+// KopiGuard: lo que vigila el launcher mientras se juega
+(async () => {
+  try {
+    const guard = require('../src/main/guard');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-guard-'));
+    const put = (rel, txt = 'x') => { fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true }); fs.writeFileSync(path.join(tmp, rel), txt); };
+    put('mods/sodium.jar'); put('mods/kopi-skins-csl-1.jar'); put('mods/wurst.jar'); put('mods/notas.txt');
+    put('resourcepacks/Faithful.zip'); put('resourcepacks/xray/pack.mcmeta'); put('config/server.toml', 'a=1');
+    put('options.txt', 'fov:70');
+    const managed = ['mods/sodium.jar', 'resourcepacks/Faithful.zip', 'config/server.toml', 'options.txt'];
+    // al empezar: lo que no es del studio (los mods de Kopi no cuentan)
+    let f = guard.foreign(tmp, managed);
+    assert.deepStrictEqual(f.mods, ['mods/wurst.jar']);
+    assert.deepStrictEqual(f.packs, ['resourcepacks/xray']);
+    assert.deepStrictEqual(guard.foreign(tmp, managed, { packsOk: true }).packs, []);
+    // durante la partida
+    const before = guard.snapshot(tmp, managed);
+    put('mods/freecam.jar'); put('shaderpacks/BSL.zip'); put('config/server.toml', 'a=2'); put('config/nuevo.json');
+    put('options.txt', 'fov:110'); put('logs/latest.log'); put('screenshots/a.png'); put('saves/mundo/level.dat');
+    let c = guard.compare(tmp, before, guard.snapshot(tmp, managed), managed);
+    assert.deepStrictEqual(c.mods, ['mods/freecam.jar']);
+    assert.deepStrictEqual(c.packs, ['shaderpacks/BSL.zip']);
+    assert.deepStrictEqual(c.changed, ['config/server.toml'], 'options.txt lo escribe el juego: no cuenta');
+    assert.deepStrictEqual(c.fresh, ['config/nuevo.json']);
+    assert.deepStrictEqual(guard.compare(tmp, before, guard.snapshot(tmp, managed), managed, { packsOk: true }).packs, []);
+    // programas: solo coincidencias; un vídeo en el navegador no cuenta
+    const P = [{ m: 'auto clicker', n: 'Autoclicker' }, { m: 'autoclicker', n: 'Autoclicker' }, { m: 'process hacker', n: 'Editor de procesos', s: 'medium' }];
+    const procs = guard.parseProcesses([
+      'chrome|C:\\Program Files\\Google\\chrome.exe|How to use an auto clicker - YouTube',
+      'OP AutoClicker|C:\\Users\\a\\Downloads\\OP AutoClicker.exe|OP Auto Clicker 3.0',
+      'notmyapp|C:\\x\\notmyapp.exe|GS Auto Clicker',
+      'javaw|C:\\java\\javaw.exe|Minecraft 1.21.1',
+      'ProcessHacker|C:\\PH\\ProcessHacker.exe|'
+    ].join('\r\n'), 'win32');
+    const hits = guard.matchPrograms(procs, P);
+    assert.deepStrictEqual(hits.map(h => h.proc.name), ['OP AutoClicker', 'notmyapp', 'ProcessHacker']);
+    assert.deepStrictEqual(guard.parseProcesses('/Applications/Clicker.app/Contents/MacOS/AutoClicker\n', 'darwin')[0], { name: 'AutoClicker', path: '/Applications/Clicker.app/Contents/MacOS/AutoClicker', title: '' });
+    // la partida entera: avisa, no repite y expulsa si el panel lo pide
+    const sent = []; let kicked = 0;
+    const stop = guard.start({
+      gameDir: tmp, managed,
+      manifest: { guard: { enabled: true, packsOk: false, programs: P }, files: [{ path: 'mods/sodium.jar' }] },
+      timers: { grace: 30, files: 30, programs: 40, flush: 10 },
+      list: async () => procs.slice(1, 2),
+      report: async (ev) => { sent.push(...ev); return { kick: ev.some(e => e.type === 'program') }; },
+      onKick: () => { kicked++; }
+    });
+    await new Promise(r => setTimeout(r, 150));
+    put('mods/killaura.jar');
+    await new Promise(r => setTimeout(r, 150));
+    stop();
+    const types = sent.map(e => e.type);
+    assert.ok(types.includes('program') && types.filter(t => t === 'program').length === 1, 'el mismo programa, una vez');
+    assert.ok(sent.some(e => e.type === 'mod' && /que no es de la instancia/.test(e.detail) && e.items.includes('mods/wurst.jar')), 'mods de antes de empezar');
+    assert.ok(sent.some(e => e.type === 'mod' && /killaura/.test(e.detail)), 'mod añadido jugando');
+    assert.ok(sent.some(e => e.type === 'pack'));
+    assert.deepStrictEqual(sent[0].mods, ['sodium.jar']);
+    assert.strictEqual(sent.find(e => e.type === 'program').process.name, 'OP AutoClicker.exe');
+    assert.ok(kicked >= 1);
+    assert.ok(!JSON.stringify(sent).includes('chrome'), 'nunca la lista de programas');
+    // apagado: no hace nada
+    assert.strictEqual(typeof guard.start({ gameDir: tmp, manifest: { guard: null } }), 'function');
+    fs.rmSync(tmp, { recursive: true, force: true });
+    passed++; console.log('  ✓ KopiGuard: mods, paquetes, archivos y programas');
+  } catch (e) { console.error('  ✗ KopiGuard\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();

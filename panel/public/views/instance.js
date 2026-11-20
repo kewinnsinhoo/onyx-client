@@ -3,7 +3,7 @@
   const V = window.Views;
   const TABS = [
     ['summary', 'info', 'Resumen'], ['files', 'folder', 'Archivos'], ['look', 'sparkles', 'Personalización'],
-    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['players', 'activity', 'Jugadores']
+    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['players', 'activity', 'Jugadores']
   ];
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const genCode = () => { const a = crypto.getRandomValues(new Uint8Array(12)); const s = [...a].map(b => B32[b % 32]).join(''); return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`; };
@@ -67,7 +67,7 @@
     async function drawTab() {
       const el = $('#tab');
       if (timer) { clearInterval(timer); timer = null; }
-      const fn = { summary, files, look, game, launch, access, players }[tab];
+      const fn = { summary, files, look, game, launch, access, protect, players }[tab];
       await fn(el);
       if (!editable) $$('#tab input, #tab select, #tab textarea, #tab .option, #tab .chip, #tab [data-edit]').forEach(x => { x.disabled = true; });
     }
@@ -257,6 +257,33 @@
         $('#s-open', el).onchange = (e) => { d.schedule.opensAt = fromLocal(e.target.value); changed(); };
         $('#s-close', el).onchange = (e) => { d.schedule.closesAt = fromLocal(e.target.value); changed(); };
         $('#s-msg', el).oninput = (e) => { d.lockedMessage = e.target.value; changed(); };
+      };
+      draw();
+    }
+
+    // Protección: KopiGuard (anticheat)
+    function protect(el) {
+      d.guard = d.guard || { enabled: false, autoKick: false, packsOk: false, webhook: '' };
+      const draw = () => {
+        const g = d.guard, off = d.loader.type === 'vanilla';
+        el.innerHTML = html`<div class="card"><div class="card-head"><div><h3>${icon('shield')}KopiGuard</h3><p class="sub">${t('El anticheat de Kopi. Mientras se juega, el launcher avisa en la página KopiGuard de lo que no debería pasar.')}</p></div><span class="grow"></span>${sw('gd-on', g.enabled)}</div>
+            <div class="g-list">
+              <div><span class="badge g-type t-mod">${icon('package')}${t('Mod')}</span><span>${t('Alguien añade un mod que no es de la instancia.')}</span></div>
+              <div><span class="badge g-type t-pack">${icon('image')}${t('Paquete')}</span><span>${t('Alguien añade un paquete de texturas o de shaders.')}</span></div>
+              <div><span class="badge g-type t-file">${icon('file')}${t('Archivo')}</span><span>${t('Alguien cambia un archivo de la instancia o añade uno en config.')}</span></div>
+              <div><span class="badge g-type t-program">${icon('cpu')}${t('Programa')}</span><span>${t('Alguien tiene abierto un autoclicker u otro programa de trampas.')}</span></div>
+            </div>
+            ${off ? `<p class="help" style="margin-top:12px">${t('En Vanilla solo se vigilan los programas y los paquetes (no hay mods).')}</p>` : ''}</div>
+          <div class="card ${g.enabled ? '' : 'g-dim'}"><h3>${icon('settings')}${t('Opciones')}</h3>
+            <div class="set" style="margin-top:8px"><div class="t"><b>${t('Expulsar al momento a quien use un programa de trampas')}</b><small>${t('Se le cierra el juego al momento. El resto de avisos los revisas tú.')}</small></div>${sw('gd-kick', g.autoKick)}</div>
+            <div class="set"><div class="t"><b>${t('Permitir paquetes de texturas y shaders')}</b><small>${t('No avisa si alguien añade uno (por ejemplo, si dejas usar los suyos).')}</small></div>${sw('gd-packs', g.packsOk)}</div>
+            <div class="field" style="margin-top:12px"><span class="label">${t('Avisar en un canal de Discord (opcional)')}</span><span class="help">${t('Pega el enlace de un webhook de Discord: cada detección llegará también allí.')}</span>
+              <input class="input mono" id="gd-hook" placeholder="https://discord.com/api/webhooks/…" value="${esc(g.webhook || '')}"></div></div>
+          <p class="help g-note">${icon('info')}${t('Los jugadores lo aceptan en los términos del launcher. De los programas abiertos, el launcher solo avisa de los de trampas, nunca envía la lista completa.')}</p>`;
+        $('#gd-on', el).onchange = (e) => { g.enabled = e.target.checked; changed(); draw(); };
+        $('#gd-kick', el).onchange = (e) => { g.autoKick = e.target.checked; changed(); };
+        $('#gd-packs', el).onchange = (e) => { g.packsOk = e.target.checked; changed(); };
+        $('#gd-hook', el).oninput = (e) => { g.webhook = e.target.value.trim(); changed(); };
       };
       draw();
     }
