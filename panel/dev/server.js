@@ -118,6 +118,21 @@ async function seed() {
     for (const [id, key, name, type, sev, detail, data, st, kicked, mins] of G)
       await run('INSERT INTO guard_events (id, studio_id, instance_id, play_id, player_key, player_name, type, severity, detail, data, status, kicked, handled_by, handled_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         id, 'onyx-studios', 'ignite-extremo-3', key === 'steve_pro' ? 'pg1' : null, key, name, type, sev, detail, JSON.stringify(data), st, kicked, st === 'new' ? null : 'kew', st === 'new' ? null : t - (mins - 5) * 60e3, t - mins * 60e3);
+    // Cámaras y capturas de ejemplo: imágenes de /tmp/kopi-cams/*.jpg si existen (solo para probar en local)
+    const camDir = '/tmp/kopi-cams';
+    const jpgs = fs.existsSync(camDir) ? fs.readdirSync(camDir).filter(f => f.endsWith('.jpg')).sort().map(f => fs.readFileSync(path.join(camDir, f))) : [];
+    if (jpgs.length) {
+      const who = [['pg1', 'Steve_Pro'], ['pg2', 'Luna_MC'], ['pg3', 'Dante'], ['pg4', 'Pixel'], ['pg5', 'Mia_2010']];
+      for (const [i, [pid, nm]] of who.entries()) {
+        if (pid !== 'pg1') await run("INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES (?, 'ignite-extremo-3', 'onyx-studios', ?, ?, ?, ?, NULL)", pid, nm.toLowerCase(), nm, t - (12 + i * 17) * 60e3, t - 5e3);
+        if (i < 4) await run('INSERT INTO guard_live (play_id, studio_id, frame, hd, none, at) VALUES (?, ?, ?, 0, ?, ?)', pid, 'onyx-studios', jpgs[i % jpgs.length].toString('base64'), i === 3 ? 1 : 0, t - 3e3);
+      }
+      await env.MEDIA.put('guard:g1:shot', jpgs[0], { metadata: { type: 'image/jpeg' } });
+      await run(`UPDATE guard_events SET media = '{"shot":{"size":1}}' WHERE id = 'g1'`);
+      await run("UPDATE guard_events SET media = '{}' WHERE id = 'g2'");
+      // la imagen de las cámaras se renueva sola, como si el launcher siguiera mandando
+      setInterval(async () => { for (const [i, [pid]] of who.slice(0, 4).entries()) await env.DB.prepare('UPDATE guard_live SET at = ?, frame = ? WHERE play_id = ?').bind(Date.now(), jpgs[(i + Math.floor(Date.now() / 3000)) % jpgs.length].toString('base64'), pid).run(); await env.DB.prepare("UPDATE plays SET last_seen = ? WHERE id LIKE 'pg%'").bind(Date.now()).run(); }, 1500).unref();
+    }
   }
   const ev = [['Final IGNITE', 'Serie', '#38bdf8', 2], ['Torneo PvP 1.8', 'Torneo', '#ef4444', 5], ['Squid Game Kopi', 'Squid Game', '#8b5cf6', 9], ['Directo de presentación', 'Directo', '#ec4899', 12]];
   for (const [i, [title, cat, color, days]] of ev.entries()) await run('INSERT INTO events (id, studio_id, instance_id, title, category, color, description, starts_at, ends_at, public, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)', 'e' + i, 'onyx-studios', i === 0 ? 'ignite-extremo-3' : null, title, cat, color, 'Evento de ejemplo', t + days * DAY + 3600e3 * 4, i === 2 ? t + (days + 2) * DAY : null, t);

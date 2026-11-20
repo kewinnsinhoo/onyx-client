@@ -273,6 +273,7 @@
               <div><span class="badge g-type t-file">${icon('file')}${t('Archivo')}</span><span>${t('Alguien cambia un archivo de la instancia o añade uno en config.')}</span></div>
               <div><span class="badge g-type t-program">${icon('cpu')}${t('Programa')}</span><span>${t('Alguien tiene abierto un autoclicker u otro programa de trampas.')}</span></div>
             </div>
+            <div class="g-extra"><span>${icon('camera')}${t('Cada detección importante llega con una foto y un vídeo de 10 s del juego.')}</span><span>${icon('video')}${t('En Cámaras ves en directo el juego de quien esté jugando.')}</span></div>
             ${off ? `<p class="help" style="margin-top:12px">${t('En Vanilla solo se vigilan los programas y los paquetes (no hay mods).')}</p>` : ''}</div>
           <div class="card ${g.enabled ? '' : 'g-dim'}"><h3>${icon('settings')}${t('Opciones')}</h3>
             <div class="set" style="margin-top:8px"><div class="t"><b>${t('Expulsar al momento a quien use un programa de trampas')}</b><small>${t('Se le cierra el juego al momento. El resto de avisos los revisas tú.')}</small></div>${sw('gd-kick', g.autoKick)}</div>

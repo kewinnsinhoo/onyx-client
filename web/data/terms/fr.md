@@ -1,6 +1,6 @@
 # Conditions générales d'utilisation de Kopi Client
 
-**Dernière mise à jour :** 20/11/2026 · **Version :** 1.1
+**Dernière mise à jour :** 20/11/2026 · **Version :** 1.2
 
 > PRODUIT MINECRAFT NON OFFICIEL. NON APPROUVÉ PAR MOJANG OU MICROSOFT ET NON ASSOCIÉ À EUX.
 
@@ -31,6 +31,8 @@ Certains studios activent KopiGuard dans leurs instances pour empêcher la trich
 - Vérifie que les mods, les packs de textures et de shaders et les fichiers de l'instance sont ceux fournis par le studio, et signale tout ajout ou changement.
 - Cherche, parmi les programmes ouverts sur ton appareil, ceux qui servent à tricher (autoclickers, enregistreurs de macros, injecteurs…). Il n'envoie que ceux qui correspondent à cette liste (leur nom, leur chemin et une empreinte du programme) ; il n'envoie jamais la liste complète de ce que tu as ouvert.
 - Envoie ces alertes au studio de l'instance, avec ton nom de joueur et la liste des mods de l'instance.
+- Quand il détecte quelque chose d'important, il prend une capture et enregistre une courte vidéo (environ 10 secondes) de la fenêtre de Minecraft et les envoie au studio. Elles sont supprimées automatiquement après 30 jours.
+- Permet à l'équipe du studio de voir en direct la fenêtre de Minecraft pendant que tu joues. Seulement la fenêtre du jeu : jamais le reste de ton écran ni le son. Rien n'est enregistré : le panel ne garde que la dernière image pendant que tu joues.
 
 Le studio peut examiner les alertes, fermer ta partie ou te bannir de son instance. Chaque studio est responsable de l'usage qu'il fait de ces alertes. Si tu n'es pas d'accord, ne joue pas aux instances avec KopiGuard.
 

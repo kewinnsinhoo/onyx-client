@@ -11,7 +11,7 @@ import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
-import { guardReport, guardApi } from './guard.js';
+import { guardReport, guardApi, guardMedia, guardFrame, camWanted } from './guard.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
@@ -43,6 +43,7 @@ export default {
     await ensureSchema(env.DB);
     ctx.waitUntil(runChecks(env));
     ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
+    ctx.waitUntil(env.DB.prepare('DELETE FROM guard_live WHERE at IS NULL OR at < ?').bind(now() - 10 * 60e3).run()); // cámaras viejas
   }
 };
 
@@ -284,7 +285,7 @@ async function studioApi(c, parts, m) {
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m, sub, d);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
-  if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r));
+  if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
   if (a === 'activity' && m === 'GET') {
@@ -774,6 +775,8 @@ async function launcherApi(req, env, u, path, m, ctx) {
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
   // KopiGuard: el launcher avisa de lo que ha visto mientras se juega
+  if (parts[0] === 'guard' && parts[1] === 'media' && m === 'POST') return guardMedia(env, P, req, u.searchParams);
+  if (parts[0] === 'guard' && parts[1] === 'frame' && m === 'POST') return guardFrame(env, P, await readJson(req, 1024 * 1024));
   if (parts[0] === 'guard' && m === 'POST') return guardReport(env, ctx, P, await readJson(req, 256 * 1024));
 
   if (parts[0] === 'redeem' && m === 'POST') {
@@ -844,7 +847,11 @@ async function launcherApi(req, env, u, path, m, ctx) {
     const pl = await env.DB.prepare('SELECT * FROM plays WHERE id = ? AND player_key = ?').bind(String(b.play || ''), P.key).first();
     if (!pl) fail(404, 'play', 'Partida no encontrada');
     const t = now();
-    if (parts[0] === 'end') { await env.DB.prepare('UPDATE plays SET ended_at = ?, last_seen = ? WHERE id = ?').bind(t, t, pl.id).run(); return json({ ok: true }); }
+    if (parts[0] === 'end') {
+      await env.DB.prepare('UPDATE plays SET ended_at = ?, last_seen = ? WHERE id = ?').bind(t, t, pl.id).run();
+      await env.DB.prepare('DELETE FROM guard_live WHERE play_id = ?').bind(pl.id).run();
+      return json({ ok: true });
+    }
     await env.DB.prepare('UPDATE plays SET last_seen = ? WHERE id = ?').bind(t, pl.id).run();
     // ¿Hay que sacarle? (instancia cerrada con "sacar al cerrar", baneado o bloqueada sin ser staff)
     const row = await env.DB.prepare('SELECT * FROM instances WHERE id = ?').bind(pl.instance_id).first();
@@ -856,7 +863,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
       if (await isBanned(row)) kick = true;
       else if (!staff && data.schedule.kickOnClose && ((data.schedule.closesAt && t > data.schedule.closesAt) || row.state === 'locked')) kick = true;
     }
-    return json({ ok: true, kick });
+    return json({ ok: true, kick, cam: kick ? null : await camWanted(env, pl) });
   }
 
   fail(404, 'not_found', 'Ruta no encontrada');

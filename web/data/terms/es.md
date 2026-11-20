@@ -1,6 +1,6 @@
 # Términos y condiciones de uso de Kopi Client
 
-**Última actualización:** 20/11/2026 · **Versión:** 1.1
+**Última actualización:** 20/11/2026 · **Versión:** 1.2
 
 > PRODUCTO NO OFICIAL DE MINECRAFT. NO ESTÁ APROBADO NI ASOCIADO CON MOJANG O MICROSOFT.
 
@@ -46,6 +46,8 @@ Algunos studios activan KopiGuard en sus instancias para evitar trampas. Esas in
 - Comprueba que los mods, los paquetes de texturas y shaders y los archivos de la instancia son los que puso el studio, y avisa si se añade o se cambia alguno.
 - Busca, entre los programas abiertos en tu equipo, los que sirven para hacer trampas (autoclickers, grabadores de macros, inyectores…). Solo envía los que coinciden con esa lista (su nombre, su ruta y una huella del programa); nunca envía la lista completa de lo que tienes abierto.
 - Envía estos avisos al studio de la instancia, con tu nombre de jugador y la lista de mods de la instancia.
+- Cuando detecta algo importante, saca una foto y graba un vídeo corto (unos 10 segundos) de la ventana de Minecraft y los envía al studio. Se borran solos a los 30 días.
+- Permite que el equipo del studio vea en directo la ventana de Minecraft mientras juegas. Solo la ventana del juego: nunca el resto de tu pantalla ni el sonido. No se graba: el panel solo guarda la última imagen mientras juegas.
 
 El studio puede revisar los avisos, cerrarte la partida o banearte de su instancia. Cada studio es responsable de cómo usa estos avisos. Si no estás de acuerdo, no juegues en instancias con KopiGuard.
 

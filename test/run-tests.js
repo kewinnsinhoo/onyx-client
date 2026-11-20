@@ -1005,19 +1005,38 @@ test('panel: errores legibles', () => {
     assert.deepStrictEqual(hits.map(h => h.proc.name), ['OP AutoClicker', 'notmyapp', 'ProcessHacker']);
     assert.deepStrictEqual(guard.parseProcesses('/Applications/Clicker.app/Contents/MacOS/AutoClicker\n', 'darwin')[0], { name: 'AutoClicker', path: '/Applications/Clicker.app/Contents/MacOS/AutoClicker', title: '' });
     // la partida entera: avisa, no repite y expulsa si el panel lo pide
-    const sent = []; let kicked = 0;
-    const stop = guard.start({
-      gameDir: tmp, managed,
+    const sent = [], uploads = [], frames = []; let kicked = 0, n = 0, shots = 0, closed = 0, camAnswers = ['live', 'live', 'grid', null];
+    const capture = {
+      shot: async () => { shots++; return Buffer.from([0xff, 0xd8, 1]); },
+      video: async () => { await new Promise(r => setTimeout(r, 20)); return Buffer.from([0x1a, 0x45, 0xdf, 0xa3]); },
+      frame: async (hd) => (hd ? 'HD' : 'sd'),
+      close: () => { closed++; }
+    };
+    const run = guard.start({
+      gameDir: tmp, managed, capture,
       manifest: { guard: { enabled: true, packsOk: false, programs: P }, files: [{ path: 'mods/sodium.jar' }] },
-      timers: { grace: 30, files: 30, programs: 40, flush: 10 },
+      timers: { grace: 30, files: 30, programs: 40, flush: 10, video: 20, live: 5, grid: 5 },
       list: async () => procs.slice(1, 2),
-      report: async (ev) => { sent.push(...ev); return { kick: ev.some(e => e.type === 'program') }; },
+      report: async (ev) => { sent.push(...ev); return { kick: ev.some(e => e.type === 'program'), ids: ev.map(e => ({ id: 'e' + (++n), media: e.severity !== 'low' })) }; },
+      upload: async (id, kind, buf) => { uploads.push([id, kind, buf.length]); },
+      sendFrame: async (f, hd) => { frames.push([f, hd]); return { cam: camAnswers.shift() || null }; },
       onKick: () => { kicked++; }
     });
     await new Promise(r => setTimeout(r, 150));
     put('mods/killaura.jar');
+    run.cam('grid'); // alguien abre la página de cámaras
     await new Promise(r => setTimeout(r, 150));
-    stop();
+    run.stop();
+    await new Promise(r => setTimeout(r, 50));
+    // foto y vídeo de cada detección importante, subidos con el id que da el panel
+    assert.ok(uploads.some(u => u[1] === 'shot') && uploads.some(u => u[1] === 'video'));
+    assert.strictEqual(uploads.filter(u => u[1] === 'shot').length, shots);
+    assert.ok(shots <= 6);
+    assert.ok(!JSON.stringify(sent).includes('shot'), 'la foto no va en el aviso');
+    // cámara: pequeña en la cuadrícula, nítida al mirar en grande, y para cuando nadie mira
+    assert.deepStrictEqual(frames.map(f => f[1]), [false, true, true, false]);
+    assert.deepStrictEqual(frames[1], ['HD', true]);
+    assert.strictEqual(closed, 1);
     const types = sent.map(e => e.type);
     assert.ok(types.includes('program') && types.filter(t => t === 'program').length === 1, 'el mismo programa, una vez');
     assert.ok(sent.some(e => e.type === 'mod' && /que no es de la instancia/.test(e.detail) && e.items.includes('mods/wurst.jar')), 'mods de antes de empezar');
@@ -1028,7 +1047,7 @@ test('panel: errores legibles', () => {
     assert.ok(kicked >= 1);
     assert.ok(!JSON.stringify(sent).includes('chrome'), 'nunca la lista de programas');
     // apagado: no hace nada
-    assert.strictEqual(typeof guard.start({ gameDir: tmp, manifest: { guard: null } }), 'function');
+    assert.strictEqual(typeof guard.start({ gameDir: tmp, manifest: { guard: null } }).stop, 'function');
     fs.rmSync(tmp, { recursive: true, force: true });
     passed++; console.log('  ✓ KopiGuard: mods, paquetes, archivos y programas');
   } catch (e) { console.error('  ✗ KopiGuard\n    ' + (e.stack || e.message)); process.exitCode = 1; }

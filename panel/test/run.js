@@ -892,4 +892,64 @@ await test('KopiGuard: avisos del launcher, Discord, expulsar y sancionar', asyn
   assert.ok(JSON.stringify((await call('GET', '/api/s/onyx-studios/activity', { cookie: creator })).data).includes('guard.sanction'));
 });
 
+await test('KopiGuard: foto, vídeo y cámaras en directo', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Cámaras' } });
+  const gid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, guard: { enabled: true } } } });
+  const p = await player('Mirado', false);
+  const play = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
+  // detecciones: las importantes llevan foto y vídeo; las leves no
+  let r = await call('POST', '/api/l/guard', { headers: p, body: { play: play.play, events: [{ type: 'mod', severity: 'high', detail: 'Mod añadido: mods/a.jar' }, { type: 'file', severity: 'low', detail: 'Archivo nuevo en config: config/x' }] } });
+  assert.strictEqual(r.data.ids.length, 2);
+  assert.strictEqual(r.data.ids[0].media, true);
+  assert.strictEqual(r.data.ids[1].media, false);
+  const evId = r.data.ids[0].id;
+  const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]), WEBM = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 9, 9]);
+  const up = (kind, raw, ev = evId, who = p) => call('POST', `/api/l/guard/media?play=${play.play}&event=${ev}&kind=${kind}`, { headers: { ...who, 'Content-Type': 'application/octet-stream' }, raw });
+  assert.strictEqual((await up('shot', WEBM)).status, 400, 'una foto tiene que ser JPEG');
+  assert.strictEqual((await up('shot', JPEG)).status, 200);
+  assert.strictEqual((await up('shot', JPEG)).status, 409, 'una sola vez');
+  assert.strictEqual((await up('video', WEBM)).status, 200);
+  assert.strictEqual((await up('shot', JPEG, r.data.ids[1].id)).status, 403, 'la leve no lleva foto');
+  const stranger = await player('Otro', false);
+  assert.strictEqual((await up('shot', JPEG, evId, stranger)).status, 404, 'solo el jugador de esa partida');
+  const det = (await call('GET', `/api/s/onyx-studios/guard/${evId}`, { cookie: creator })).data.event;
+  assert.deepStrictEqual([det.media.shot, det.media.video], [true, true]);
+  let f = await call('GET', `/api/s/onyx-studios/guard/${evId}/shot`, { cookie: creator });
+  assert.deepStrictEqual([f.status, f.headers.get('Content-Type')], [200, 'image/jpeg']);
+  f = await call('GET', `/api/s/onyx-studios/guard/${evId}/video`, { cookie: creator });
+  assert.deepStrictEqual([f.status, f.headers.get('Content-Type')], [200, 'video/webm']);
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/${evId}/shot`, { cookie: other })).status, 403, 'solo el studio');
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/guard/live', { cookie: other })).status, 403);
+
+  // cámaras: nadie mira → el launcher no manda nada
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data.cam, null);
+  assert.strictEqual((await call('POST', '/api/l/guard/frame', { headers: p, body: { play: play.play, frame: '/9j/AAAA' } })).data.cam, null);
+  // se abre la página de cámaras → imágenes pequeñas de vez en cuando
+  let cams = (await call('GET', '/api/s/onyx-studios/guard/live', { cookie: creator })).data;
+  const me = cams.players.find(x => x.play === play.play);
+  assert.ok(me, JSON.stringify(cams)); assert.strictEqual(me.frameAt, null); assert.ok(me.instanceName && me.instance === gid);
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data.cam, 'grid');
+  const b64 = Buffer.from(JPEG).toString('base64');
+  assert.strictEqual((await call('POST', '/api/l/guard/frame', { headers: p, body: { play: play.play, frame: b64 } })).data.cam, 'grid');
+  assert.strictEqual((await call('POST', '/api/l/guard/frame', { headers: p, body: { play: play.play, frame: 'AAAA' } })).status, 400, 'solo JPEG');
+  cams = (await call('GET', '/api/s/onyx-studios/guard/live', { cookie: creator })).data;
+  assert.ok(cams.players.find(x => x.play === play.play).frameAt > 0);
+  f = await call('GET', `/api/s/onyx-studios/guard/live/${play.play}/img`, { cookie: creator });
+  assert.deepStrictEqual([f.status, f.headers.get('Content-Type')], [200, 'image/jpeg']);
+  // mirarle en grande → imágenes seguidas
+  const one = (await call('GET', `/api/s/onyx-studios/guard/live/${play.play}`, { cookie: creator })).data;
+  assert.deepStrictEqual([one.playing, one.player], [true, 'Mirado']);
+  assert.strictEqual((await call('POST', '/api/l/guard/frame', { headers: p, body: { play: play.play, frame: null, hd: true } })).data.cam, 'live');
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/live/${play.play}`, { cookie: creator })).data.hidden, true, 'ventana minimizada');
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/live/${play.play}/img`, { cookie: creator })).status, 200, 'se queda la última imagen');
+  // expulsar desde la cámara
+  assert.strictEqual((await call('POST', `/api/s/onyx-studios/guard/live/${play.play}`, { cookie: creator, body: { action: 'kick' } })).data.kicked, true);
+  assert.strictEqual((await call('POST', '/api/l/beat', { headers: p, body: { play: play.play } })).data.kick, true);
+  // al acabar la partida, su imagen se borra
+  await call('POST', '/api/l/end', { headers: p, body: { play: play.play } });
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/guard/live/${play.play}/img`, { cookie: creator })).status, 404);
+  assert.ok(!(await call('GET', '/api/s/onyx-studios/guard/live', { cookie: creator })).data.players.some(x => x.play === play.play));
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

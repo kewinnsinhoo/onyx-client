@@ -273,7 +273,20 @@ CREATE TABLE guard_events (
 CREATE INDEX guard_studio ON guard_events(studio_id, created_at);
 CREATE INDEX guard_play ON guard_events(play_id);
 CREATE INDEX guard_player ON guard_events(instance_id, player_key);
-ALTER TABLE plays ADD COLUMN kick_reason TEXT`
+ALTER TABLE plays ADD COLUMN kick_reason TEXT`,
+  `-- KopiGuard: captura y vídeo de cada detección (en MEDIA) y cámaras en directo
+ALTER TABLE guard_events ADD COLUMN media TEXT;
+CREATE TABLE guard_live (
+  play_id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL,
+  frame TEXT,                        -- última imagen del juego (JPEG en base64)
+  hd INTEGER NOT NULL DEFAULT 0,
+  none INTEGER NOT NULL DEFAULT 0,   -- 1: juego minimizado; 2: ese equipo no puede capturar
+  at INTEGER,
+  focus_at INTEGER                   -- alguien está mirando a este jugador en grande
+);
+CREATE INDEX guard_live_studio ON guard_live(studio_id);
+CREATE TABLE guard_watch (studio_id TEXT PRIMARY KEY, at INTEGER NOT NULL)`
 ];
 
 export function statements(sql) {

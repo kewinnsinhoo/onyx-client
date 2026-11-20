@@ -11,6 +11,7 @@ const skinmod = require('./skinmod');
 const perfmode = require('./perfmode');
 const vault = require('./vault');
 const guard = require('./guard');
+const capture = require('./capture');
 const game = require('./game/launch');
 const log = require('./logger');
 
@@ -308,7 +309,8 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   }
 
   let stopBeat = () => {};
-  let stopGuard = () => {};
+  let guardRun = null;
+  const stopGuard = () => { if (guardRun) guardRun.stop(); };
   let kicked = false;
   let launched = false;
   try {
@@ -344,14 +346,17 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         log.info(`[panel] El studio cerró ${id}: se cierra el juego`);
         stop(id);
       };
-      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick);
       if (guardOn) {
         log.info(`[KopiGuard] Vigilando ${id}`);
-        stopGuard = guard.start({
-          gameDir, manifest: m, managed: inst.managedFiles, initial: guardFirst, onKick: kick,
-          report: (events) => panel.guardReport(account, session.play, events)
+        guardRun = guard.start({
+          gameDir, manifest: m, managed: inst.managedFiles, initial: guardFirst, onKick: kick, capture,
+          report: (events) => panel.guardReport(account, session.play, events),
+          upload: (eventId, kind, buf) => panel.guardMedia(account, session.play, eventId, kind, buf),
+          sendFrame: (frame, hd) => panel.guardFrame(account, session.play, frame, hd)
         });
       }
+      // el latido también dice si alguien del studio quiere ver la cámara
+      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick, (r) => { if (guardRun && 'cam' in r) guardRun.cam(r.cam); });
     }
   } catch (e) {
     if (session) panel.endPlay(account, session.play).catch(() => {});

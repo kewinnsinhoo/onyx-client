@@ -63,6 +63,7 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   win.once('ready-to-show', () => win.show());
+  win.on('closed', () => { try { require('./capture').destroy(); } catch { /* nada */ } }); // la ventana oculta de KopiGuard no deja cerrar el launcher
   win.on('maximize', () => send('window:state', { maximized: true }));
   win.on('unmaximize', () => send('window:state', { maximized: false }));
   // Los enlaces externos se abren en el navegador

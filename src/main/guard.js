@@ -119,32 +119,55 @@ function matchPrograms(procs, programs) {
 }
 
 // ---------------------------------------------------------------- vigilar una partida
-// opts: { gameDir, manifest, managed, initial (lo de foreign() antes de esconder los mods), report(events) → Promise<{ kick }>, onKick(), timers?, list? }
+// opts: { gameDir, manifest, managed, initial (lo de foreign() antes de esconder los mods),
+//         report(events) → Promise<{ kick, ids }>, upload(eventId, 'shot'|'video', Buffer), sendFrame(b64|''|null, hd) → Promise<{ cam }>,
+//         capture: { shot(), video(ms), frame(hd), close() } (capture.js), onKick(), timers?, list? }
+// Devuelve { stop(), cam(modo) }: cam('grid'|'live'|null) lo llama el latido cuando alguien quiere ver la cámara.
 function start(opts) {
   const g = (opts.manifest && opts.manifest.guard) || {};
-  if (!g.enabled) return () => {};
+  if (!g.enabled) return { stop() {}, cam() {} };
   const { gameDir } = opts;
   const managed = opts.managed || [];
   const packsOk = !!g.packsOk;
-  const T = { files: 15e3, programs: 30e3, grace: 60e3, flush: 3e3, ...(opts.timers || {}) };
+  const T = { files: 15e3, programs: 30e3, grace: 60e3, flush: 3e3, video: 10e3, live: 600, grid: 5e3, ...(opts.timers || {}) };
+  const cap = opts.capture || null;
+  let mediaLeft = 6; // como en el panel: foto y vídeo de las 6 primeras detecciones que importan
   const list = opts.list || listProcesses;
   const mods = (opts.manifest.files || []).map(f => Sync.norm(f && f.path)).filter(r => r && under(r, 'mods') && isJar(r)).map(r => path.posix.basename(r)).slice(0, 300);
   const queue = [], sentKeys = new Set();
   const timers = [];
   let stopped = false, before = null, flushing = false;
 
+  const media = new WeakMap(); // evento → { shot, video } (promesas): la foto se saca al momento de verlo
   const push = (e) => {
     const key = `${e.type}:${e.detail}`;
     if (sentKeys.has(key)) return; // la misma cosa, una vez por partida
     sentKeys.add(key);
-    queue.push({ ...e, mods });
+    const ev = { ...e, mods };
+    if (cap && e.severity !== 'low' && mediaLeft > 0) {
+      mediaLeft--;
+      media.set(ev, { shot: Promise.resolve().then(() => cap.shot()).catch(() => null), video: Promise.resolve().then(() => cap.video(T.video)).catch(() => null) });
+    }
+    queue.push(ev);
   };
+  const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+  async function sendMedia(ev, id) {
+    const m = media.get(ev);
+    if (!m || !opts.upload) return;
+    const shot = await withTimeout(m.shot, 10e3);
+    if (shot) await opts.upload(id, 'shot', shot).catch(() => {});
+    // el vídeo, cuando termine de grabarse (sin esperar)
+    m.video.then(v => v && opts.upload(id, 'video', v)).catch(() => {});
+  }
   async function flush() {
-    if (stopped || flushing || !queue.length) return;
+    if (flushing || !queue.length) return;
     flushing = true;
     const batch = queue.splice(0, 10);
     try {
-      const r = await opts.report(batch);
+      const r = await opts.report(batch.map(({ ...e }) => e));
+      const ids = (r && r.ids) || [];
+      // primero la foto (antes de cerrar el juego, si toca expulsar)
+      await Promise.all(batch.map((ev, i) => ids[i] && ids[i].media ? sendMedia(ev, ids[i].id) : null));
       if (r && r.kick && !stopped) opts.onKick && opts.onKick();
     } catch { queue.unshift(...batch.filter(() => queue.length < 50)); }
     finally { flushing = false; }
@@ -189,11 +212,39 @@ function start(opts) {
   timers.push(setInterval(flush, T.flush));
   setTimeout(flush, 0);
 
-  return () => {
-    if (stopped) return;
-    flush(); // lo último que quedó
-    stopped = true;
-    for (const t of timers) { clearTimeout(t); clearInterval(t); }
+  // 4) cámaras en directo: mientras alguien del studio mire, se mandan imágenes del juego
+  let camMode = null, camLoop = null;
+  function cam(mode) {
+    camMode = stopped || !cap || !opts.sendFrame ? null : mode || null;
+    if (!camMode || camLoop) return;
+    camLoop = (async () => {
+      let fails = 0;
+      while (camMode && !stopped) {
+        const hd = camMode === 'live';
+        const started = Date.now();
+        try {
+          const f = await cap.frame(hd);
+          const r = await opts.sendFrame(f, hd);
+          camMode = r ? r.cam || null : null;
+          fails = 0;
+          if (f === null) camMode = camMode && 'grid'; // sin captura en este equipo: avisarlo de vez en cuando basta
+        } catch { if (++fails >= 3) camMode = null; }
+        const wait = (camMode === 'live' ? T.live : T.grid) - (Date.now() - started);
+        if (camMode && wait > 0) await new Promise(r => setTimeout(r, wait));
+      }
+      camLoop = null;
+    })();
+  }
+
+  return {
+    cam,
+    stop() {
+      if (stopped) return;
+      stopped = true; camMode = null;
+      for (const t of timers) { clearTimeout(t); clearInterval(t); }
+      flush(); // lo último que quedó (y sus fotos)
+      if (cap) cap.close();
+    }
   };
 }
 

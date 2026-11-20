@@ -92,6 +92,17 @@
     await load();
   };
 
+  // Foto y vídeo de la detección (el launcher los sube justo después de avisar)
+  function mediaBlock(e) {
+    const m = e.media, base = `/api/s/${encodeURIComponent(S.studio.id)}/guard/${encodeURIComponent(e.id)}`;
+    if (!m) return `<div class="g-sec g-media">${icon('image')}<div><b>${t('Sin captura')}</b><small>${t('Las detecciones leves (y a partir de la sexta de una partida) no llevan foto ni vídeo.')}</small></div></div>`;
+    if (!m.shot && !m.video) return `<div class="g-sec g-media">${icon('image')}<div><b>${t('Captura y vídeo')}</b><small>${t('Todavía no han llegado. Si el jugador tenía el juego minimizado, no habrá.')}</small></div></div>`;
+    return html`<div class="g-shots">
+      ${m.shot ? `<a class="g-shot" href="${base}/shot" target="_blank" rel="noopener" title="${esc(t('Abrir en grande'))}"><img src="${base}/shot" alt="" loading="lazy"><span class="g-cap">${icon('camera')}${t('Captura')}</span></a>` : ''}
+      ${m.video ? `<div class="g-shot g-vid"><video src="${base}/video" controls preload="metadata" playsinline></video><span class="g-cap">${icon('video')}${t('Vídeo · 10 s')}</span></div>` : ''}
+    </div>`;
+  }
+
   // ---------------------------------------------------------------- detalle (panel lateral)
   async function openEvent(id, onChange) {
     let changed = false;
@@ -106,6 +117,7 @@
           <div class="mb g-dbody">
             <div class="g-who">${head(e.player)}<div><b>${esc(e.player)}</b><small>${esc(e.instanceName)} · ${esc(fmtDateTime(e.at))}</small></div>
               <span class="grow"></span>${e.playing ? `<span class="badge ok">${icon('activity')}${t('Jugando ahora')}</span>` : ''}</div>
+            ${e.livePlay && (can('editor') || (S.me && S.me.user.role === 'creator')) ? `<a class="btn sm g-live-btn" href="#/cameras?play=${encodeURIComponent(e.livePlay)}" data-x>${icon('video')}${t('Ver su cámara en directo')}</a>` : ''}
             <div class="g-tags"><span class="badge g-type t-${e.type}">${icon(TYPE_NAME[e.type][0])}${esc(t(TYPE_NAME[e.type][1]))}</span>${badge(SEV[e.severity])}${badge(ST[e.status])}${e.kicked ? `<span class="badge danger solid">${icon('logout')}${t('Expulsado')}</span>` : ''}</div>
             <h4 class="g-title">${esc(e.detail)}</h4>
             ${(d.items || []).length > 1 ? html`<ul class="g-items">${d.items.map(x => `<li class="mono">${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -115,7 +127,7 @@
               ${p.hash ? `<div class="g-kv"><span>${t('Huella')}</span><code>${esc(p.hash)}</code></div>` : ''}</div>` : ''}
             ${(d.mods || []).length ? html`<details class="g-sec g-mods"><summary><span class="label">${t('Mods cargados ({n})', { n: d.mods.length })}</span></summary>
               <div class="chips">${d.mods.map(x => `<span class="tag mono">${esc(x)}</span>`).join('')}</div></details>` : ''}
-            <div class="g-sec g-media">${icon('image')}<div><b>${t('Captura y vídeo')}</b><small>${t('Muy pronto: una foto y un vídeo corto del juego cuando salte algo.')}</small></div></div>
+            ${mediaBlock(e)}
             ${e.others ? `<p class="help">${e.others === 1 ? t('Este jugador tiene 1 detección más en esta instancia.') : t('Este jugador tiene {n} detecciones más en esta instancia.', { n: e.others })}</p>` : ''}
             ${e.handledBy ? `<p class="help">${t('Último cambio: {who}, {when}', { who: esc(e.handledBy), when: esc(fmtDateTime(e.handledAt)) })}</p>` : ''}
           </div>
@@ -125,7 +137,7 @@
             <button class="btn danger" data-a="sanction" ${e.status === 'sanctioned' ? 'disabled' : ''}>${icon('ban')}${t('Sancionar')}</button>
             <button class="btn danger" data-a="kick" ${e.playing ? '' : `disabled title="${esc(t('Solo si está jugando ahora'))}"`}>${icon('logout')}${t('Expulsar')}</button>
           </div>` : ''}`;
-        $('[data-x]', m).onclick = done;
+        $$('[data-x]', m).forEach(x => { x.onclick = () => done(); });
         $$('[data-a]', m).forEach(b => b.onclick = async () => {
           const a = b.dataset.a;
           if (a === 'sanction' && !(await confirmBox({ title: t('¿Sancionar a {n}?', { n: e.player }), text: t('Queda baneado en {i}: no podrá volver a entrar. Si está jugando, se le cierra el juego.', { i: e.instanceName }), ok: t('Sancionar'), danger: true, ico: 'ban' }))) return;

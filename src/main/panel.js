@@ -66,15 +66,15 @@ function toError(body, status) {
   return e;
 }
 
-async function request(method, rel, { body, token, timeout = 15000 } = {}) {
+async function request(method, rel, { body, raw, token, timeout = 15000 } = {}) {
   const b = base();
   if (!b) throw new PanelError('El launcher no está conectado al panel', 'no_panel');
   let res;
   try {
     res = await fetchImpl(`${b}/api/l/${rel}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
+      headers: { 'Content-Type': raw ? 'application/octet-stream' : 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: raw || (body ? JSON.stringify(body) : undefined),
       signal: AbortSignal.timeout(timeout)
     });
   } catch (e) {
@@ -150,6 +150,12 @@ const endPlay = (account, play) => call(account, 'POST', 'end', { play });
 const referral = (account, studio) => call(account, 'POST', 'referral', { studio });
 // KopiGuard: avisos de lo que se vio durante la partida → { saved, kick }
 const guardReport = (account, play, events) => call(account, 'POST', 'guard', { play, events });
+// La foto (JPEG) o el vídeo (WebM) de una detección, tal cual
+const guardMedia = (account, play, event, kind, buf) =>
+  call(account, 'POST', `guard/media?play=${encodeURIComponent(play)}&event=${encodeURIComponent(event)}&kind=${kind}`, undefined, { raw: buf, timeout: 120000 });
+// Una imagen para las cámaras en directo (base64 JPEG, '' si el juego está minimizado) → { cam: 'live'|'grid'|null }
+// frame null = este equipo no puede capturar (p. ej. macOS sin permiso de grabar pantalla)
+const guardFrame = (account, play, frame, hd) => call(account, 'POST', 'guard/frame', { play, frame: frame || null, hd: !!hd, off: frame === null });
 
 // Kopi Skins: sube la skin de una cuenta no premium para que se vea en los servidores con el plugin.
 // Solo si cambió desde la última vez. skin = { png (base64), variant } o null para quitarla.
@@ -191,13 +197,14 @@ async function publicGet(rel) {
 }
 
 // Mantiene viva la partida en el panel y avisa si el studio echa al jugador
-function heartbeat(account, play, everySec, onKick) {
+function heartbeat(account, play, everySec, onKick, onBeat) {
   let ended = false;
   const iv = setInterval(async () => {
     if (ended) return;
     try {
       const r = await beat(account, play);
       if (r && r.kick && !ended) { clearInterval(iv); onKick(); }
+      else if (r && !ended && onBeat) onBeat(r); // p. ej. KopiGuard: alguien quiere ver la cámara
     } catch (e) { log.warn('[panel] latido:', e.message); }
   }, Math.max(15, everySec || 60) * 1000);
   return () => {
@@ -207,4 +214,4 @@ function heartbeat(account, play, everySec, onKick) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, guardReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

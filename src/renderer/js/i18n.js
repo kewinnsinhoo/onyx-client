@@ -247,7 +247,7 @@
     ['Abrir de nuevo', 'Open again', 'Torna a obrir', 'Rouvrir'],
     ['¿No se abre? Iniciar sesión en una ventana del launcher', 'Not opening? Sign in in a launcher window', 'No s’obre? Inicia la sessió en una finestra del launcher', 'Rien ne s’ouvre ? Se connecter dans une fenêtre du launcher'],
     ['Rendimiento', 'Performance', 'Rendiment', 'Performances'],
-    ['Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya mods ni programas de trampas.', 'This studio uses KopiGuard: while you play, the launcher checks for cheating mods and programs.', 'Aquest studio fa servir KopiGuard: mentre jugues, el launcher comprova que no hi hagi mods ni programes de trampes.', 'Ce studio utilise KopiGuard : pendant que tu joues, le launcher vérifie qu’il n’y a pas de mods ni de programmes de triche.'],
+    ['Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.', 'This studio uses KopiGuard: while you play, the launcher checks for cheats and the studio can watch the game window live.', 'Aquest studio fa servir KopiGuard: mentre jugues, el launcher comprova que no hi hagi trampes, i el studio pot veure en directe la finestra del joc.', 'Ce studio utilise KopiGuard : pendant que tu joues, le launcher vérifie qu’il n’y a pas de triche, et le studio peut voir la fenêtre du jeu en direct.'],
     ['Restablecer', 'Reset', 'Restableix', 'Réinitialiser'],
     ['Ruta de Java', 'Java path', 'Ruta de Java', 'Chemin de Java'],
     ['Salir del launcher', 'Quit launcher', 'Surt del launcher', 'Quitter le launcher'],

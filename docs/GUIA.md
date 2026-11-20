@@ -214,7 +214,10 @@ Para que se cuenten solos:
   - **Programa:** autoclickers, grabadores de macros, Cheat Engine, inyectores, editores de procesos… Solo se envían los que coinciden con la lista (`PROGRAMS` en `panel/src/guard.js`, se amplía sin sacar otra versión del launcher). Las ventanas de navegadores, Discord, OBS, etc. no cuentan aunque digan «auto clicker».
 - **Página KopiGuard del panel:** números, pestañas por tipo y estado, gravedad, búsqueda, instancia y fechas. Al pulsar una detección se abre el detalle (datos técnicos, mods cargados) con **Revisar**, **Descartar**, **Sancionar** (ban en esa instancia y se le cierra el juego) y **Expulsar** (solo si está jugando).
 - **Límites:** como mucho 60 detecciones por partida y la misma cosa una vez cada 10 minutos. Los latidos pasan a ser cada 20 s para expulsar más rápido.
-- **Pendiente (próximas fases):** captura y vídeo corto del juego, cámaras en directo y el plugin del servidor para movimientos raros (sin contar empujones, explosiones, caídas, slime, tridente ni élitros).
+- **Foto y vídeo (1.7.0):** cada detección importante (no las leves, y como mucho 6 por partida) llega con una foto y un vídeo de 10 s **solo de la ventana de Minecraft** (sin sonido). Se ven en el detalle de la detección y se borran solos a los 30 días (se guardan en el KV `MEDIA`).
+- **Cámaras en directo (1.7.0):** menú **Cámaras** del panel (editores, administradores y dueño). Cuadrícula de quien está jugando en instancias con KopiGuard (imagen nueva cada ~5 s) y, al pulsar a alguien, se le ve en grande (~1–2 imágenes por segundo, más nítidas), con **Guardar captura**, **Pantalla completa** y **Expulsar**. La primera imagen tarda hasta 20 s (llega con el latido). No se graba nada: el panel solo guarda la última imagen de cada partida y la borra al acabar. El launcher solo manda imágenes mientras alguien mira.
+  - En Mac hace falta que el jugador dé permiso para grabar la pantalla; si no, sale «Este equipo no permite capturar el juego». En Linux con Wayland no hay capturas.
+- **Pendiente:** el plugin del servidor para movimientos raros (sin contar empujones, explosiones, caídas, slime, tridente ni élitros).
 - Está explicado en los términos del launcher (punto 8), en los 4 idiomas.
 
 ## Cosas a saber
