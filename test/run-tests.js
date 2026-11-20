@@ -745,3 +745,91 @@ test('panel: errores legibles', () => {
     passed++; console.log('  ✓ skins de Kopi: el mod según versión y loader');
   } catch (e) { console.error('  ✗ skins de Kopi\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Modo rendimiento: mods de optimización según versión y loader, sin chocar con los del studio
+(async () => {
+  try {
+    const perfmode = require('../src/main/perfmode');
+    // copia propia de skinmod (la otra prueba de skins corre a la vez y usa su propia caché)
+    delete require.cache[require.resolve('../src/main/skinmod')];
+    const skinmod = require('../src/main/skinmod');
+    const Sync = require('../src/main/sync');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-perf-'));
+    perfmode.init(tmp); skinmod.init(tmp);
+    const FAPI = 'P7dR8mSH';
+    const ver = (v, deps = []) => [{ version_number: v, version_type: 'release', dependencies: deps, files: [{ primary: true, url: `https://cdn.modrinth.com/${v}.jar`, hashes: { sha1: 's' }, size: 3 }] }];
+    const fetchJson = async (url) => {
+      const q = new URL(url).searchParams;
+      const loader = JSON.parse(q.get('loaders'))[0], mc = JSON.parse(q.get('game_versions'))[0];
+      const project = url.split('/project/')[1].split('/')[0];
+      if (mc === '1.0') return [];
+      if (project === 'sodium') return loader === 'fabric' ? ver('sodium-0.6.13', [{ project_id: FAPI, dependency_type: 'required' }]) : [];
+      if (project === 'embeddium') return loader === 'forge' ? ver('embeddium-0.3.31') : [];
+      if (project === 'lithium') return loader === 'fabric' ? ver('lithium-0.15.0', [{ project_id: 'otro', dependency_type: 'optional' }]) : [];
+      if (project === 'ferrite-core') return ver(`ferritecore-7.0.2-${loader}`);
+      if (project === 'entityculling') return ver('entityculling-1.7.2', [{ project_id: 'Skyl1bs', dependency_type: 'required' }]); // necesita otra librería
+      if (project === 'fabric-api') return loader === 'fabric' ? ver('fabric-api-0.116.7') : [];
+      if (project === 'idMHQ4n2') return ver(`csl-15-${loader}`);
+      return [];
+    };
+    const downloadFile = async (t) => { fs.mkdirSync(path.dirname(t.dest), { recursive: true }); fs.writeFileSync(t.dest, 'jar'); };
+    const deps = { fetchJson, downloadFile };
+    const g = path.join(tmp, 'instances', 'evento');
+    const mods = () => { try { return fs.readdirSync(path.join(g, 'mods')).sort(); } catch { return []; } };
+
+    // apagado: no pone nada
+    let r = await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: false }, deps);
+    assert.deepStrictEqual([r.status, mods()], ['off', []]);
+    // Fabric 1.21.1: Sodium, Lithium y FerriteCore; EntityCulling no (necesita otra librería)
+    r = await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    assert.deepStrictEqual(r.mods, ['Sodium', 'Lithium', 'FerriteCore']);
+    assert.strictEqual(r.needsFabricApi, true);
+    assert.deepStrictEqual(mods(), ['kopi-perf-ferrite-core-ferritecore-7.0.2-fabric.jar', 'kopi-perf-lithium-lithium-0.15.0.jar', 'kopi-perf-sodium-sodium-0.6.13.jar']);
+    // Fabric API: una sola copia, la pone skinmod aunque las skins estén apagadas
+    let s = await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: false, panelBase: 'https://p', needFabricApi: r.needsFabricApi }, deps);
+    assert.strictEqual(s.fabricApi, 'kopi-skins-fabric-api-fabric-api-0.116.7.jar');
+    assert.ok(mods().includes(s.fabricApi));
+    // con skins y capas a la vez: sigue habiendo una sola Fabric API
+    s = await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true, panelBase: 'https://p', needFabricApi: true }, deps);
+    assert.strictEqual(mods().filter(f => /fabric-api/.test(f)).length, 1);
+    // la sincronización del studio no borra los mods de rendimiento
+    const plan = Sync.plan({ files: [], sync: { mode: 'reset' }, local: [...mods().map(f => 'mods/' + f), 'mods/otro.jar'], state: {} });
+    assert.deepStrictEqual(plan.remove, ['mods/otro.jar']);
+    // el studio ya trae Sodium y OptiFine: no se pone otro motor de dibujo; trae FerriteCore: tampoco
+    fs.writeFileSync(path.join(g, 'mods', 'sodium-fabric-0.6.5+mc1.21.1.jar'), 'jar');
+    fs.writeFileSync(path.join(g, 'mods', 'ferritecore-7.0.0-fabric.jar'), 'jar');
+    r = await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    assert.deepStrictEqual(r.mods, ['Lithium']);
+    assert.strictEqual(r.needsFabricApi, false);
+    assert.ok(!mods().some(f => f.startsWith('kopi-perf-sodium') || f.startsWith('kopi-perf-ferrite')));
+    fs.unlinkSync(path.join(g, 'mods', 'sodium-fabric-0.6.5+mc1.21.1.jar')); fs.unlinkSync(path.join(g, 'mods', 'ferritecore-7.0.0-fabric.jar'));
+    fs.writeFileSync(path.join(g, 'mods', 'OptiFabric-1.14.3.jar'), 'jar');
+    r = await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    assert.deepStrictEqual(r.mods, ['Lithium', 'FerriteCore']);
+    fs.unlinkSync(path.join(g, 'mods', 'OptiFabric-1.14.3.jar'));
+    // si al final no hubiera Fabric API, se quitan los que la necesitan (Sodium) y se quedan los demás
+    await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    await perfmode.dropNeedingFabricApi(g, { mc: '1.21.1', loader: { type: 'fabric' } }, deps);
+    assert.ok(!mods().some(f => f.startsWith('kopi-perf-sodium')));
+    assert.ok(mods().some(f => f.startsWith('kopi-perf-lithium')));
+    // apagarlo quita todos los suyos; y Fabric API se va si ya nadie la necesita
+    await perfmode.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: false }, deps);
+    assert.ok(!mods().some(f => f.startsWith('kopi-perf-')));
+    s = await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: false, panelBase: 'https://p', needFabricApi: false }, deps);
+    assert.strictEqual(s.fabricApi, null);
+    assert.ok(!mods().some(f => /fabric-api/.test(f)));
+    // Forge 1.20.1: Embeddium en vez de Sodium; vanilla: nada
+    const gf = path.join(tmp, 'instances', 'forge');
+    r = await perfmode.ensure(gf, { mc: '1.20.1', loader: { type: 'forge' }, enabled: true }, deps);
+    assert.deepStrictEqual(r.mods, ['Embeddium', 'FerriteCore']);
+    assert.strictEqual(r.needsFabricApi, false);
+    r = await perfmode.ensure(gf, { mc: '1.20.1', loader: { type: 'vanilla' }, enabled: true }, deps);
+    assert.strictEqual(r.status, 'off');
+    assert.ok(!fs.readdirSync(path.join(gf, 'mods')).some(f => f.startsWith('kopi-perf-')));
+    // sin conexión con Modrinth: se juega igual (sin esos mods)
+    const gx = path.join(tmp, 'instances', 'sinred');
+    r = await perfmode.ensure(gx, { mc: '1.0.1', loader: { type: 'fabric' }, enabled: true }, { fetchJson: async () => { throw new Error('sin conexión'); }, downloadFile });
+    assert.deepStrictEqual([r.status, r.mods], ['unsupported', []]);
+    passed++; console.log('  ✓ modo rendimiento: mods de optimización sin chocar con los del studio');
+  } catch (e) { console.error('  ✗ modo rendimiento\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();

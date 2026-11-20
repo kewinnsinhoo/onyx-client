@@ -4,7 +4,8 @@
 //   2) Kopi    → la skin que cada jugador no premium eligió en Kopi Client (panel /csl/)
 // Así todos ven las skins en cualquier servidor, también en modo offline, sin instalar nada en el servidor.
 // Capas de Kopi: CustomSkinLoader enseña la capa quieta. En Fabric, si existe para esa versión, se pone
-// también el mod Cape Provider (y Fabric API si falta), que la enseña ANIMADA (panel /capes/<nombre>.png).
+// también el mod Cape Provider, que la enseña ANIMADA (panel /capes/<nombre>.png).
+// Fabric API: una sola copia para los mods de Kopi que la necesitan (capas y modo rendimiento), ver ensureFabricApi.
 // Los mods se guardan como mods/kopi-skins-*.jar: la sincronización de archivos del studio no los borra.
 const fs = require('fs');
 const path = require('path');
@@ -104,39 +105,32 @@ function writeCapeConfig(gameDir, panelBase) {
   fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
 }
 
-// Capas animadas (solo Fabric): Cape Provider + Fabric API si hace falta. Nunca impide jugar.
+// Mods del studio (no nuestros): ni kopi-skins-* ni kopi-perf-*
+const studioJars = (modsDir) => { try { return fs.readdirSync(modsDir).filter(f => f.endsWith('.jar') && !f.startsWith(PREFIX) && !f.startsWith('kopi-perf-')); } catch { return []; } };
+const cleanOurs = (modsDir, prefix, keep) => { for (const f of ours(modsDir, prefix)) if (f !== keep) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
+
+// Capas animadas (solo Fabric): Cape Provider. Si necesita Fabric API y el studio no la trae, lo avisa
+// (needFabricApi) y la pone ensure() al final. Nunca impide jugar.
 async function ensureCapes(gameDir, { mc, type, panelBase }, deps) {
   const modsDir = path.join(gameDir, 'mods');
-  const clean = (prefix, keep) => { for (const f of ours(modsDir, prefix)) if (f !== keep) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
-  const off = (status) => { clean(CAPES, null); clean(FAPI, null); return { status }; };
+  const off = (status) => { cleanOurs(modsDir, CAPES, null); return { status }; };
   if (type !== 'fabric') return off('off');
-  let jars = [];
-  try { jars = fs.readdirSync(modsDir).filter(f => !f.startsWith(PREFIX)); } catch { /* sin carpeta mods */ }
+  const jars = studioJars(modsDir);
   if (jars.some(f => CAPE_CONFLICTS.test(f))) return off('conflict'); // el studio ya trae otro mod de capas
   try {
     let status = 'ok', file = null;
-    if (jars.some(f => /cape-provider/i.test(f))) { clean(CAPES, null); status = 'studio'; }
+    if (jars.some(f => /cape-provider/i.test(f))) { cleanOurs(modsDir, CAPES, null); status = 'studio'; }
     else {
       file = await resolve(mc, 'fabric', deps.fetchJson, 'cape-provider');
       if (!file) return off('unsupported');
     }
-    // Fabric API: la del studio si la trae; si no, la ponemos nosotros
-    let fapi = null;
-    if (jars.some(f => /fabric-api/i.test(f))) clean(FAPI, null);
-    else {
-      const fa = await resolve(mc, 'fabric', deps.fetchJson, 'fabric-api');
-      if (!fa) return off('unsupported');
-      fapi = jarName(FAPI, fa.version);
-      await deps.downloadFile({ url: fa.url, dest: path.join(modsDir, fapi), sha1: fa.sha1, size: fa.size, verify: !!fa.sha1 });
-      clean(FAPI, fapi);
-    }
     if (file) {
       const name = jarName(CAPES, file.version);
       await deps.downloadFile({ url: file.url, dest: path.join(modsDir, name), sha1: file.sha1, size: file.size, verify: !!file.sha1 });
-      clean(CAPES, name);
+      cleanOurs(modsDir, CAPES, name);
     }
     writeCapeConfig(gameDir, panelBase);
-    return { status, fabricApi: fapi };
+    return { status, needFabricApi: true };
   } catch (e) {
     // Sin Cape Provider la capa se sigue viendo (quieta) con CustomSkinLoader
     log.warn('[capas] No se pudo preparar Cape Provider:', e.message);
@@ -144,26 +138,60 @@ async function ensureCapes(gameDir, { mc, type, panelBase }, deps) {
   }
 }
 
+// Fabric API: UNA sola copia para todos los mods de Kopi que la necesitan (capas y modo rendimiento).
+// La del studio si la trae; si no, la nuestra (kopi-skins-fabric-api-*.jar) solo si alguien la necesita.
+// → el nombre del archivo, 'studio' o null (no hay)
+async function ensureFabricApi(gameDir, { mc, type }, need, deps) {
+  const modsDir = path.join(gameDir, 'mods');
+  if (type !== 'fabric') { cleanOurs(modsDir, FAPI, null); return null; }
+  if (studioJars(modsDir).some(f => /fabric-api/i.test(f))) { cleanOurs(modsDir, FAPI, null); return 'studio'; }
+  if (!need) { cleanOurs(modsDir, FAPI, null); return null; }
+  try {
+    const fa = await resolve(mc, 'fabric', deps.fetchJson, 'fabric-api');
+    if (!fa) { cleanOurs(modsDir, FAPI, null); return null; }
+    const name = jarName(FAPI, fa.version);
+    fs.mkdirSync(modsDir, { recursive: true });
+    await deps.downloadFile({ url: fa.url, dest: path.join(modsDir, name), sha1: fa.sha1, size: fa.size, verify: !!fa.sha1 });
+    cleanOurs(modsDir, FAPI, name);
+    return name;
+  } catch (e) {
+    log.warn('[fabric-api] No se pudo preparar Fabric API:', e.message);
+    const have = ours(modsDir, FAPI);
+    return have.length ? have[0] : null; // si ya estaba descargada, sirve
+  }
+}
+
 /**
  * Deja el mod listo (o lo quita si la instancia no lo quiere). Nunca impide jugar: si algo falla, se avisa en el registro.
- * opts: { mc, loader, enabled, panelBase }   deps: { fetchJson, downloadFile } (para las pruebas)
+ * opts: { mc, loader, enabled, panelBase, needFabricApi }   deps: { fetchJson, downloadFile } (para las pruebas)
+ * needFabricApi: otro mod de Kopi (modo rendimiento) también necesita Fabric API.
+ * → { status, capes, fabricApi: nombre | 'studio' | null }
  */
-async function ensure(gameDir, { mc, loader, enabled = true, panelBase }, deps) {
+async function ensure(gameDir, opts, deps) {
+  const r = await ensureSkins(gameDir, opts, deps);
+  const type = opts.loader && opts.loader.type ? opts.loader.type : 'vanilla';
+  r.fabricApi = await ensureFabricApi(gameDir, { mc: opts.mc, type }, !!r.needFabricApi || !!opts.needFabricApi, deps);
+  if (r.needFabricApi && !r.fabricApi) { cleanOurs(path.join(gameDir, 'mods'), CAPES, null); r.capes = 'unsupported'; }
+  delete r.needFabricApi;
+  return r;
+}
+
+async function ensureSkins(gameDir, { mc, loader, enabled = true, panelBase }, deps) {
   const modsDir = path.join(gameDir, 'mods');
   const type = loader && loader.type ? loader.type : 'vanilla';
-  const remove = (keep) => { for (const f of ours(modsDir)) if (f !== keep) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
+  // Fabric API no se toca aquí (la lleva ensureFabricApi)
+  const remove = (keep) => { for (const f of ours(modsDir)) if (f !== keep && !f.startsWith(FAPI)) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
   // Solo el de CustomSkinLoader (también los nombres antiguos); los de las capas los lleva ensureCapes
   const removeCsl = (keep) => { for (const f of ours(modsDir)) if (f !== keep && !f.startsWith(CAPES) && !f.startsWith(FAPI)) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
+  const withCapes = async (r) => { const c = await ensureCapes(gameDir, { mc, type, panelBase }, deps); return { ...r, capes: c.status, needFabricApi: !!c.needFabricApi }; };
   try {
     if (!enabled || !LOADERS.includes(type) || !panelBase) { remove(null); return { status: 'off' }; }
-    const capes = () => ensureCapes(gameDir, { mc, type, panelBase }, deps);
-    let jars = [];
-    try { jars = fs.readdirSync(modsDir); } catch { /* sin carpeta mods */ }
+    const jars = studioJars(modsDir);
     // El studio ya lo incluye en sus mods: solo se configura (dos copias harían fallar el juego)
-    if (jars.some(f => /customskinloader/i.test(f) && !f.startsWith(PREFIX))) {
+    if (jars.some(f => /customskinloader/i.test(f))) {
       removeCsl(null);
       writeConfig(gameDir, panelBase);
-      return { status: 'studio', capes: (await capes()).status };
+      return withCapes({ status: 'studio' });
     }
     const file = await resolve(mc, type, deps.fetchJson);
     if (!file) { remove(null); log.info(`[skins] CustomSkinLoader no está disponible para ${type} ${mc}`); return { status: 'unsupported' }; }
@@ -171,7 +199,7 @@ async function ensure(gameDir, { mc, loader, enabled = true, panelBase }, deps) 
     await deps.downloadFile({ url: file.url, dest: path.join(modsDir, name), sha1: file.sha1, size: file.size, verify: !!file.sha1 });
     removeCsl(name);
     writeConfig(gameDir, panelBase);
-    return { status: 'ok', file: name, capes: (await capes()).status };
+    return withCapes({ status: 'ok', file: name });
   } catch (e) {
     log.warn('[skins] No se pudo preparar el mod de skins:', e.message);
     return { status: 'error', error: e.message };

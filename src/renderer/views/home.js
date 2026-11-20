@@ -218,6 +218,7 @@
                 ${inst.category ? `<span class="badge">${esc(inst.category)}</span>` : ''}
                 ${inst.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Premium y offline')}</span>`}
                 ${inst.server && inst.server.address && !look.hideTech ? `<span class="badge">${icon('globe')}${esc(inst.server.address)}</span>` : ''}
+                ${inst.perfMode ? `<span class="badge perf" title="${t('Modo rendimiento')}">${icon('zap')}${t('Rendimiento')}</span>` : ''}
               </div>
             </div>
             ${running
@@ -264,6 +265,35 @@
       b('#ins-more').onclick = (e) => menu(e.currentTarget);
     };
 
+    // Modo rendimiento: mods que hacen que el juego vaya más fluido (solo en este ordenador)
+    function perfModal() {
+      const can = ['fabric', 'forge', 'neoforge'].includes((inst.loader && inst.loader.type) || 'vanilla');
+      const on = !!inst.perfMode;
+      const rows = [['Sodium', t('Más FPS: dibuja el mundo mucho más rápido')], ['Lithium', t('El mundo y los mobs gastan menos')],
+        ['FerriteCore', t('Usa menos memoria RAM')], ['EntityCulling', t('No dibuja lo que no se ve')]];
+      UI.modal((m, close) => {
+        m.classList.add('perf-modal');
+        m.innerHTML = html`<div class="m-ico">${icon('zap')}</div>
+          <h2>${t('Modo rendimiento')}</h2>
+          <p class="sub">${t('Añade mods de optimización para que el juego vaya más fluido. Solo en tu ordenador: el servidor no necesita nada.')}</p>
+          <div class="perf-list">${rows.map(([n, d]) => `<div><b>${n}</b><span>${esc(d)}</span></div>`).join('')}</div>
+          <p class="note">${can ? t('Si el studio ya trae alguno, se usa el suyo. Se aplica la próxima vez que pulses Jugar.') : t('Esta instancia es vanilla: el modo rendimiento necesita Fabric, Forge o NeoForge.')}</p>
+          <div class="actions"><button class="btn btn-ghost" data-a="no">${t('Cancelar')}</button>
+            ${can || on ? `<button class="btn ${on ? 'btn-ghost danger-text' : 'btn-primary'}" data-a="yes">${icon(on ? 'x' : 'zap')}${on ? t('Desactivar') : t('Activar')}</button>` : ''}</div>`;
+        m.querySelector('[data-a=no]').onclick = close;
+        const yes = m.querySelector('[data-a=yes]');
+        if (yes) yes.onclick = async () => {
+          try {
+            await onyx.instances.setPerfMode(id, !on);
+            await App.loadInstances();
+            close();
+            render();
+            toast(on ? t('Modo rendimiento desactivado') : t('Modo rendimiento activado'), 'success');
+          } catch (e) { toast(t(e.message, e.vars), 'error'); }
+        };
+      }, { wide: true });
+    }
+
     function menu(anchor) {
       UI.dropdown(anchor, (dd, close) => {
         dd.innerHTML = html`
@@ -271,6 +301,7 @@
           <button class="dd-item" data-a="report">${icon('alert')}${t('Reportar un fallo')}</button>
           <button class="dd-item" data-a="pack">${icon('package')}${t('Instalar desde .onyxpack')}</button>
           <button class="dd-item" data-a="shots">${icon('image')}${t('Capturas')}</button>
+          <button class="dd-item" data-a="perf">${icon('zap')}${t('Modo rendimiento')}<span class="dd-state ${inst.perfMode ? 'on' : ''}">${inst.perfMode ? t('Activado') : t('Desactivado')}</span></button>
           <div class="dd-sep"></div>
           <button class="dd-item danger" data-a="wipe">${icon('trash')}${t('Borrar archivos')}</button>
           <button class="dd-item danger" data-a="leave">${icon('logout')}${t('Salir de la instancia')}</button>`;
@@ -284,6 +315,7 @@
           finally { delete S.progress[id]; document.dispatchEvent(new CustomEvent('onyx:progress', { detail: { id } })); }
         });
         on('report', App.reportModal);
+        on('perf', perfModal);
         on('shots', () => onyx.app.openPath('screenshots', id));
         on('pack', async () => {
           try { const n = await onyx.instances.importPack(id); if (n != null) toast(t('{n} archivos instalados desde el pack', { n }), 'success'); }

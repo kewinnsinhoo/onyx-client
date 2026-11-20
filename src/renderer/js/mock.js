@@ -61,7 +61,7 @@
     },
     instances: {
       list: () => wait(instances), get: (id) => wait(instances.find(i => i.id === id)), redeem: () => wait(null, 300).then(() => { throw new Error('Código no válido o caducado'); }),
-      remove: wait, setMemory: wait, play: wait, stop: wait, onProgress: () => () => {}, onChanged: () => () => {}, sync: wait,
+      remove: wait, setMemory: wait, setPerfMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.perfMode = !!on; return wait(i); }, play: wait, stop: wait, onProgress: () => () => {}, onChanged: () => () => {}, sync: wait,
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },

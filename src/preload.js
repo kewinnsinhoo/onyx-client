@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('onyx', {
     redeem: (code) => call('instances:redeem', code),
     remove: (id, del) => call('instances:remove', id, del),
     setMemory: (id, mb) => call('instances:setMemory', id, mb),
+    setPerfMode: (id, on) => call('instances:setPerfMode', id, on),
     play: (id) => call('instances:play', id),
     stop: (id) => call('instances:stop', id),
     status: (id) => call('instances:status', id),

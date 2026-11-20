@@ -8,6 +8,7 @@ const panel = require('./panel');
 const Sync = require('./sync');
 const { downloadAll, downloadFile, fetchJson } = require('./game/download');
 const skinmod = require('./skinmod');
+const perfmode = require('./perfmode');
 const game = require('./game/launch');
 const log = require('./logger');
 
@@ -17,6 +18,7 @@ const running = new Map();
 function init(gameRoot) {
   root = gameRoot;
   skinmod.init(gameRoot);
+  perfmode.init(gameRoot);
   store = new JsonStore(path.join(root, 'instances.json'), { instances: [], dismissed: [] });
 }
 
@@ -61,6 +63,7 @@ function view(i) {
     lastPlayed: i.lastPlayed || null,
     playTime: i.playTime || 0,
     memoryMb: i.memoryMb || null,
+    perfMode: !!i.perfMode,
     running: running.has(i.id)
   };
 }
@@ -205,9 +208,15 @@ async function syncFiles(inst, gameDir, concurrency, progress) {
   inst.managedFiles = p.state.managed;
 }
 
-// Skins de Kopi: el mod de skins para esta versión y este loader (si la instancia lo tiene activado)
-function skinMod(m, gameDir) {
-  return skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base() }, { fetchJson, downloadFile });
+// Mods que pone Kopi: modo rendimiento (si el jugador lo activó) y skins/capas (si el studio no lo desactivó).
+// Fabric API: una sola copia para los dos (la gestiona skinmod).
+async function kopiMods(inst, m, gameDir) {
+  const deps = { fetchJson, downloadFile };
+  const perf = await perfmode.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.perfMode }, deps)
+    .catch(e => { log.warn('[rendimiento]', e.message); return { needsFabricApi: false }; });
+  const skins = await skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base(), needFabricApi: perf.needsFabricApi }, deps);
+  if (perf.needsFabricApi && !skins.fabricApi) await perfmode.dropNeedingFabricApi(gameDir, { mc: m.minecraft, loader: m.loader }, deps).catch(() => {});
+  return { perf, skins };
 }
 
 async function play(id, { account, settings, launcherVersion, progress, onLog, onExit, onStart }) {
@@ -238,7 +247,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         // Descarga anticipada: se deja todo listo para entrar al instante cuando abra
         await syncFiles(inst, gameDir, concurrency, progress);
         store.replace(d);
-        await skinMod(m, gameDir);
+        await kopiMods(inst, m, gameDir);
         await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
         const ready = new Error(e.code === 'locked' ? 'Todo descargado. Podrás jugar cuando el studio la abra.' : 'Todo descargado. La instancia abre el {date}');
         ready.code = 'predownloaded'; ready.vars = e.vars;
@@ -253,7 +262,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   try {
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
-    await skinMod(m, gameDir);
+    await kopiMods(inst, m, gameDir);
     const started = Date.now();
     const child = await game.launch(root, {
       instance: gameInfo,
@@ -303,6 +312,14 @@ function remove(id, deleteFiles) {
     try { fs.rmSync(path.join(root, 'instances', id), { recursive: true, force: true }); } catch { /* nada */ }
   }
   return list();
+}
+
+// Modo rendimiento de una instancia (se aplica la próxima vez que se juegue)
+function setPerfMode(id, on) {
+  const d = store.get();
+  const i = d.instances.find(x => x.id === id);
+  if (i) { i.perfMode = !!on; store.replace(d); }
+  return i ? view(i) : null;
 }
 
 function setMemory(id, mb) {
@@ -383,4 +400,4 @@ function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

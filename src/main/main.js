@@ -364,6 +364,7 @@ handle('instances:get', (id) => instances.get(id));
 handle('instances:redeem', (code) => instances.redeem(code, panelAccount()));
 handle('instances:remove', (id, del) => instances.remove(id, del));
 handle('instances:setMemory', (id, mb) => instances.setMemory(id, mb));
+handle('instances:setPerfMode', (id, on) => instances.setPerfMode(id, on));
 handle('instances:stop', (id) => instances.stop(id));
 handle('instances:status', (id) => instances.serverStatus(id));
 handle('instances:wipe', (id) => instances.wipe(id));

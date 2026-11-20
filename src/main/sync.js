@@ -12,7 +12,7 @@ const path = require('path');
 
 // Carpetas que crea el propio launcher y no se borran nunca (también el mod de skins de Kopi y su configuración)
 const ALWAYS_KEEP = ['logs', 'resources', 'CustomSkinLoader'];
-const KEEP_PREFIX = ['mods/kopi-skins-'];
+const KEEP_PREFIX = ['mods/kopi-skins-', 'mods/kopi-perf-']; // mods que pone Kopi (skins/capas y modo rendimiento)
 
 function norm(p) {
   const n = path.posix.normalize(String(p || '').replace(/\\/g, '/')).replace(/^\/+/, '').replace(/\/+$/, '');
