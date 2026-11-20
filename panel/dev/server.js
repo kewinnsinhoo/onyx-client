@@ -99,6 +99,27 @@ async function seed() {
         'p' + n++, k % 3 ? 'ignite-extremo-3' : 'torneo-pvp', 'onyx-studios', 'p' + k, 'Jugador' + k, end ? st : t - 60e3, end || t - 20e3, end);
     }
   }
+  // Más partidas repartidas en 60 días (tardes y fines de semana con más gente) para las estadísticas
+  {
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const nicks = ['Steve_Pro', 'Luna_MC', 'Dante', 'Pixel', 'Mia_2010', 'Kewinsinho', 'NoahCraft', 'Valen', 'Tomi_YT', 'Sofi', 'ElRayo', 'Gabo', 'Nico77', 'Alma', 'Bruno', 'Iker', 'Leo', 'Mateo', 'Vale', 'Zoe'];
+    const insts = ['ignite-extremo-3', 'ignite-extremo-3', 'torneo-pvp'];
+    let q = 0;
+    for (let d = 60; d >= 0; d--) {
+      const day = new Date(t - d * DAY); day.setHours(0, 0, 0, 0);
+      const wd = day.getDay(), weekend = wd === 0 || wd === 6 || wd === 5;
+      const people = Math.round((weekend ? 9 : 5) + rnd() * 5 + (60 - d) / 12); // va creciendo
+      for (let k = 0; k < people; k++) {
+        const who = nicks[Math.floor(Math.pow(rnd(), 1.6) * nicks.length)];
+        const hour = rnd() < 0.7 ? 17 + Math.floor(rnd() * 6) : 10 + Math.floor(rnd() * 7);
+        const st = day.getTime() + hour * 3600e3 + Math.floor(rnd() * 60) * 60e3;
+        if (st > t - 30 * 60e3) continue;
+        const len = (20 + Math.floor(rnd() * 150)) * 60e3;
+        await run('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          'ps' + q++, insts[Math.floor(rnd() * insts.length)], 'onyx-studios', who.toLowerCase(), who, st, Math.min(st + len, t - 60e3), Math.min(st + len, t - 60e3));
+      }
+    }
+  }
   // KopiGuard: activado en IGNITE con algunas detecciones de ejemplo
   {
     const row = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first();

@@ -54,10 +54,13 @@ function buildActivity(state, ctx) {
     const inst = state.instance || {};
     const name = inst.name || inst.id || 'Minecraft';
     act.details = fit(state.kind === 'launching' ? tr('launching', lang, { name }) : name);
-    act.state = fit(versionLine(inst));
+    // «Kopi Studio · Minecraft 1.21.1 · Fabric»: así se ve de qué servidor es
+    const studio = inst.studio && inst.studio.name ? String(inst.studio.name) : '';
+    act.state = fit(studio ? `${studio} · ${versionLine(inst)}` : versionLine(inst));
     act.timestamps = { start: state.startedAt || Date.now() };
-    if (isHttpsImage(inst.icon)) {
-      act.assets = { large_image: inst.icon, large_text: fit(name), small_image: LOGO_URL, small_text: APP };
+    const big = isHttpsImage(inst.icon) ? inst.icon : inst.studio && isHttpsImage(inst.studio.logo) ? inst.studio.logo : null;
+    if (big) {
+      act.assets = { large_image: big, large_text: fit(studio ? `${name} · ${studio}` : name), small_image: LOGO_URL, small_text: APP };
     } else {
       act.assets = { large_image: LOGO_URL, large_text: fit(name) };
     }

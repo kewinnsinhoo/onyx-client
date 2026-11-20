@@ -256,6 +256,11 @@ test('estado de Discord: textos y botones', () => {
   assert.strictEqual(noIcon.state, 'Minecraft 1.21.1');
   assert.strictEqual(noIcon.assets.large_image, P.LOGO_URL);
   assert.strictEqual(noIcon.buttons, undefined);
+  // con studio: su nombre en la segunda línea y su logo si la instancia no tiene icono
+  const st = P.buildActivity({ kind: 'playing', instance: { ...inst, icon: '', studio: { name: 'Kopi Studio', logo: 'https://x.y/logo.png' } } }, ctx);
+  assert.strictEqual(st.state, 'Kopi Studio · Minecraft 1.21.1 · Fabric');
+  assert.strictEqual(st.assets.large_image, 'https://x.y/logo.png');
+  assert.strictEqual(st.assets.large_text, 'Survival Kopi · Kopi Studio');
 });
 
 test('Forge/NeoForge: elegir versión', () => {

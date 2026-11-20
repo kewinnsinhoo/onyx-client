@@ -952,4 +952,47 @@ await test('KopiGuard: foto, vídeo y cámaras en directo', async () => {
   assert.ok(!(await call('GET', '/api/s/onyx-studios/guard/live', { cookie: creator })).data.players.some(x => x.play === play.play));
 });
 
+await test('Estadísticas del studio: jugadores, horas, nuevos, vuelven, mapa de calor', async () => {
+  const { computeStats } = await import('../src/studio-stats.js');
+  const H = 36e5, D = 864e5;
+  const nowMs = Date.UTC(2026, 10, 20, 18, 0); // viernes 20/11/2026 18:00 UTC
+  const tz = 300;                               // Bogotá: 13:00 local
+  const at = (d, h) => Date.UTC(2026, 10, d, h + 5); // d de noviembre a las h (hora de Bogotá)
+  const rows = [
+    // este periodo (7 días: 14 al 20)
+    { instance_id: 'a', player_key: 'ana', player_name: 'Ana', started_at: at(20, 9), end_at: at(20, 11) },     // 2 h, hoy
+    { instance_id: 'a', player_key: 'ana', player_name: 'Ana', started_at: at(18, 20), end_at: at(18, 21) },    // 1 h
+    { instance_id: 'b', player_key: 'bob', player_name: 'Bob', started_at: at(19, 20), end_at: at(19, 20) + 30 * 60e3 }, // 30 min
+    { instance_id: 'a', player_key: 'cris', player_name: 'Cris', started_at: at(18, 20), end_at: at(18, 22) },  // 2 h, nuevo
+    // periodo anterior (7 al 13)
+    { instance_id: 'a', player_key: 'ana', player_name: 'Ana', started_at: at(10, 20), end_at: at(10, 21) },
+    { instance_id: 'a', player_key: 'dani', player_name: 'Dani', started_at: at(11, 20), end_at: at(11, 21) }
+  ];
+  const first = { ana: at(1, 10), bob: at(5, 10), cris: at(18, 20), dani: at(11, 20) };
+  const r = computeStats(rows, first, { days: 7, nowMs, tz, names: { a: 'Survival', b: 'Torneo' } });
+  assert.strictEqual(r.daily.length, 7);
+  assert.strictEqual(r.daily[6].day, at(20, 0), 'el último día es hoy a medianoche de Bogotá');
+  assert.deepStrictEqual([r.now.players, r.now.plays, r.now.hours, r.now.fresh], [3, 4, 5.5, 1]);
+  assert.deepStrictEqual([r.prev.players, r.prev.plays], [2, 2]);
+  assert.strictEqual(r.returning, 50, 'de Ana y Dani, volvió Ana');
+  assert.strictEqual(r.now.avgMin, Math.round((120 + 60 + 30 + 120) / 4));
+  const d18 = r.daily.find(x => x.day === at(18, 0));
+  assert.deepStrictEqual([d18.players, d18.fresh, d18.hours], [2, 1, 3]);
+  // miércoles 18 a las 20: Ana y Cris a la vez → 2 de media (solo hubo un miércoles en 7 días)
+  assert.strictEqual(r.heat[3][20], 2);
+  assert.deepStrictEqual([r.best.wd, r.best.h, r.best.v], [3, 20, 2]);
+  assert.deepStrictEqual(r.top.map(p => [p.name, p.hours, p.days]), [['Ana', 3, 2], ['Cris', 2, 1], ['Bob', 0.5, 1]]);
+  assert.deepStrictEqual(r.instances.map(i => [i.name, i.hours, i.players]), [['Survival', 5, 2], ['Torneo', 0.5, 1]]);
+
+  // por la API (y solo para miembros del studio)
+  let res = await call('GET', '/api/s/onyx-studios/stats?days=30&tz=300', { cookie: creator });
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.data.days, 30);
+  assert.strictEqual(res.data.daily.length, 30);
+  assert.ok(res.data.list.length >= 1 && Array.isArray(res.data.heat) && res.data.heat.length === 7);
+  res = await call('GET', '/api/s/onyx-studios/stats?days=999', { cookie: creator });
+  assert.strictEqual(res.data.days, 30, 'rango raro → 30 días');
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/stats', { cookie: other })).status, 403);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

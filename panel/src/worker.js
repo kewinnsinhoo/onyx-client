@@ -11,6 +11,7 @@ import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
+import { statsApi } from './studio-stats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted } from './guard.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
@@ -281,6 +282,7 @@ async function studioApi(c, parts, m) {
   if (a === 'members') return members(c, b, m);
   if (a === 'events') return eventsApi(c, b, m);
   if (a === 'history' && m === 'GET') return json(await history(env, studio.id));
+  if (a === 'stats' && m === 'GET') return statsApi(c);
   if (a === 'referrals' && m === 'GET') return json(await referrals(env, studio.id));
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m, sub, d);
