@@ -3,6 +3,22 @@
   const ROWS = {
     "Tu ID de Discord": ["Your Discord ID", "El teu ID de Discord", "Ton ID Discord"],
     "Si ya tenías acceso con otra cuenta de Discord, cierra sesión y entra con esa.": ["If you already had access with another Discord account, sign out and sign in with that one.", "Si ja tenies accés amb un altre compte de Discord, tanca la sessió i entra amb aquell.", "Si tu avais déjà accès avec un autre compte Discord, déconnecte-toi et connecte-toi avec celui-là."],
+    // Novedades
+    "Contar una novedad": ["Share some news", "Explica una novetat", "Annoncer une nouveauté"],
+    "Los jugadores la verán en el launcher la próxima vez que abran la instancia. Las líneas que empiezan por «-» salen como lista.": ["Players will see it in the launcher next time they open the instance. Lines starting with “-” show as a list.", "Els jugadors la veuran al launcher la propera vegada que obrin la instància. Les línies que comencen per «-» surten com a llista.", "Les joueurs la verront dans le launcher la prochaine fois qu’ils ouvriront l’instance. Les lignes qui commencent par « - » s’affichent en liste."],
+    "¿Qué hay de nuevo? Por ejemplo: «Temporada 2: mapa nuevo, Create y un evento el sábado».": ["What’s new? For example: “Season 2: new map, Create and an event on Saturday”.", "Què hi ha de nou? Per exemple: «Temporada 2: mapa nou, Create i un esdeveniment dissabte».", "Quoi de neuf ? Par exemple : « Saison 2 : nouvelle carte, Create et un événement samedi »."],
+    "Los mods que añades, quitas o actualizas se apuntan solos.": ["Mods you add, remove or update are noted automatically.", "Els mods que afegeixes, treus o actualitzes s’apunten sols.", "Les mods que tu ajoutes, retires ou mets à jour sont notés automatiquement."],
+    "Novedades publicadas": ["Published news", "Novetats publicades", "Nouveautés publiées"],
+    "Se guardan las 30 últimas": ["The last 30 are kept", "Es guarden les 30 últimes", "Les 30 dernières sont gardées"],
+    "Cambios en los archivos": ["File changes", "Canvis als fitxers", "Changements de fichiers"],
+    "{n} ajustes cambiados": ["{n} settings changed", "{n} ajustos canviats", "{n} réglages modifiés"],
+    "Todavía no hay novedades": ["No news yet", "Encara no hi ha novetats", "Pas encore de nouveautés"],
+    "Escribe la primera o cambia algún mod en Archivos.": ["Write the first one or change a mod in Files.", "Escriu la primera o canvia algun mod a Fitxers.", "Écris la première ou modifie un mod dans Fichiers."],
+    "Escribe algo primero": ["Write something first", "Escriu alguna cosa primer", "Écris quelque chose d’abord"],
+    "Novedad publicada": ["News published", "Novetat publicada", "Nouveauté publiée"],
+    "¿Borrar esta novedad?": ["Delete this news?", "Esborrar aquesta novetat?", "Supprimer cette nouveauté ?"],
+    "Los jugadores dejarán de verla.": ["Players will stop seeing it.", "Els jugadors deixaran de veure-la.", "Les joueurs ne la verront plus."],
+    "Novedades": ["News", "Novetats", "Nouveautés"],
     // Estadísticas
     "{n} h": ["{n} h", "{n} h", "{n} h"],
     "Sin datos antes": ["No earlier data", "Sense dades abans", "Pas de données avant"],

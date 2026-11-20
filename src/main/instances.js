@@ -69,6 +69,10 @@ function view(i) {
     memoryMb: i.memoryMb || null,
     perfMode: !!i.perfMode,
     guard: !!(m.guard && m.guard.enabled), // KopiGuard: el studio vigila las trampas en esta instancia
+    // Novedades del studio (la más nueva primero) y hasta cuándo las ha visto el jugador.
+    // Si nunca las vio, cuentan como vistas las de antes de añadir la instancia (no se le llena de avisos viejos).
+    news: Array.isArray(m.news) ? m.news.slice(0, 10) : [],
+    newsSeen: i.newsSeen != null ? i.newsSeen : (i.addedAt || 0),
     running: running.has(i.id)
   };
 }
@@ -334,7 +338,8 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         const i2 = d2.instances.find(x => x.id === id);
         if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
         lockMods(id, gameDir); // el juego se cerró: los mods vuelven bajo llave
-        onExit && onExit(code, { kicked });
+        const stopped = stopping.delete(id) && !kicked;
+        onExit && onExit(code, { kicked, stopped, gameDir, perfMode: !!inst.perfMode, memoryMb: inst.memoryMb || settings.memoryMb || 4096 });
       }
     });
     running.set(id, child);
@@ -370,9 +375,10 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   return view(inst);
 }
 
+const stopping = new Set(); // lo cerró el jugador (botón Detener): no es un error del juego
 function stop(id) {
   const c = running.get(id);
-  if (c) { try { c.kill(); } catch { /* nada */ } }
+  if (c) { stopping.add(id); try { c.kill(); } catch { /* nada */ } }
   return true;
 }
 
@@ -396,6 +402,14 @@ function setPerfMode(id, on) {
   const d = store.get();
   const i = d.instances.find(x => x.id === id);
   if (i) { i.perfMode = !!on; store.replace(d); }
+  return i ? view(i) : null;
+}
+
+// El jugador vio las novedades de la instancia
+function seenNews(id) {
+  const d = store.get();
+  const i = d.instances.find(x => x.id === id);
+  if (i) { i.newsSeen = Date.now(); store.replace(d); }
   return i ? view(i) : null;
 }
 
@@ -482,4 +496,4 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

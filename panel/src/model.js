@@ -32,6 +32,7 @@ export function defaults() {
     server: { address: '', port: 25565, autoJoin: false },
     kopiSkins: true,          // el launcher pone CustomSkinLoader: se ven las skins (premium y de Kopi) en cualquier servidor
     guard: guardDefaults(),   // KopiGuard (anticheat): apagado hasta que el studio lo active
+    news: [],                 // Novedades: lo que escribe el studio + los mods que entran, salen o se actualizan (solo)
     lockedMessage: ''
   };
 }
@@ -43,6 +44,64 @@ const cleanPath = (p) => {
 };
 const names = (list) => [...new Set((Array.isArray(list) ? list : []).map(n => String(n).trim()).filter(n => NAME_RE.test(n)))].slice(0, 500);
 const time = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? Math.round(n) : null; };
+
+// ---------------------------------------------------------------- Novedades
+const NEWS_MAX = 30;
+const NEWS_KINDS = { mods: 'mods/', resourcepacks: 'resourcepacks/', shaderpacks: 'shaderpacks/' };
+// «sodium-fabric-0.6.0+mc1.21.1.jar» → «sodium-fabric» (para saber que es el mismo mod en otra versión)
+const modKey = (f) => f.mr || String(f.path.split('/').pop()).toLowerCase().replace(/\.(jar|zip|disabled)$/g, '').replace(/[-_+ ]v?\d[\s\S]*$/, '');
+const modName = (f) => {
+  const n = String(f.name || f.path.split('/').pop()).replace(/\.(jar|zip)$/i, '');
+  return n.slice(0, 80);
+};
+// Qué cambió entre la lista de archivos de antes y la de ahora (solo mods y paquetes; config cuenta como «ajustes»)
+export function filesDiff(before, after) {
+  const out = { added: [], removed: [], updated: [], config: 0 };
+  const kind = (p) => Object.keys(NEWS_KINDS).find(k => p.startsWith(NEWS_KINDS[k]));
+  const index = (list) => { const m = new Map(); for (const f of list || []) { const k = kind(f.path); if (k) m.set(k + ':' + modKey(f), f); } return m; };
+  const a = index(before), b = index(after);
+  for (const [k, f] of b) {
+    const old = a.get(k);
+    if (!old) out.added.push(modName(f));
+    else if (old.path !== f.path || (old.sha1 && f.sha1 && old.sha1 !== f.sha1)) out.updated.push(modName(f));
+  }
+  for (const [k, f] of a) if (!b.has(k)) out.removed.push(modName(f));
+  const cfg = (list) => new Map((list || []).filter(f => f.path.startsWith('config/') || f.path === 'options.txt').map(f => [f.path, f.sha1 || f.url]));
+  const ca = cfg(before), cb = cfg(after);
+  for (const [p, v] of cb) if (ca.get(p) !== v) out.config++;
+  for (const p of ca.keys()) if (!cb.has(p)) out.config++;
+  return out;
+}
+const clipList = (l) => (Array.isArray(l) ? l : []).map(x => str(x, 80)).filter(Boolean).slice(0, 60);
+function cleanNews(list) {
+  return (Array.isArray(list) ? list : []).map(n => ({
+    id: /^[a-z0-9]{6,24}$/.test(String(n && n.id)) ? String(n.id) : Math.random().toString(36).slice(2, 12),
+    at: time(n && n.at) || Date.now(),
+    text: str(n && n.text, 2000).trim(),
+    ...(n && n.auto ? { auto: { added: clipList(n.auto.added), removed: clipList(n.auto.removed), updated: clipList(n.auto.updated), config: int(n.auto.config, 0, 5000, 0) } } : {})
+  })).filter(n => n.text || (n.auto && (n.auto.added.length || n.auto.removed.length || n.auto.updated.length || n.auto.config))).sort((x, y) => x.at - y.at).slice(-NEWS_MAX);
+}
+// Apunta los cambios de archivos en las novedades (si hay otro apunte automático de hace menos de 30 min, se juntan)
+function noteFiles(d, before) {
+  const diff = filesDiff(before, d.files);
+  if (!diff.added.length && !diff.removed.length && !diff.updated.length && !diff.config) return;
+  const news = Array.isArray(d.news) ? d.news : [];
+  const last = news[news.length - 1];
+  const now = Date.now();
+  if (last && last.auto && !last.text && now - last.at < 30 * 60e3) {
+    const merge = (x, y) => [...new Set([...x, ...y])].slice(0, 60);
+    // lo que se añadió y luego se quitó en el mismo rato no cuenta
+    const removedNow = new Set(diff.removed);
+    last.auto.added = merge(last.auto.added.filter(n => !removedNow.has(n)), diff.added);
+    last.auto.removed = merge(last.auto.removed, diff.removed.filter(n => !last.auto.added.includes(n)));
+    last.auto.updated = merge(last.auto.updated, diff.updated);
+    last.auto.config += diff.config;
+    last.at = now;
+  } else {
+    news.push({ id: Math.random().toString(36).slice(2, 12), at: now, text: '', auto: diff });
+  }
+  d.news = cleanNews(news);
+}
 
 // Aplica un cambio (patch) sobre los datos actuales y devuelve datos limpios.
 export function sanitize(patch, current = defaults()) {
@@ -89,7 +148,10 @@ export function sanitize(patch, current = defaults()) {
     if ('maxPlayers' in a) o.maxPlayers = int(a.maxPlayers, 1, 100000, null);
     if ('staff' in a) o.staff = names(a.staff);
   }
+  // Novedades antes que los archivos: el editor manda todo junto y el apunte automático va después
+  if (Array.isArray(p.news)) d.news = cleanNews(p.news);
   if (Array.isArray(p.files)) {
+    const before = d.files || [];
     const seen = new Set();
     d.files = p.files.map(f => ({
       path: cleanPath(f && f.path), url: url(f && f.url),
@@ -97,7 +159,9 @@ export function sanitize(patch, current = defaults()) {
       size: int(f && f.size, 0, 4e9, null), name: str(f && f.name, 120), at: time(f && f.at),
       ...(f && /^[A-Za-z0-9]{8}$/.test(String(f.mr || '')) ? { mr: String(f.mr) } : {})
     })).filter(f => f.path && f.url && !seen.has(f.path) && seen.add(f.path)).slice(0, 5000);
+    if (before.length) noteFiles(d, before); // la primera subida (instancia nueva) no es una «novedad»
   }
+  if (!Array.isArray(d.news)) d.news = [];
   // Carpetas creadas a mano (aunque estén vacías)
   if (Array.isArray(p.dirs)) d.dirs = [...new Set(p.dirs.map(cleanPath).filter(Boolean))].slice(0, 1000);
   if (!Array.isArray(d.dirs)) d.dirs = [];
@@ -157,6 +221,7 @@ export function toManifest(row, studio, origin, playerKey = null) {
     server: d.server.address ? d.server : null,
     kopiSkins: d.kopiSkins !== false,
     guard: guardManifest(d.guard),
+    news: (d.news || []).slice(-10).reverse(), // las 10 últimas novedades, la más nueva primero
     files: d.files.map(f => ({ path: f.path, url: abs(f.url), sha1: f.sha1 || undefined, size: f.size || undefined })),
     dirs: d.dirs || [],
     sync: d.sync,

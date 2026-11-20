@@ -392,6 +392,7 @@ handle('instances:get', (id) => instances.get(id));
 handle('instances:redeem', (code) => instances.redeem(code, panelAccount()));
 handle('instances:remove', (id, del) => instances.remove(id, del));
 handle('instances:setMemory', (id, mb) => instances.setMemory(id, mb));
+handle('instances:seenNews', (id) => instances.seenNews(id));
 handle('instances:setPerfMode', (id, on) => instances.setPerfMode(id, on));
 handle('instances:stop', (id) => instances.stop(id));
 handle('instances:status', (id) => instances.serverStatus(id));
@@ -412,6 +413,7 @@ handle('instances:play', async (id) => {
   syncOfflineSkin(account.id); // la skin no premium, lista para los servidores con Kopi Skins
   gameLogBuffer = [];
   lastPlayed = id;
+  playStartedAt = Date.now();
   presence.launching(instances.get(id));
   let v;
   try {
@@ -432,7 +434,18 @@ handle('instances:play', async (id) => {
         else if (after === 'close') setTimeout(() => app.quit(), 1500);
       },
       onExit: (code, info) => {
-        send('instances:progress', { id, stage: 'exited', code, kicked: !!(info && info.kicked) });
+        info = info || {};
+        // Arreglo de cierres: si el juego se cerró con un error, qué pasó y qué hacer
+        let crash = null;
+        try {
+          crash = require('./crash').diagnose({
+            code, log: gameLogBuffer.join(''), gameDir: info.gameDir, startedAt: playStartedAt,
+            memoryMb: info.memoryMb, totalMemMb: Math.round(require('os').totalmem() / 1048576),
+            customJava: !!settings.javaPath, jvmArgs: settings.jvmArgs, perfMode: info.perfMode, stopped: info.stopped, kicked: info.kicked
+          });
+          if (crash) log.warn(`[cierre] ${id}: ${crash.kind} ${JSON.stringify(crash.vars)}`);
+        } catch (e) { log.warn('[cierre] No se pudo revisar el cierre:', e.message); }
+        send('instances:progress', { id, stage: 'exited', code, kicked: !!info.kicked, crash });
         presence.stopped();
         if (win && !win.isVisible()) win.show();
         log.info(`Instancia ${id} cerrada con código ${code}`);
@@ -445,6 +458,16 @@ handle('instances:play', async (id) => {
   return v;
 });
 handle('game:log', () => gameLogBuffer.join(''));
+let playStartedAt = 0;
+// Arreglo de cierres: cambiar los ajustes que dieron problemas
+handle('crash:fix', (id, fix) => {
+  fix = fix || {};
+  if (fix.type === 'java' || fix.type === 'jvmargs') {
+    settingsStore.set(fix.type === 'java' ? { javaPath: '' } : { jvmArgs: '' }); // Java automático / sin argumentos raros
+    return true;
+  }
+  return false;
+});
 
 // ---------- galería ----------
 handle('gallery:list', () => instances.screenshots().map(s => ({ ...s, url: 'file://' + s.path.replace(/\\/g, '/') })));

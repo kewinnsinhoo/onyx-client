@@ -861,3 +861,47 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .pf-empty svg { width: 18px; height: 18px; flex: none; color: var(--accent); }
 @media (max-width: 920px) { .pf-cols { grid-template-columns: 1fr; } .pf-card { grid-template-columns: 210px 1fr; } .pf-name { font-size: 32px; } }
 .pf-cols > .card { margin: 0; }
+
+/* ---------- Arreglo de cierres ---------- */
+.modal.crash { width: min(470px, 92vw); }
+.modal.crash .m-ico.bad { background: rgba(255, 107, 122, .14); color: #ff8a97; }
+.crash-inst { display: inline-flex; align-items: center; gap: 7px; margin: 2px 0 6px; padding: 5px 12px; border-radius: 999px; background: rgba(255, 255, 255, .05); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+.crash-inst svg { width: 14px; height: 14px; }
+.crash-note { display: flex; gap: 8px; align-items: flex-start; text-align: left; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 199, 92, .08); border: 1px solid rgba(255, 199, 92, .2); color: #f3d9a4; font-size: 12.5px; line-height: 1.45; }
+.crash-note svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.crash-acts { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 18px; }
+.crash-acts .btn { width: 100%; justify-content: center; }
+.crash-more { width: 100%; margin-top: 14px; text-align: left; }
+.crash-more summary { cursor: pointer; color: var(--muted); font-size: 12.5px; text-align: center; list-style: none; }
+.crash-more summary::-webkit-details-marker { display: none; }
+.crash-more summary::after { content: " ▾"; }
+.crash-more[open] summary::after { content: " ▴"; }
+.crash-more pre { margin: 10px 0 8px; max-height: 170px; overflow: auto; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .35); border: 1px solid var(--border); font: 11px/1.5 ui-monospace, Consolas, monospace; color: #e7d9ee; white-space: pre-wrap; word-break: break-word; }
+.modal.crash .actions { width: 100%; justify-content: space-between; margin-top: 16px; }
+
+/* ---------- Novedades de la instancia ---------- */
+.badge.news-b { cursor: pointer; font: inherit; background: rgba(245, 142, 224, .12); color: #f7a8e8; border-color: transparent; gap: 6px; }
+.badge.news-b:hover { background: rgba(245, 142, 224, .2); }
+.badge.news-b i { font-style: normal; font-size: 10.5px; font-weight: 800; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; background: #f58ee0; color: #2a0f25; }
+.badge.news-b.new { animation: newsPulse 2.4s ease-in-out infinite; }
+@keyframes newsPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 142, 224, 0); } 50% { box-shadow: 0 0 0 4px rgba(245, 142, 224, .18); } }
+#sidebar .pin .pin-news { position: absolute; top: -3px; right: -3px; width: 13px; height: 13px; border-radius: 50%; background: #f58ee0; border: 2px solid var(--bg); box-shadow: 0 0 10px rgba(245, 142, 224, .7); }
+.modal.news-modal { width: min(520px, 92vw); }
+.news-list { width: 100%; max-height: min(52vh, 440px); overflow: auto; margin-top: 16px; text-align: left; display: grid; gap: 10px; padding-right: 2px; }
+.news-item { padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, .035); border: 1px solid var(--border); }
+.news-item.new { border-color: rgba(245, 142, 224, .35); background: rgba(245, 142, 224, .06); }
+.news-meta { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+.news-tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.news-tag svg { width: 13px; height: 13px; }
+.news-new { margin-left: auto; font-weight: 800; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: #f7a8e8; }
+.news-text { margin-top: 6px; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.news-text p { margin: 0 0 6px; }
+.news-text p:last-child { margin-bottom: 0; }
+.news-text ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 3px; }
+.news-text li::marker { color: #f58ee0; }
+.nw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.nw-chip { font: 600 11.5px/1 inherit; font-size: 11.5px; padding: 5px 9px; border-radius: 999px; background: rgba(255, 255, 255, .06); color: var(--muted); }
+.nw-chip.add { background: rgba(126, 226, 168, .12); color: #7ee2a8; }
+.nw-chip.up { background: rgba(124, 180, 255, .13); color: #8fc1ff; }
+.nw-chip.del { background: rgba(255, 122, 138, .12); color: #ff8a97; }
+.modal.news-modal .actions { margin-top: 18px; }

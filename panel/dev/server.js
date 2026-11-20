@@ -124,6 +124,11 @@ async function seed() {
   {
     const row = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first();
     const d = JSON.parse(row.data); d.guard = { enabled: true, autoKick: true, packsOk: false, webhook: '' };
+    d.news = [
+      { id: 'nw1', at: t - 6 * DAY, text: 'Bienvenidos a IGNITE EXTREMO 3. Lee las normas en Discord.' },
+      { id: 'nw2', at: t - 5 * 3600e3, text: '', auto: { added: ['create-0.5.1', 'farmers-delight-1.5'], updated: ['sodium-0.6.0'], removed: ['optifine-hd'], config: 2 } },
+      { id: 'nw3', at: t - 2 * 3600e3, text: '¡Temporada 2 ya está aquí!\n- Mapa nuevo con 3 biomas\n- Evento PvP el sábado a las 20:00' }
+    ];
     await run("UPDATE instances SET data = ? WHERE id = 'ignite-extremo-3'", JSON.stringify(d));
     await run("INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES ('pg1', 'ignite-extremo-3', 'onyx-studios', 'steve_pro', 'Steve_Pro', ?, ?, NULL)", t - 40 * 60e3, t - 10e3);
     const mods = ['kopi-skins-csl.jar', 'sodium-fabric-0.6.jar', 'lithium-fabric-0.14.jar', 'fabric-api-0.116.jar', 'ignite-core-3.2.jar', 'voicechat-2.5.jar'];

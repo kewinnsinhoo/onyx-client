@@ -1066,3 +1066,59 @@ test('panel: errores legibles', () => {
     passed++; console.log('  ✓ KopiGuard: mods, paquetes, archivos y programas');
   } catch (e) { console.error('  ✗ KopiGuard\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Arreglo de cierres: qué pasó y qué botón ofrecer
+(async () => {
+  try {
+    const C = require('../src/main/crash');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-crash-'));
+    const base = { gameDir: tmp, startedAt: Date.now() - 60e3, memoryMb: 4096, totalMemMb: 16384, code: 1 };
+    const d = (log, extra) => C.diagnose({ ...base, log, ...extra });
+    // se cerró bien, lo cerró el jugador o el studio: nada
+    assert.strictEqual(C.diagnose({ ...base, code: 0, log: 'Stopping!' }), null);
+    assert.strictEqual(d('java.lang.OutOfMemoryError', { stopped: true }), null);
+    assert.strictEqual(d('java.lang.OutOfMemoryError', { kicked: true }), null);
+    // memoria
+    let r = d('[Render thread/ERROR]: java.lang.OutOfMemoryError: Java heap space');
+    assert.deepStrictEqual([r.kind, r.fixes[0].type, r.fixes[0].mb], ['memory', 'ram', 6144]);
+    r = d('Error occurred during initialization of VM\nCould not reserve enough space for 8388608KB object heap', { memoryMb: 8192, totalMemMb: 8192 });
+    assert.deepStrictEqual([r.kind, r.fixes[0].mb], ['heap', 4096]);
+    // falta un mod (Fabric, las dos formas) y Forge
+    r = d(" - Mod 'Sodium Extra' (sodium-extra) 0.5.4+mc1.20.4 requires any version of fabric-api, which is missing!");
+    assert.deepStrictEqual([r.kind, r.vars.mod, r.vars.dep, r.fixes[0].type], ['missing', 'Sodium Extra', 'fabric-api', 'repair']);
+    r = d(" - Mod 'Create' (create) 0.5.1 requires any version of mod 'Fabric API' (fabric-api), which is missing!");
+    assert.deepStrictEqual([r.vars.mod, r.vars.dep], ['Create', 'Fabric API']);
+    r = d("Mod ID: 'geckolib', Requested by: 'mowziesmobs', Expected range: '[4.4,)', Actual version: '[MISSING]'");
+    assert.deepStrictEqual([r.kind, r.vars.mod, r.vars.dep], ['missing', 'mowziesmobs', 'geckolib']);
+    r = d(" - Mod 'Iris' (iris) 1.7.0 requires version 0.5.x of mod 'Sodium' (sodium), but only the wrong version is present: 0.6.0!");
+    assert.deepStrictEqual([r.kind, r.vars.mod, r.vars.dep], ['incompatible', 'Iris', 'Sodium']);
+    // repetidos y dañados
+    assert.strictEqual(d('net.fabricmc.loader.impl.discovery.ModResolutionException: Duplicate mods found').kind, 'duplicate');
+    assert.strictEqual(d('java.util.zip.ZipException: zip END header not found').fixes[0].type, 'repair');
+    // Java y argumentos
+    assert.deepStrictEqual(d('java.lang.UnsupportedClassVersionError: net/minecraft/client/main/Main has been compiled by a more recent version of the Java Runtime', { customJava: true }).fixes[0].type, 'java');
+    assert.strictEqual(d('Unrecognized VM option \'UseZGC2\'\nError: Could not create the Java Virtual Machine.', { jvmArgs: '-XX:+UseZGC2' }).kind, 'jvmargs');
+    // el modo rendimiento choca
+    r = d('java.lang.RuntimeException: Mixin transformation of net.minecraft.class_123 failed\n\tat me.jellysquid.mods.sodium.client.render.X', { perfMode: true });
+    assert.deepStrictEqual([r.kind, r.fixes[0].type], ['perf', 'perf']);
+    r = d('org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError: Mixin apply for mod create failed create.mixins.json');
+    assert.deepStrictEqual([r.kind, r.vars.mod], ['mixin', 'create']);
+    // tarjeta gráfica (informe de Java)
+    fs.writeFileSync(path.join(tmp, 'hs_err_pid4242.log'), '# EXCEPTION_ACCESS_VIOLATION (0xc0000005)\n# Problematic frame:\n# C  [atio6axx.dll+0x1c2b3]\n');
+    r = d('');
+    assert.deepStrictEqual([r.kind, r.vars.vendor, r.fixes[0].type], ['driver', 'AMD', 'drivers']);
+    assert.ok(/amd\.com/.test(r.fixes[0].url));
+    fs.rmSync(path.join(tmp, 'hs_err_pid4242.log'));
+    // un informe de error viejo (de otra partida) no cuenta; uno nuevo sí
+    fs.mkdirSync(path.join(tmp, 'crash-reports'));
+    const old = path.join(tmp, 'crash-reports', 'crash-2026-01-01_10.00.00-client.txt');
+    fs.writeFileSync(old, 'Description: Viejo\njava.lang.NullPointerException');
+    const past = (Date.now() - 3600e3) / 1000; fs.utimesSync(old, past, past);
+    fs.writeFileSync(path.join(tmp, 'crash-reports', 'crash-2026-11-20_15.00.00-client.txt'), '---- Minecraft Crash Report ----\nDescription: Rendering overlay\n\njava.lang.NullPointerException: Cannot invoke "Object.toString()"\n\tat net.minecraft.X');
+    r = C.diagnose({ ...base, code: -1, log: '' });
+    assert.deepStrictEqual([r.kind, r.vars.desc, r.vars.error], ['generic', 'Rendering overlay', 'NullPointerException']);
+    assert.ok(/15\.00\.00/.test(r.file) && r.lines.some(l => /NullPointerException/.test(l)));
+    fs.rmSync(tmp, { recursive: true, force: true });
+    passed++; console.log('  ✓ Arreglo de cierres: memoria, mods, Java, tarjeta gráfica, informes');
+  } catch (e) { console.error('  ✗ Arreglo de cierres\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();

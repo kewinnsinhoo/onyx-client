@@ -315,7 +315,7 @@
   }
 
   // ---------- informe ----------
-  function reportModal() {
+  function reportModal(prefill) {
     modal((m, close) => {
       m.innerHTML = html`<div class="m-ico">${icon('alert')}</div>
         <h2>${t('Enviar informe')}</h2><p class="sub">${t('Cuéntanos qué ha fallado.')}</p>
@@ -325,7 +325,7 @@
           <div>${icon('cpu')}${t('Información básica del estado')}</div>
           <div>${icon('lock')}${t('Solo el equipo de {studio} tiene acceso al informe.', { studio: esc(S.info.studio) })}</div>
         </div>
-        <textarea class="input" placeholder="${t('Qué ha pasado (opcional)')}"></textarea>
+        <textarea class="input" placeholder="${t('Qué ha pasado (opcional)')}">${esc(typeof prefill === 'string' ? prefill : '')}</textarea>
         <div class="actions" style="margin-top:16px"><button class="btn btn-ghost" data-a="c">${t('Cancelar')}</button>
         <button class="btn btn-primary" data-a="s">${icon('send')}${t('Enviar')}</button></div>`;
       m.querySelector('[data-a=c]').onclick = close;
@@ -340,6 +340,125 @@
           close();
           toast(r.sent ? t('Informe enviado. ¡Gracias!') : t('Informe guardado en una carpeta para que lo compartas.'), 'success', 5000);
         } catch (err) { m.parentElement.style.visibility = ''; toast(t(err.message, err.vars), 'error'); busy(b, false); }
+      };
+    }, { wide: false });
+  }
+
+  // ---------- novedades de la instancia ----------
+  const unseenNews = (i) => (i.news || []).filter(n => n.at > (i.newsSeen || 0)).length;
+  // Texto del studio: las líneas con «-» salen como lista; el resto, como párrafos
+  function newsText(s) {
+    const out = [];
+    let list = [];
+    const flush = () => { if (list.length) { out.push(`<ul>${list.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`); list = []; } };
+    for (const line of String(s || '').split(/\r?\n/)) {
+      const l = line.trim();
+      if (/^[-•*]\s+/.test(l)) list.push(l.replace(/^[-•*]\s+/, ''));
+      else { flush(); if (l) out.push(`<p>${esc(l)}</p>`); }
+    }
+    flush();
+    return out.join('');
+  }
+  function newsModal(id) {
+    const inst = S.instances.find(i => i.id === id);
+    if (!inst || !(inst.news || []).length) return;
+    const seen = inst.newsSeen || 0;
+    const chips = (l, cls, sign) => (l || []).map(x => `<span class="nw-chip ${cls}">${sign} ${esc(x)}</span>`).join('');
+    modal((m, close) => {
+      m.classList.add('news-modal');
+      m.innerHTML = html`<div class="m-ico">${icon('megaphone')}</div>
+        <h2>${t('Novedades de {name}', { name: esc(inst.name) })}</h2>
+        <p class="sub">${inst.studio && inst.studio.name ? t('Lo último de {studio}.', { studio: esc(inst.studio.name) }) : t('Lo último de la instancia.')}</p>
+        <div class="news-list">${inst.news.map(n => html`<div class="news-item ${n.at > seen ? 'new' : ''}">
+          <div class="news-meta">${n.auto ? `<span class="news-tag">${icon('package')}${t('Archivos')}</span>` : ''}<span>${esc(UI.timeAgo(n.at))}</span>${n.at > seen ? `<span class="news-new">${t('Nuevo')}</span>` : ''}</div>
+          ${n.text ? `<div class="news-text">${newsText(n.text)}</div>` : ''}
+          ${n.auto ? html`<div class="nw-chips">${chips(n.auto.added, 'add', '+')}${chips(n.auto.updated, 'up', '↑')}${chips(n.auto.removed, 'del', '−')}${n.auto.config ? `<span class="nw-chip">${t('{n} ajustes cambiados', { n: n.auto.config })}</span>` : ''}</div>` : ''}
+        </div>`).join('')}</div>
+        <div class="actions"><button class="btn btn-primary" data-a="ok">${t('Entendido')}</button></div>`;
+      m.querySelector('[data-a=ok]').onclick = close;
+    }, { wide: true });
+    // vistas: se quita el puntito
+    onyx.instances.seenNews(id).then(v => {
+      const i = S.instances.find(x => x.id === id);
+      if (i) i.newsSeen = (v && v.newsSeen) || Date.now();
+      renderChrome();
+      document.dispatchEvent(new CustomEvent('onyx:news', { detail: { id } }));
+    }).catch(() => {});
+  }
+
+  // ---------- arreglo de cierres ----------
+  // El juego se cerró con un error: qué pasó, en palabras sencillas, y un botón para arreglarlo.
+  const CRASH = {
+    memory: ['cpu', 'El juego se quedó sin memoria', 'Minecraft necesitaba más memoria (RAM) de la que tenía ({mb} MB).'],
+    heap: ['cpu', 'Java no pudo arrancar con tanta memoria', 'Esta instancia pide {mb} MB de memoria y tu PC no puede darle tanta ahora mismo.'],
+    jvmargs: ['settings', 'Hay un ajuste de Java que no vale', 'Los argumentos de Java que pusiste en Ajustes no funcionan.'],
+    java: ['coffee', 'La versión de Java no es la correcta', 'Esta versión de Minecraft necesita otra Java distinta de la que elegiste en Ajustes.'],
+    missing: ['package', 'Falta un mod', 'El mod «{mod}» necesita «{dep}» y no está en la instancia.'],
+    incompatible: ['package', 'Hay mods que no se llevan bien', 'Algunos mods de la instancia no funcionan juntos.'],
+    duplicate: ['package', 'Hay un mod repetido', 'La instancia tiene dos copias del mismo mod.'],
+    corrupt: ['download', 'Un archivo está dañado', 'Algún archivo de la instancia se descargó mal o se ha roto.'],
+    perf: ['zap', 'El modo rendimiento choca con un mod', 'Los mods de rendimiento de Kopi no se llevan bien con algún mod de esta instancia.'],
+    mixin: ['package', 'Un mod choca con otro', 'Dos mods de la instancia chocan entre sí.'],
+    driver: ['monitor', 'Fallo del controlador de la tarjeta gráfica', 'El controlador de tu tarjeta gráfica se ha cerrado. Casi siempre se arregla actualizándolo.'],
+    jvm: ['alert', 'Java se ha cerrado de golpe', 'Puede ser la tarjeta gráfica, un mod o el propio PC.'],
+    generic: ['alert', 'El juego se ha cerrado con un error', 'Minecraft se ha cerrado de golpe.']
+  };
+  function crashText(c) {
+    const v = c.vars || {};
+    if (c.kind === 'incompatible' && v.mod && v.dep) return t('«{mod}» no funciona con la versión de «{dep}» que trae la instancia.', v);
+    if (c.kind === 'mixin' && v.mod) return t('El mod «{mod}» choca con otro mod de la instancia.', v);
+    if (c.kind === 'driver' && v.vendor) return t('El controlador de tu tarjeta gráfica {vendor} se ha cerrado. Casi siempre se arregla actualizándolo.', v);
+    if (c.kind === 'generic' && v.desc) return t('Minecraft dice: «{desc}».', v) + (v.error ? ` (${esc(v.error)})` : '');
+    return t(CRASH[c.kind][2], v);
+  }
+  const FIX_LABEL = {
+    ram: (f, c) => c.kind === 'heap' ? t('Bajar la memoria a {mb} MB y jugar', { mb: f.mb }) : t('Subir la memoria a {mb} MB y jugar', { mb: f.mb }),
+    repair: () => t('Reparar los archivos y jugar'),
+    perf: () => t('Apagar el modo rendimiento y jugar'),
+    java: () => t('Usar la Java automática y jugar'),
+    jvmargs: () => t('Quitar los argumentos de Java y jugar'),
+    drivers: (f) => f.url ? t('Actualizar el controlador de {vendor}', { vendor: f.vendor }) : null
+  };
+  function crashModal(id, c) {
+    const inst = S.instances.find(i => i.id === id);
+    const [ic, title] = CRASH[c.kind] || CRASH.generic;
+    const fix = (c.fixes || []).find(f => FIX_LABEL[f.type] && FIX_LABEL[f.type](f, c));
+    const onlyStudio = ['missing', 'incompatible', 'mixin'].includes(c.kind);
+    modal((m, close) => {
+      m.classList.add('crash');
+      m.innerHTML = html`<div class="m-ico bad">${icon(ic)}</div>
+        <h2>${t(title)}</h2>
+        <p class="sub">${crashText(c)}</p>
+        ${inst ? `<div class="crash-inst">${icon('box')}<span>${esc(inst.name)}</span></div>` : ''}
+        ${onlyStudio ? `<p class="crash-note">${icon('info')}<span>${t('Esto lo tiene que arreglar el studio de la instancia. Mándales el informe para que lo vean.')}</span></p>` : ''}
+        <div class="crash-acts">
+          ${fix ? `<button class="btn btn-primary" data-a="fix">${icon(fix.type === 'drivers' ? 'external' : 'wrench')}${esc(FIX_LABEL[fix.type](fix, c))}</button>` : ''}
+          <button class="btn ${fix ? 'btn-ghost' : 'btn-primary'}" data-a="report">${icon('send')}${t('Enviar el error al studio')}</button>
+        </div>
+        ${c.lines && c.lines.length ? html`<details class="crash-more"><summary>${t('Ver detalles')}</summary>
+          <pre>${esc(c.lines.join('\n'))}</pre><button class="btn btn-ghost btn-sm" data-a="copy">${icon('copy')}${t('Copiar')}</button></details>` : ''}
+        <div class="actions"><button class="btn btn-ghost" data-a="close">${t('Cerrar')}</button>
+          <button class="btn btn-ghost" data-a="again">${icon('play')}${t('Volver a jugar')}</button></div>`;
+      const $a = (a) => m.querySelector(`[data-a=${a}]`);
+      $a('close').onclick = close;
+      $a('again').onclick = () => { close(); play(id); };
+      $a('report').onclick = () => { close(); reportModal(`${t(title)} — ${inst ? inst.name : id}\n${(c.lines || []).slice(0, 4).join('\n')}`); };
+      const cp = $a('copy');
+      if (cp) cp.onclick = () => { navigator.clipboard.writeText(c.lines.join('\n')).then(() => toast(t('Copiado'), 'success')).catch(() => {}); };
+      const fb = $a('fix');
+      if (fb) fb.onclick = async () => {
+        if (fix.type === 'drivers') { onyx.app.openExternal(fix.url); return; }
+        busy(fb, true);
+        try {
+          if (fix.type === 'ram') await onyx.instances.setMemory(id, fix.mb);
+          else if (fix.type === 'perf') await onyx.instances.setPerfMode(id, false);
+          else if (fix.type === 'repair') await onyx.instances.update(id);
+          else if (fix.type === 'java' || fix.type === 'jvmargs') { await onyx.crash.fix(id, { type: fix.type }); S.settings = await onyx.settings.get(); }
+          await loadInstances();
+          close();
+          toast(t('Arreglado. Volviendo a abrir el juego…'), 'success', 4000);
+          play(id);
+        } catch (err) { busy(fb, false); toast(t(err.message, err.vars), 'error'); }
       };
     }, { wide: false });
   }
@@ -418,7 +537,7 @@
       <span class="nav-sep"></span>
       <div class="inst-pins">
         ${S.instances.map(i => html`<button class="pin ${curInst === i.id ? 'active' : ''}" data-inst="${esc(i.id)}" title="${esc(i.name)}"
-          style="${tileBg(i) ? `background-image:url('${esc(tileBg(i))}')` : ''}">${tileBg(i) ? '' : `<b>${esc(i.name.slice(0, 2).toUpperCase())}</b>`}${S.progress[i.id] && S.progress[i.id].stage === 'running' ? '<span class="live"></span>' : ''}</button>`).join('')}
+          style="${tileBg(i) ? `background-image:url('${esc(tileBg(i))}')` : ''}">${tileBg(i) ? '' : `<b>${esc(i.name.slice(0, 2).toUpperCase())}</b>`}${S.progress[i.id] && S.progress[i.id].stage === 'running' ? '<span class="live"></span>' : unseenNews(i) ? `<span class="pin-news" title="${esc(t('Novedades'))}"></span>` : ''}</button>`).join('')}
       </div>
       <div class="bottom">
         <button class="sb-add" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
@@ -501,6 +620,7 @@
         delete S.progress[p.id];
         loadInstances().then(renderChrome);
         if (p.kicked) toast(t('El studio ha cerrado la instancia'), 'error', 9000);
+        else if (p.crash) crashModal(p.id, p.crash); // se cerró con un error: qué pasó y cómo arreglarlo
       }
       else S.progress[p.id] = p;
       if ((p.stage === 'running') !== (was === 'running')) renderChrome();
@@ -536,7 +656,7 @@
   }
 
   window.App = {
-    go, rerender, play, stageText, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    go, rerender, play, stageText, crashModal, newsModal, unseenNews, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
     loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);

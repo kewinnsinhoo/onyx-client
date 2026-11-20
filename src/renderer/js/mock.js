@@ -21,7 +21,13 @@
     { id: 'survival-onyx', name: 'IGNITE EXTREMO 3', studio: { name: 'Kopi Studio' }, description: 'IGNITE EXTREMO 3 es una serie de supervivencia extrema donde cada día el mundo se vuelve más peligroso. Los participantes deberán completar misiones, proteger sus refugios y sobrevivir con vidas limitadas.\n\nEl azufre se extiende, los monstruos evolucionan y poderosos jefes comienzan a despertar.', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' }, premium: false, guard: true, addedAt: Date.now() - 1e8, lastPlayed: Date.now() - 4e6, playTime: 5.4e6, server: { address: 'play.kopi.gg' },
       source: 'panel', category: 'Serie', banner: q.get('look') ? '../../web/img/arte-3.webp' : null, logo: q.get('look') ? 'assets/logo-wordmark.png' : null,
       look: q.get('look') ? { accent: '#f59e0b', playColor: '#ea580c', vignette: true, snow: true, music: { url: 'x.mp3', volume: 30, loop: true }, sponsor: { name: 'HostNova', url: 'https://example.com' } } : {},
-      schedule: q.get('soon') ? { opensAt: Date.now() + 2 * 864e5, predownload: true } : null },
+      schedule: q.get('soon') ? { opensAt: Date.now() + 2 * 864e5, predownload: true } : null,
+      newsSeen: Date.now() - 3 * 864e5,
+      news: [
+        { id: 'n3', at: Date.now() - 2 * 3600e3, text: '¡Temporada 2 ya está aquí!\n- Mapa nuevo con 3 biomas\n- Evento PvP el sábado a las 20:00\n- Arreglado el lag del spawn' },
+        { id: 'n2', at: Date.now() - 5 * 3600e3, text: '', auto: { added: ['create-0.5.1', 'farmers-delight-1.5'], updated: ['sodium-0.6.0'], removed: ['optifine-hd'], config: 2 } },
+        { id: 'n1', at: Date.now() - 6 * 864e5, text: 'Bienvenidos a IGNITE EXTREMO 3. Lee las normas en Discord.' }
+      ] },
     { id: 'torneo', name: q.get('pre') ? 'dedsafio' : 'Torneo PvP', category: q.get('pre') ? 'Serie' : 'Torneo', studio: { name: 'Kopi Studio', logo: q.get('pre') ? 'assets/logo-wordmark.png' : null }, banner: q.get('pre') ? '../../web/img/arte-3.webp' : null, schedule: q.get('pre') ? { predownload: true } : null, minecraft: '1.8.9', loader: { type: 'vanilla' }, premium: false, addedAt: Date.now() - 3e8, state: 'locked', lockedMessage: 'Volvemos a las 18:00', source: 'panel', staff: !!q.get('staff'), playTime: 2.1e6 },
     { id: 'eventos', name: 'Eventos Kopi', description: '', minecraft: '1.20.4', loader: { type: 'vanilla' }, premium: true, addedAt: Date.now() - 2e8 }
   ];
@@ -40,6 +46,7 @@
       loginMicrosoft: () => wait(null, q.get('mswait') ? 600000 : 300), cancelLogin: wait, reopenLogin: wait, addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
     },
     discord: { link: () => wait({ username: 'kewin' }), unlink: wait, presence: wait },
+    crash: { fix: wait },
     skins: {
       library: () => wait([{ id: 'a', name: 'Hoodie blanco', variant: 'classic', data: ALT }, { id: 'b', name: 'Kopi', variant: 'slim', data: SK }]),
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
@@ -62,7 +69,7 @@
     },
     instances: {
       list: () => wait(instances), get: (id) => wait(instances.find(i => i.id === id)), redeem: () => wait(null, 300).then(() => { throw new Error('Código no válido o caducado'); }),
-      remove: wait, setMemory: wait, setPerfMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.perfMode = !!on; return wait(i); }, play: wait, stop: wait, onProgress: () => () => {}, onChanged: () => () => {}, sync: wait,
+      remove: wait, setMemory: wait, seenNews: (id) => { const i = instances.find(x => x.id === id); if (i) i.newsSeen = Date.now(); return wait(i); }, setPerfMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.perfMode = !!on; return wait(i); }, play: wait, stop: wait, onProgress: () => () => {}, onChanged: () => () => {}, sync: wait,
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },

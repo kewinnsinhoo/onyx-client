@@ -2,7 +2,7 @@
 (function () {
   const V = window.Views;
   const TABS = [
-    ['summary', 'info', 'Resumen'], ['files', 'folder', 'Archivos'], ['look', 'sparkles', 'Personalización'],
+    ['summary', 'info', 'Resumen'], ['news', 'megaphone', 'Novedades'], ['files', 'folder', 'Archivos'], ['look', 'sparkles', 'Personalización'],
     ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['players', 'activity', 'Jugadores']
   ];
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -67,7 +67,7 @@
     async function drawTab() {
       const el = $('#tab');
       if (timer) { clearInterval(timer); timer = null; }
-      const fn = { summary, files, look, game, launch, access, protect, players }[tab];
+      const fn = { summary, news, files, look, game, launch, access, protect, players }[tab];
       await fn(el);
       if (!editable) $$('#tab input, #tab select, #tab textarea, #tab .option, #tab .chip, #tab [data-edit]').forEach(x => { x.disabled = true; });
     }
@@ -97,6 +97,48 @@
         <div><div id="pv">${previewHtml(d)}</div></div></div>`;
     }
 
+    // Novedades: lo que ven los jugadores en el launcher al abrir la instancia
+    function news(el) {
+      const save = async (list) => {
+        const res = await sapi('PATCH', base, { data: { news: list } });
+        d.news = res.data.news; inst.data.news = res.data.news;
+        const o = JSON.parse(orig); o.news = res.data.news; orig = JSON.stringify(o); changed();
+      };
+      const chips = (list, cls, sign) => list.map(x => `<span class="nw-chip ${cls}">${sign} ${esc(x)}</span>`).join('');
+      const draw = () => {
+        const list = (d.news || []).slice().reverse();
+        el.innerHTML = html`
+          ${editable ? html`<div class="card nw-compose"><h3>${icon('megaphone')}${t('Contar una novedad')}</h3>
+            <p class="sub">${t('Los jugadores la verán en el launcher la próxima vez que abran la instancia. Las líneas que empiezan por «-» salen como lista.')}</p>
+            <textarea class="input" id="nw-text" rows="4" maxlength="2000" placeholder="${t('¿Qué hay de nuevo? Por ejemplo: «Temporada 2: mapa nuevo, Create y un evento el sábado».')}"></textarea>
+            <div class="nw-row"><span class="help">${t('Los mods que añades, quitas o actualizas se apuntan solos.')}</span><span class="grow"></span>
+              <button class="btn primary" id="nw-pub">${icon('send')}${t('Publicar')}</button></div></div>` : ''}
+          <div class="card"><div class="card-head"><h3>${icon('history')}${t('Novedades publicadas')}</h3><span class="grow"></span><small style="color:var(--muted)">${t('Se guardan las 30 últimas')}</small></div>
+            ${list.length ? `<div class="nw-list">${list.map(n => html`<div class="nw-item ${n.auto ? 'auto' : ''}">
+                <span class="nw-dot">${icon(n.auto ? 'package' : 'megaphone')}</span>
+                <div class="nw-body"><div class="nw-meta"><b>${n.auto ? t('Cambios en los archivos') : t('Novedad')}</b><small title="${esc(fmtDateTime(n.at))}">${timeAgo(n.at)}</small></div>
+                  ${n.text ? `<div class="nw-text">${esc(n.text)}</div>` : ''}
+                  ${n.auto ? html`<div class="nw-chips">${chips(n.auto.added, 'add', '+')}${chips(n.auto.updated, 'up', '↑')}${chips(n.auto.removed, 'del', '−')}${n.auto.config ? `<span class="nw-chip cfg">${t('{n} ajustes cambiados', { n: n.auto.config })}</span>` : ''}</div>` : ''}
+                </div>
+                ${editable ? `<button class="btn ghost icon sm" data-del="${esc(n.id)}" title="${t('Borrar')}">${icon('trash')}</button>` : ''}
+              </div>`).join('')}</div>` : `<div class="empty"><div class="ic">${icon('megaphone')}</div><h4>${t('Todavía no hay novedades')}</h4><p>${t('Escribe la primera o cambia algún mod en Archivos.')}</p></div>`}
+          </div>`;
+        const pub = $('#nw-pub', el);
+        if (pub) pub.onclick = async () => {
+          const text = $('#nw-text', el).value.trim();
+          if (!text) { toast(t('Escribe algo primero'), 'error'); return; }
+          busy(pub, true);
+          try { await save([...(d.news || []), { id: Math.random().toString(36).slice(2, 12), at: Date.now(), text }]); toast(t('Novedad publicada')); draw(); }
+          catch (e) { fail(e); busy(pub, false); }
+        };
+        $$('[data-del]', el).forEach(b => b.onclick = async () => {
+          if (!(await confirmBox({ title: t('¿Borrar esta novedad?'), text: t('Los jugadores dejarán de verla.'), ok: t('Borrar'), danger: true, ico: 'trash' }))) return;
+          try { await save((d.news || []).filter(n => n.id !== b.dataset.del)); draw(); } catch (e) { fail(e); }
+        });
+      };
+      draw();
+    }
+
     // Archivos
     async function files(el) {
       // Explorador de archivos (views/files.js). Cada cambio se guarda al momento.
@@ -106,7 +148,8 @@
         persist: async (patch) => {
           const res = await sapi('PATCH', base, { data: patch });
           const o = JSON.parse(orig);
-          for (const k of Object.keys(patch)) { d[k] = res.data[k]; o[k] = res.data[k]; inst.data[k] = res.data[k]; }
+          // también las novedades: el panel apunta solo los mods que cambian
+          for (const k of [...Object.keys(patch), 'news']) { d[k] = res.data[k]; o[k] = res.data[k]; inst.data[k] = res.data[k]; }
           orig = JSON.stringify(o);
           changed(); paintHead();
         }

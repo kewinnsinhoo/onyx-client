@@ -71,6 +71,7 @@
     move: '<path d="M13 4a2 2 0 1 0 0 .01"/><path d="m9 20 3-6 3 2v5"/><path d="m6 12 3-4 4 1 3 3 3 1"/><path d="m12 14-2-5"/>',
     crosshair: '<circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.5"/>',
     server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+    send: '<path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/>',
     chart: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>',
     list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
     video: '<rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/>',

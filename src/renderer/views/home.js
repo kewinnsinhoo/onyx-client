@@ -2,6 +2,7 @@
 (function () {
   const { esc, html, toast } = UI;
   const V = window.Views = window.Views || {};
+  const shownNews = new Set(); // instancias cuyas novedades ya se enseñaron solas en esta sesión
 
   function loaderLabel(l, withVersion) {
     const type = (l && l.type) || 'vanilla';
@@ -218,6 +219,7 @@
                 ${inst.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Premium y offline')}</span>`}
                 ${inst.server && inst.server.address && !look.hideTech ? `<span class="badge">${icon('globe')}${esc(inst.server.address)}</span>` : ''}
                 ${inst.guard ? `<span class="badge guard" title="${t('Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.')}">${icon('shield')}KopiGuard</span>` : ''}
+                ${(inst.news || []).length ? `<button class="badge news-b ${App.unseenNews(inst) ? 'new' : ''}" id="ins-news">${icon('megaphone')}${t('Novedades')}${App.unseenNews(inst) ? `<i>${App.unseenNews(inst)}</i>` : ''}</button>` : ''}
                 ${inst.perfMode ? `<span class="badge perf" title="${t('Modo rendimiento')}">${icon('zap')}${t('Rendimiento')}</span>` : ''}
               </div>
             </div>
@@ -257,6 +259,12 @@
 
       const b = (s) => root.querySelector(s);
       if (b('#ins-play')) b('#ins-play').onclick = () => App.play(id);
+      if (b('#ins-news')) b('#ins-news').onclick = () => App.newsModal(id);
+      // Novedades sin ver: se enseñan solas una vez al abrir la instancia (no mientras se juega)
+      if (App.unseenNews(inst) && !running && !p && !document.querySelector('.news-modal') && !shownNews.has(id)) {
+        shownNews.add(id);
+        setTimeout(() => { if (S.route && S.route.name === 'instance' && S.route.params.id === id) App.newsModal(id); }, 450);
+      }
       if (b('#ins-stop')) b('#ins-stop').onclick = () => onyx.instances.stop(id);
       if (b('#ins-music')) b('#ins-music').onclick = () => { setMusicMuted(!musicMuted()); syncMusic(); render(); };
       if (b('#ins-sponsor') && look.sponsor && look.sponsor.url) b('#ins-sponsor').onclick = () => onyx.app.openExternal(look.sponsor.url);
@@ -358,6 +366,8 @@
       root.querySelector('#ins-pct').textContent = pct == null ? '' : pct + '%';
     };
     const off = smoothProgress(() => render(), update);
-    return () => { alive = false; clearInterval(timer); off(); if (audio) { audio.pause(); audio = null; } };
+    const onNews = (e) => { if (e.detail && e.detail.id === id && alive) render(); }; // vistas: se quita el contador
+    document.addEventListener('onyx:news', onNews);
+    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); if (audio) { audio.pause(); audio = null; } };
   };
 })();
