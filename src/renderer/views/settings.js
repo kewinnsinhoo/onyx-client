@@ -238,7 +238,8 @@
         <div class="ver mono">${t('Versión')} v${esc(i.version)} · ${t('Compilación')} ${esc(i.build)} · Core ${esc(i.core)}</div>
         <div class="by">${B ? t('Launcher de {s} · con la tecnología de Kopi Client', { s: esc(B.studioName || B.name) }) : t('Hecho por {s}', { s: esc(i.studio) })}</div>
         ${B && (B.web || B.store) ? `<div class="row" style="justify-content:center;margin:4px 0 6px">${B.web ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.web)}">${icon('globe')}${t('Web')}</button>` : ''}${B.store ? `<button class="btn btn-outline btn-sm" data-ext="${esc(B.store)}">${icon('external')}${t('Tienda')}</button>` : ''}</div>` : ''}
-        <button class="btn btn-primary btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button></div></div>
+        <div class="row" style="justify-content:center;gap:10px"><button class="btn btn-primary btn-lg" id="ab-up">${icon('refresh')}${t('Buscar actualizaciones')}</button>
+          <button class="btn btn-outline btn-lg" id="ab-news">${icon('sparkles')}${t('Novedades del launcher')}</button></div></div></div>
       <div class="card"><h3>${t('Canal de actualizaciones')} <span class="info-i" title="${t('Beta recibe novedades antes, pero puede tener fallos.')}">i</span></h3>
         <div class="segmented" id="ab-ch"><button data-c="stable">${t('Estable')}</button><button data-c="beta">Beta</button></div>
         <div class="hint" id="ab-ch-d"></div></div>
@@ -267,6 +268,7 @@
         else toast(t('No se pudo comprobar ahora mismo'), 'error');
       } finally { busy(b, false); }
     };
+    body.querySelector('#ab-news').onclick = () => App.allChanges();
     body.querySelector('#ab-dc').onclick = () => i.discordInvite ? onyx.app.openExternal(i.discordInvite) : toast(t('El enlace de Discord aún no está configurado'));
     const gh = body.querySelector('#ab-gh');
     if (gh) gh.onclick = () => onyx.app.openExternal(`https://github.com/${i.githubRepo}`);

@@ -126,6 +126,7 @@
     renderChrome();
     go('home');
     if (firstTime && S.account) toast(t('¡Bienvenido, {name}!', { name: S.account.name }), 'success');
+    whatsNew().catch(() => {});
   }
 
   function offlineModal(done) {
@@ -343,6 +344,46 @@
       };
     }, { wide: false });
   }
+
+  // ---------- novedades del launcher ----------
+  // «1.7.6-beta.2» → [1, 7, 6]; compara versiones
+  const vnum = (v) => String(v || '0').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+  const vcmp = (a, b) => { const x = vnum(a), y = vnum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+  const LANG_COL = { es: 1, en: 2, ca: 3, fr: 4 };
+  const clText = (item) => item[LANG_COL[S.settings.language] || 1] || item[1];
+  function changesModal(entries, { updated } = {}) {
+    if (!entries.length) return;
+    const app = S.info.name || 'Kopi Client';
+    const fmt = (d) => { try { return new Date(d + 'T12:00:00').toLocaleDateString(I18N.locale ? I18N.locale() : undefined, { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return d; } };
+    const [first, ...rest] = entries;
+    modal((m, close) => {
+      m.classList.add('changes-modal');
+      m.innerHTML = html`<div class="ch-hero"><div class="ch-glow"></div>${brandMark()}</div>
+        <span class="ch-ver">v${esc(first.v)}</span>
+        <h2>${updated ? t('¡{app} se ha actualizado!', { app: esc(app) }) : t('Novedades del launcher')}</h2>
+        <p class="sub">${updated ? t('Esto es lo nuevo:') : t('Lo que ha traído cada versión.')}</p>
+        <div class="ch-list">
+          <div class="ch-items">${first.items.map(it => `<div class="ch-item"><span class="ch-ic">${icon(it[0])}</span><span>${esc(clText(it))}</span></div>`).join('')}</div>
+          ${rest.map(e => html`<div class="ch-old"><div class="ch-old-h"><b>v${esc(e.v)}</b><small>${esc(fmt(e.date))}</small></div>
+            ${e.items.map(it => `<div class="ch-item sm"><span class="ch-ic">${icon(it[0])}</span><span>${esc(clText(it))}</span></div>`).join('')}</div>`).join('')}
+        </div>
+        <div class="actions"><button class="btn btn-primary" data-a="ok">${updated ? t('¡Genial!') : t('Cerrar')}</button></div>`;
+      m.querySelector('[data-a=ok]').onclick = close;
+    }, { wide: true });
+  }
+  // Al abrir el launcher: si se ha actualizado, enseña una vez lo nuevo de las versiones que no había visto
+  async function whatsNew() {
+    const cur = S.info.version, seen = S.settings.lastSeenVersion;
+    if (!cur || !window.CHANGELOG) return;
+    // Primera vez que se abre (recién instalado): nada que enseñar
+    if (!seen && !S.settings.onboarded) { await saveSettings({ lastSeenVersion: cur }).catch(() => {}); return; }
+    if (seen && vcmp(cur, seen) <= 0) return;
+    // Venía de una versión sin este aviso: solo lo de esta versión
+    const list = CHANGELOG.filter(e => vcmp(e.v, cur) <= 0 && (seen ? vcmp(e.v, seen) > 0 : vcmp(e.v, cur) === 0)).slice(0, 4);
+    await saveSettings({ lastSeenVersion: cur }).catch(() => {});
+    if (list.length) setTimeout(() => changesModal(list, { updated: true }), 700);
+  }
+  const allChanges = () => changesModal((window.CHANGELOG || []).filter(e => vcmp(e.v, S.info.version) <= 0), { updated: false });
 
   // ---------- novedades de la instancia ----------
   const unseenNews = (i) => (i.news || []).filter(n => n.at > (i.newsSeen || 0)).length;
@@ -656,7 +697,7 @@
   }
 
   window.App = {
-    go, rerender, play, stageText, crashModal, newsModal, unseenNews, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    go, rerender, play, stageText, crashModal, newsModal, unseenNews, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
     loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);

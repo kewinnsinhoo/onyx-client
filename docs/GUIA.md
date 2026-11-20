@@ -239,6 +239,12 @@ Para que se cuenten solos:
 - **Se apuntan solas** las altas, bajas y actualizaciones de mods, paquetes de texturas y shaders, y cuántos ajustes (`config/`) cambiaron, cada vez que se cambian archivos (los cambios de la misma media hora se juntan). La primera subida de una instancia nueva no cuenta.
 - En el launcher: botón **Novedades** con un contador en la instancia y un puntito en su icono del lateral. Las novedades sin ver se enseñan solas una vez al abrir la instancia. Las de antes de añadir la instancia no cuentan como nuevas.
 
+## Novedades del launcher (desde la 1.7.6)
+
+- La primera vez que se abre el launcher después de actualizarse sale una ventana «¡Kopi Client se ha actualizado!» con lo que trae la versión nueva (y las que se saltó, hasta 4). Recién instalado no sale nada.
+- Se pueden volver a ver en Ajustes → Acerca de → **Novedades del launcher**.
+- Están en `src/renderer/js/changelog.js`, contadas para el jugador y en es, en, ca y fr. **Cada versión nueva tiene que tener su entrada arriba del todo**: si no, la prueba «Novedades del launcher al día» falla y no se puede publicar sin darse cuenta.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

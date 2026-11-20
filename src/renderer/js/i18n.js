@@ -247,6 +247,12 @@
     ['Abrir de nuevo', 'Open again', 'Torna a obrir', 'Rouvrir'],
     ['¿No se abre? Iniciar sesión en una ventana del launcher', 'Not opening? Sign in in a launcher window', 'No s’obre? Inicia la sessió en una finestra del launcher', 'Rien ne s’ouvre ? Se connecter dans une fenêtre du launcher'],
     ['Rendimiento', 'Performance', 'Rendiment', 'Performances'],
+    // Novedades del launcher
+    ['¡{app} se ha actualizado!', '{app} has been updated!', '{app} s’ha actualitzat!', '{app} a été mis à jour !'],
+    ['Esto es lo nuevo:', 'Here’s what’s new:', 'Això és el que hi ha de nou:', 'Voici les nouveautés :'],
+    ['Novedades del launcher', 'What’s new in the launcher', 'Novetats del launcher', 'Nouveautés du launcher'],
+    ['Lo que ha traído cada versión.', 'What each version brought.', 'El que ha portat cada versió.', 'Ce que chaque version a apporté.'],
+    ['¡Genial!', 'Awesome!', 'Genial!', 'Génial !'],
     // Novedades de la instancia
     ['Novedades', 'News', 'Novetats', 'Nouveautés'],
     ['Novedades de {name}', 'What’s new in {name}', 'Novetats de {name}', 'Nouveautés de {name}'],

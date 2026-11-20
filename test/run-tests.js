@@ -1122,3 +1122,20 @@ test('panel: errores legibles', () => {
     passed++; console.log('  ✓ Arreglo de cierres: memoria, mods, Java, tarjeta gráfica, informes');
   } catch (e) { console.error('  ✗ Arreglo de cierres\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Novedades del launcher: cada versión publicada tiene que contar lo que trae (en los 4 idiomas)
+test('Novedades del launcher al día', () => {
+  const vm = require('vm');
+  const sb = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'changelog.js'), 'utf8'), sb);
+  const list = sb.window.CHANGELOG;
+  const version = require('../package.json').version.split('-')[0];
+  assert.strictEqual(list[0].v, version, `Falta la entrada de la ${version} en src/renderer/js/changelog.js`);
+  const num = (v) => v.split('.').map(Number);
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    assert.ok(/^\d+\.\d+\.\d+$/.test(e.v) && /^\d{4}-\d{2}-\d{2}$/.test(e.date), `entrada rara: ${e.v}`);
+    if (i) { const a = num(list[i - 1].v), b = num(e.v); assert.ok(a[0] * 1e6 + a[1] * 1e3 + a[2] > b[0] * 1e6 + b[1] * 1e3 + b[2], 'la más nueva arriba'); }
+    for (const it of e.items) assert.ok(it.length === 5 && it.every(x => typeof x === 'string' && x.trim()), `${e.v}: cada novedad en es, en, ca y fr`);
+  }
+});
