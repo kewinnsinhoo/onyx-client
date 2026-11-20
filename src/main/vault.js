@@ -8,7 +8,11 @@
 // vault/ a otro PC no sirve de nada. Si la llave se pierde, los mods se vuelven a descargar al jugar.
 // Los mods que pone Kopi (kopi-skins-*, kopi-perf-*) son públicos y no hace falta guardarlos.
 // Ojo: mientras el juego está abierto los mods tienen que estar sin cifrar (Minecraft los necesita).
+// En Fabric ni siquiera entonces están en mods/: stage() los abre en una carpeta temporal con nombre al azar
+// (y cada mod con nombre al azar), y Fabric los carga desde ahí con -Dfabric.addMods. Al cerrar se borra.
+// (No se marca como «oculta» de Windows porque Fabric ignora las carpetas ocultas.)
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { pipeline } = require('stream/promises');
@@ -152,7 +156,10 @@ async function seal(id, gameDir) {
   const idx = readIndex(id);
   const files = idx.files || {};
   const now = plainMods(gameDir);
-  if (!now.length && !Object.keys(files).length) return { sealed: 0, removed: 0, busy: 0 };
+  let live = idx.live || null;
+  // la carpeta temporal donde jugó (Fabric): fuera
+  if (live) { try { fs.rmSync(live, { recursive: true, force: true }); } catch { /* en uso: la próxima vez */ } if (!fs.existsSync(live)) live = null; }
+  if (!now.length && !Object.keys(files).length) { if (idx.live && !live) writeIndex(id, { files }); return { sealed: 0, removed: 0, busy: 0 }; }
   fs.mkdirSync(dirOf(id), { recursive: true });
   const wasOpen = fs.existsSync(path.join(dirOf(id), 'open'));
   const next = {};
@@ -178,7 +185,7 @@ async function seal(id, gameDir) {
       }
     }
   }
-  writeIndex(id, { files: next });
+  writeIndex(id, live ? { files: next, live } : { files: next });
   // los cifrados que ya no se usan (el studio quitó ese mod o se cifró una versión nueva)
   const used = new Set(Object.values(next).map(f => f.blob));
   for (const b of safeList(dirOf(id))) if (b.endsWith('.kv') && b !== 'index.kv' && !used.has(b)) { try { fs.unlinkSync(path.join(dirOf(id), b)); } catch { /* nada */ } }
@@ -192,6 +199,33 @@ async function seal(id, gameDir) {
   return { sealed, removed, busy };
 }
 
+/**
+ * Fabric: abre los mods en una carpeta temporal con nombre al azar (y cada mod con nombre al azar) para que
+ * mods/ siga vacía mientras se juega. Solo los de la raíz de mods/ (Fabric no mira en subcarpetas).
+ * → la carpeta (para -Dfabric.addMods) o null si no hay nada que abrir. La borra seal() al cerrar el juego.
+ */
+async function stage(id) {
+  if (!base) return null;
+  key();
+  const idx = readIndex(id);
+  const list = Object.entries(idx.files || {}).filter(([rel]) => /^mods\/[^/]+\.jar$/i.test(rel));
+  if (!list.length) return null;
+  const dir = path.join(os.tmpdir(), crypto.randomBytes(8).toString('hex'));
+  fs.mkdirSync(dir, { recursive: true });
+  writeIndex(id, { ...idx, live: dir }); // para borrarla aunque el launcher se cierre de golpe
+  for (const [rel, f] of list) {
+    try { await openFile(path.join(dirOf(id), f.blob), path.join(dir, crypto.randomBytes(8).toString('hex') + '.jar'), key()); }
+    catch (e) {
+      // si falta uno, mejor jugar a la manera normal (mods en mods/) que sin ese mod
+      log.warn(`[mods bajo llave] No se pudo abrir ${rel}:`, e.message);
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* nada */ }
+      writeIndex(id, { files: idx.files });
+      return null;
+    }
+  }
+  return dir;
+}
+
 /** Al abrir el launcher: cierra todo lo que se quedó abierto (y guarda los mods de antes de esta versión) */
 async function sealAll(entries) {
   for (const { id, gameDir } of entries) {
@@ -200,6 +234,10 @@ async function sealAll(entries) {
 }
 
 /** Borra lo guardado de una instancia (al borrar sus archivos o salir de ella) */
-function drop(id) { if (base) { try { fs.rmSync(dirOf(id), { recursive: true, force: true }); } catch { /* nada */ } } }
+function drop(id) {
+  if (!base) return;
+  try { const live = readIndex(id).live; if (live) fs.rmSync(live, { recursive: true, force: true }); } catch { /* nada */ }
+  try { fs.rmSync(dirOf(id), { recursive: true, force: true }); } catch { /* nada */ }
+}
 
-module.exports = { init, setProtector, open, seal, sealAll, drop, plainMods, _sealBuffer: sealBuffer, _openBuffer: openBuffer };
+module.exports = { init, setProtector, open, seal, sealAll, stage, drop, plainMods, _sealBuffer: sealBuffer, _openBuffer: openBuffer };

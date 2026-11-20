@@ -59,6 +59,8 @@ function buildArguments(version, o, env = {}) {
 
   const jvm = [`-Xmx${o.memoryMb}M`, `-Xms${Math.min(o.memoryMb, 1024)}M`];
   if (o.extraJvm) jvm.push(...o.extraJvm.split(/\s+/).filter(Boolean));
+  // Opciones que pone el launcher, enteras (una ruta puede tener espacios), p. ej. -Dfabric.addMods=<carpeta>
+  if (Array.isArray(o.jvmProps)) jvm.push(...o.jvmProps.filter(Boolean));
   if (o.loggingArg) jvm.push(o.loggingArg);
 
   let game;
@@ -184,6 +186,7 @@ async function launch(root, opts) {
     classpath,
     memoryMb: instance.memoryMb || settings.memoryMb || 4096,
     extraJvm: settings.jvmArgs,
+    jvmProps: instance.jvmProps || [],
     loggingArg,
     width: settings.windowWidth ? Number(settings.windowWidth) : null,
     height: settings.windowHeight ? Number(settings.windowHeight) : null,
@@ -197,7 +200,8 @@ async function launch(root, opts) {
   const logFile = path.join(gameDir, 'logs', 'onyx-launch.log');
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
   const logStream = fs.createWriteStream(logFile);
-  const safeArgs = args.map(a => (account.accessToken && a === account.accessToken ? '••••••' : a));
+  // En el registro no se ve el token ni dónde están escondidos los mods
+  const safeArgs = args.map(a => (account.accessToken && a === account.accessToken ? '••••••' : /^-Dfabric\.addMods=/.test(a) ? '-Dfabric.addMods=••••••' : a));
   logStream.write(`> ${java} ${safeArgs.join(' ')}\n\n`);
 
   const child = spawn(java, args, { cwd: gameDir });

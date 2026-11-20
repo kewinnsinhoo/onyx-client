@@ -201,6 +201,7 @@ Para que se cuenten solos:
   - Al pulsar **Jugar** se abren (paso «Abriendo los mods»), se sincroniza con el studio y empieza el juego. Al **cerrar el juego** vuelven bajo llave.
   - Si el PC se apaga o el launcher se cierra con el juego abierto, se cierran solos la próxima vez que se abre el launcher.
   - La llave es una por ordenador y la protege Windows/macOS: copiar la carpeta `vault` a otro PC no sirve. Si la llave se pierde, los mods se vuelven a descargar al jugar.
+  - **Mientras se juega (1.5.3, Fabric 0.14 o más nuevo):** la carpeta `mods/` sigue vacía. Los mods se abren en una carpeta temporal del sistema con nombre al azar (y cada mod con nombre al azar), Fabric los carga desde ahí (`-Dfabric.addMods`, que no sale en los registros) y al cerrar el juego se borra. En Forge/NeoForge/Quilt, mientras se juega están en `mods/` como siempre.
   - **Lo que no se puede evitar:** mientras el juego está abierto, los mods tienen que estar sin cifrar (Minecraft los necesita). Es una protección muy fuerte contra quien busca en la carpeta, pero ningún launcher puede impedirlo al 100 %.
 
 ## Cosas a saber

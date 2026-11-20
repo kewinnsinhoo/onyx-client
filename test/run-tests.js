@@ -13,7 +13,7 @@ const { platformKey, javaBinary } = require('../src/main/game/java');
 const { offlineUuid } = require('../src/main/accounts');
 const { validateSkin, pngSize } = require('../src/main/skins');
 const data = require('../src/main/data');
-const { CODE_RE } = require('../src/main/instances');
+const { CODE_RE, fabricAddModsOk } = require('../src/main/instances');
 
 let passed = 0;
 function test(name, fn) {
@@ -120,9 +120,13 @@ test('argumentos de lanzamiento (moderno, cuenta premium)', () => {
     username: 'Kewinsinho', uuid: '069a79f4-44e9-4726-a5be-fca90e38aaf5', accessToken: 'TOKEN', userType: 'msa',
     gameDir: '/g/instances/x', assetsDir: '/g/assets', nativesDir: '/g/natives', librariesDir: '/g/libraries',
     classpath: ['/a.jar', '/b.jar'], separator: ';', memoryMb: 6144, width: 1280, height: 720,
-    server: { address: 'play.onyx.gg', port: 25565 }
+    server: { address: 'play.onyx.gg', port: 25565 },
+    jvmProps: ['-Dfabric.addMods=C:\\Users\\Juan Perez\\AppData\\Local\\Temp\\a1b2c3d4e5f6a7b8']
   }, { os: 'windows', platform: 'win32', arch: 'x64' });
   assert.strictEqual(args[0], '-Xmx6144M');
+  // la carpeta temporal de los mods (Fabric) va entera aunque la ruta tenga espacios, antes de la clase principal
+  const am = args.indexOf('-Dfabric.addMods=C:\\Users\\Juan Perez\\AppData\\Local\\Temp\\a1b2c3d4e5f6a7b8');
+  assert.ok(am > 0 && am < args.indexOf(fabric.mainClass));
   const mi = args.indexOf(fabric.mainClass);
   assert.ok(mi > 0);
   assert.strictEqual(args[args.indexOf('-cp') + 1], '/a.jar;/b.jar');
@@ -134,6 +138,13 @@ test('argumentos de lanzamiento (moderno, cuenta premium)', () => {
   assert.ok(!args.includes('-XstartOnFirstThread'));
   assert.strictEqual(args[args.indexOf('--quickPlayMultiplayer') + 1], 'play.onyx.gg:25565');
   assert.ok(!args.some(a => a.includes('${')), 'sin variables sin reemplazar: ' + args.filter(a => a.includes('${')).join(' '));
+});
+
+test('mods escondidos solo con Fabric Loader 0.14 o más nuevo', () => {
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.16.5' }), true);
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.14.0' }), true);
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.11.7' }), false);
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric' }), false);
 });
 
 test('argumentos de lanzamiento (antiguo, offline, mac)', () => {
@@ -903,8 +914,44 @@ test('panel: errores legibles', () => {
     vault.init(tmp, { protector: { protect: (k) => k, unprotect: () => { throw new Error('otra máquina'); } } });
     assert.strictEqual(await vault.open('evento', g), 0);
     assert.ok(!exists('mods/nuevo.jar'));
-    // borrar la instancia borra su caja fuerte
+    // Fabric: mientras se juega, los mods están en una carpeta temporal con nombres al azar (mods/ vacía)
+    vault.init(tmp, { protector: prot }); // otra vez la llave buena de este «PC»
+    const g2 = path.join(tmp, 'instances', 'fabric');
+    const put2 = (rel, buf) => { fs.mkdirSync(path.dirname(path.join(g2, rel)), { recursive: true }); fs.writeFileSync(path.join(g2, rel), buf); };
+    put2('mods/sodium-fabric.jar', big); put2('mods/mi-mod-secreto.jar', small); put2('mods/1.21.1/viejo.jar', 'sub');
+    put2('mods/kopi-skins-customskinloader-15.jar', 'publico');
+    await vault.seal('fabric', g2);
+    const live = await vault.stage('fabric');
+    assert.ok(live && live.startsWith(os.tmpdir()) && /[0-9a-f]{16}$/.test(live), 'carpeta temporal con nombre al azar');
+    const staged = fs.readdirSync(live);
+    assert.strictEqual(staged.length, 2, 'solo los de la raíz de mods/ (Fabric no mira subcarpetas)');
+    assert.ok(staged.every(f => /^[0-9a-f]{16}\.jar$/.test(f)), 'cada mod con nombre al azar');
+    const contents = staged.map(f => fs.readFileSync(path.join(live, f)));
+    assert.ok(contents.some(b => b.equals(big)) && contents.some(b => b.equals(small)), 'idénticos');
+    assert.deepStrictEqual(fs.readdirSync(path.join(g2, 'mods')).filter(f => f.endsWith('.jar')), ['kopi-skins-customskinloader-15.jar'], 'en mods/ solo lo público');
+    // cerrar el juego: la carpeta temporal desaparece y todo sigue guardado
+    await vault.seal('fabric', g2);
+    assert.ok(!fs.existsSync(live), 'la carpeta temporal se borra');
+    assert.strictEqual(await vault.open('fabric', g2), 3);
+    await vault.seal('fabric', g2);
+    // apagón con el juego abierto: al abrir el launcher se borra la carpeta temporal
+    const live2 = await vault.stage('fabric');
+    assert.ok(fs.existsSync(live2));
+    await vault.sealAll([{ id: 'fabric', gameDir: g2 }]);
+    assert.ok(!fs.existsSync(live2));
+    // si un mod no se puede abrir, no hay carpeta temporal (se juega a la manera normal)
+    const vf = path.join(tmp, 'vault', 'fabric');
+    for (const one2 of fs.readdirSync(vf).filter(f => f !== 'index.kv' && f.endsWith('.kv'))) {
+      const b2 = fs.readFileSync(path.join(vf, one2)); b2[30] ^= 1; fs.writeFileSync(path.join(vf, one2), b2);
+    }
+    assert.strictEqual(await vault.stage('fabric'), null);
+    assert.ok(!fs.readdirSync(os.tmpdir()).some(d => /^[0-9a-f]{16}$/.test(d) && fs.existsSync(path.join(os.tmpdir(), d)) && fs.readdirSync(path.join(os.tmpdir(), d)).some(f => f.endsWith('.kopi-tmp'))), 'sin restos');
+    // borrar la instancia borra su caja fuerte (y su carpeta temporal)
+    const live3 = await vault.stage('evento');
+    vault.drop('fabric');
+    assert.ok(!fs.existsSync(vf));
     vault.drop('evento');
+    if (live3) assert.ok(!fs.existsSync(live3));
     assert.ok(!fs.existsSync(vdir));
     // los cifrados pequeños (índice) se abren solo con su llave
     const k = crypto.randomBytes(32);

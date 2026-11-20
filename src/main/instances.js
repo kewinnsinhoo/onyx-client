@@ -221,6 +221,28 @@ async function lockMods(id, gameDir) {
   if (running.has(id)) return;
   try { await vault.seal(id, gameDir); } catch (e) { log.warn('[mods bajo llave]', e.message); }
 }
+// Fabric: mientras se juega, los mods tampoco están en mods/: se cifran otra vez y se abren en una carpeta
+// temporal con nombre al azar que Fabric carga con -Dfabric.addMods. Si algo falla, se juega a la manera normal.
+// fabric.addMods es seguro desde Fabric Loader 0.14 (con versiones más viejas, a la manera normal)
+function fabricAddModsOk(loader) {
+  const v = String((loader && loader.version) || '').match(/^(\d+)\.(\d+)/);
+  return !!v && (Number(v[1]) > 0 || Number(v[2]) >= 14);
+}
+async function hideMods(id, gameDir, loader) {
+  if (!loader || loader.type !== 'fabric' || !fabricAddModsOk(loader)) return [];
+  try {
+    const r = await vault.seal(id, gameDir);
+    if (r.busy) { await vault.open(id, gameDir); return []; } // no se pudieron quitar de mods/: como siempre
+    const dir = await vault.stage(id);
+    if (dir) return [`-Dfabric.addMods=${dir}`];
+    await vault.open(id, gameDir); // no se pudo preparar la carpeta: como siempre
+  } catch (e) {
+    log.warn('[mods bajo llave]', e.message);
+    try { await vault.open(id, gameDir); } catch { /* nada */ }
+  }
+  return [];
+}
+
 // Al abrir el launcher: guarda bajo llave lo que se quedó abierto (y los mods de versiones anteriores)
 function lockLeftovers() {
   const list = store.get().instances.filter(i => !running.has(i.id)).map(i => ({ id: i.id, gameDir: path.join(root, 'instances', i.id) }));
@@ -288,6 +310,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
     await kopiMods(inst, m, gameDir);
+    gameInfo.jvmProps = await hideMods(id, gameDir, gameInfo.loader);
     const started = Date.now();
     const child = await game.launch(root, {
       instance: gameInfo,
@@ -434,4 +457,4 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, lockLeftovers, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
