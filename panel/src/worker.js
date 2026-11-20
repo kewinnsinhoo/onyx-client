@@ -10,6 +10,7 @@ import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
+import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
@@ -52,6 +53,8 @@ async function route(req, env, ctx) {
 
   if (p.startsWith('/m/')) return serveMedia(p, env);
   if (p.startsWith('/csl/')) { await ensureSchema(env.DB); return cslApi(env, p.slice(5)); }
+  // Capas de Kopi animadas dentro del juego (mod Cape Provider): /capes/<nombre>.png
+  if (p.startsWith('/capes/') && (m === 'GET' || m === 'HEAD')) { await ensureSchema(env.DB); return capesPublic(env, p.slice(7)); }
   // Página pública de descarga de un launcher de marca: panel.onyxclient.site/l/<id>
   if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
   if (p === '/auth/login') return authLogin(req, env, u);
@@ -194,6 +197,7 @@ async function panelApi(req, env, u, path, m, ctx) {
     if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede entrar aquí');
     if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
     if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m);
+    if (parts[1] === 'capes') return creatorCapes({ env, user, req }, parts[2], parts[3], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);
   }
 
@@ -763,6 +767,8 @@ async function launcherApi(req, env, u, path, m) {
   // Kopi Skins: la skin de la cuenta no premium, para verla en los servidores
   if (parts[0] === 'skin' && m === 'POST') return uploadSkin(env, P, await readJson(req, 128 * 1024));
   if (parts[0] === 'skin' && m === 'DELETE') return deleteSkin(env, P, await readJson(req));
+  // Capas de Kopi: las que tiene el jugador y cuál lleva puesta
+  if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
 

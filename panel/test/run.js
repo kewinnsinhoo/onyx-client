@@ -7,6 +7,10 @@ import { sanitize, defaults, gate, toManifest } from '../src/model.js';
 import { normalizeCode, randomCode, CODE_RE } from '../src/util.js';
 import { cmpVersion, neoPrefix } from '../src/meta.js';
 import { makeD1, makeKV } from '../dev/shim.js';
+import { spriteFrameCount, spriteFrameAt, CAPE_IDS } from '../src/capes.js';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import zlib from 'node:zlib';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ORIGIN = 'https://panel.onyxclient.site';
@@ -653,6 +657,140 @@ await test('informes del launcher → canal de Discord', async () => {
   env.DISCORD_REPORT_WEBHOOK = 'https://malo.example/x';
   assert.strictEqual((await call('POST', '/api/l/report', { headers: await player('Reportero3', false), body })).data.error, 'no_webhook');
   delete env.DISCORD_REPORT_WEBHOOK; delete env.DISCORD_FETCH;
+});
+
+// Lee un PNG fabricado por el panel (RGBA, sin filtros) → { w, h, px(x, y) }
+function readPng(buf) {
+  const b = Buffer.from(buf);
+  assert.deepStrictEqual([...b.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  let o = 8, w = 0, h = 0; const idat = [];
+  while (o < b.length) {
+    const len = b.readUInt32BE(o), type = b.toString('latin1', o + 4, o + 8), data = b.subarray(o + 8, o + 8 + len);
+    assert.strictEqual(b.readUInt32BE(o + 8 + len), zlib.crc32(b.subarray(o + 4, o + 8 + len)), 'CRC de ' + type);
+    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); assert.deepStrictEqual([...data.subarray(8)], [8, 6, 0, 0, 0]); }
+    if (type === 'IDAT') idat.push(data);
+    o += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  assert.strictEqual(raw.length, h * (w * 4 + 1));
+  return { w, h, px: (x, y) => { const i = y * (w * 4 + 1) + 1 + x * 4; return '#' + [...raw.subarray(i, i + 3)].map(v => v.toString(16).padStart(2, '0')).join('') + (raw[i + 3] === 255 ? '' : '/' + raw[i + 3]); } };
+}
+
+await test('Capas de Kopi: el dibujo del panel es el mismo que el del launcher', async () => {
+  const sb = { window: {}, document: {}, matchMedia: () => ({ matches: true }) };
+  vm.runInNewContext(fs.readFileSync(path.join(here, '..', '..', 'src', 'renderer', 'js', 'capes.js'), 'utf8'), sb);
+  const L = sb.window.KopiCapes, A = globalThis.KopiCapeArt;
+  const info = (list) => JSON.stringify(list.map(c => [c.id, c.name, c.rarity, c.frames, c.fps]));
+  assert.strictEqual(info(L.list), info(A.CAPES));
+  for (const c of L.list) for (let f = 0; f < c.frames; f++) {
+    const grid = Array.from({ length: 16 }, () => new Array(10).fill('#000000'));
+    c.draw((x, y, col) => { if (x >= 0 && y >= 0 && x < 10 && y < 16) grid[y][x] = col; }, f);
+    assert.deepStrictEqual(grid, A.pixels(A.get(c.id), f), `la capa «${c.id}» (fotograma ${f}) no coincide: cámbiala en los dos sitios`);
+  }
+  // la animación del juego (10 fotogramas por segundo) vuelve justo al principio y va a la misma velocidad
+  for (const c of A.CAPES) {
+    const n = spriteFrameCount(c);
+    assert.ok(Number.isInteger(n) && n >= 1 && n <= 120, c.id + ': ' + n);
+    if (c.frames > 1) {
+      assert.strictEqual(n * c.fps % 10, 0, c.id);
+      assert.strictEqual(Math.floor(n * c.fps / 10) % c.frames, 0, c.id + ' termina donde empieza');
+      assert.ok(Math.abs(n / 10 * c.fps - Math.round(n / 10 * c.fps)) < 1e-9);
+    }
+  }
+  assert.deepStrictEqual(['kopi', 'bubbles', 'fire', 'pink'].map(id => spriteFrameCount(A.get(id))), [40, 80, 12, 1]);
+  assert.deepStrictEqual([0, 1, 2, 3, 4, 5].map(i => spriteFrameAt(A.get('kopi'), i)), [0, 0, 1, 1, 2, 3]);
+});
+
+await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () => {
+  const A = globalThis.KopiCapeArt;
+  // solo el Creador
+  assert.strictEqual((await call('GET', '/api/onyx/capes', { cookie: other })).status, 403);
+  const list = await call('GET', '/api/onyx/capes', { cookie: creator });
+  assert.deepStrictEqual(list.data.capes.map(c => c.id), CAPE_IDS);
+  assert.ok(list.data.capes.every(c => c.owners === 0));
+  // regalar (varios a la vez, sin repetir)
+  assert.strictEqual((await call('POST', '/api/onyx/capes/kopi', { cookie: creator, body: { name: 'no válido!' } })).status, 400);
+  assert.strictEqual((await call('POST', '/api/onyx/capes/nada', { cookie: creator, body: { name: 'Ana' } })).status, 404);
+  assert.strictEqual((await call('POST', '/api/onyx/capes/kopi', { cookie: other, body: { name: 'Ana' } })).status, 403);
+  const g = await call('POST', '/api/onyx/capes/kopi', { cookie: creator, body: { name: 'CapaOff, Steve CapaOff' } });
+  assert.deepStrictEqual([g.status, g.data.added], [200, 2], JSON.stringify(g.data));
+  assert.strictEqual((await call('POST', '/api/onyx/capes/kopi', { cookie: creator, body: { names: ['capaoff'] } })).data.already, 1);
+  await call('POST', '/api/onyx/capes/fire', { cookie: creator, body: { name: 'CapaOff' } });
+  const owners = await call('GET', '/api/onyx/capes/kopi', { cookie: creator });
+  assert.deepStrictEqual(owners.data.owners.map(o => o.name).sort(), ['CapaOff', 'Steve']);
+  assert.strictEqual(owners.data.owners[0].by, 'kew');
+  const audits = (await call('GET', '/api/onyx/audit?q=cape', { cookie: creator })).data;
+  assert.ok(JSON.stringify(audits).includes('cape.give'));
+
+  // el launcher: qué tiene y ponérsela
+  const off = await player('CapaOff', false);
+  const key = 'c'.repeat(32);
+  assert.deepStrictEqual((await call('GET', '/api/l/capes', { headers: off })).data, { owned: ['kopi', 'fire'], worn: null });
+  assert.strictEqual((await call('GET', '/capes/CapaOff.png')).status, 404, 'sin capa puesta');
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: off, body: { id: 'void', key } })).status, 403, 'no la tiene');
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: off, body: { id: 'kopi' } })).status, 400, 'falta la clave');
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: off, body: { id: 'kopi', key } })).data.worn, 'kopi');
+  assert.strictEqual((await call('GET', '/api/l/capes', { headers: off })).data.worn, 'kopi');
+  // otro launcher con el mismo nombre no puede cambiarla
+  const thief = await player('CapaOff', false);
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: thief, body: { id: 'fire', key: 'z'.repeat(32) } })).status, 403);
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: thief, body: { id: null, key: 'z'.repeat(32) } })).status, 403);
+  // un nombre premium solo desde una sesión premium (Steve ya entró como premium en otra prueba)
+  const fakeSteve = await player('Steve', false);
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: fakeSteve, body: { id: 'kopi', key } })).data.error, 'premium');
+  const steve = await player('Steve', true);
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: steve, body: { id: 'kopi' } })).data.worn, 'kopi');
+
+  // Cape Provider: la capa ANIMADA (fotogramas de 64×32, uno debajo de otro)
+  const res = await worker.fetch(new Request(`${ORIGIN}/capes/capaoff.png`), env, {});
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.headers.get('Content-Type'), 'image/png');
+  assert.strictEqual(res.headers.get('Access-Control-Allow-Origin'), '*');
+  const sp = readPng(await res.arrayBuffer());
+  assert.deepStrictEqual([sp.w, sp.h], [64, 32 * 40]);
+  const kopi = A.get('kopi');
+  for (const i of [0, 7, 39]) {
+    const f = spriteFrameAt(kopi, i), grid = A.pixels(kopi, f);
+    for (const [x, y] of [[0, 0], [4, 1], [2, 5], [9, 15], [5, 11]]) assert.strictEqual(sp.px(1 + x, 32 * i + 1 + y), grid[y][x], `fotograma ${i} píxel ${x},${y}`);
+    assert.strictEqual(sp.px(24 + 3, 32 * i + 2 + 19), grid[15][3], 'élitros: la última fila se alarga');
+  }
+  assert.strictEqual(sp.px(63, 31), '#000000/0', 'lo que no es capa queda transparente');
+  assert.strictEqual(sp.px(12, 1), A.mix(A.pixels(kopi, 0)[0][0], '#000000', 0.45), 'la cara de dentro, más oscura');
+  assert.strictEqual((await call('GET', '/capes/Steve.png')).status, 200);
+  assert.strictEqual((await call('GET', '/capes/../x.png')).status, 404);
+  assert.strictEqual((await call('GET', '/capes/a.png')).status, 404);
+
+  // CustomSkinLoader: la capa QUIETA en el perfil (aunque no tenga skin de Kopi)
+  const csl = await call('GET', '/csl/CapaOff.json');
+  assert.deepStrictEqual([csl.status, csl.data.username, csl.data.skins], [200, 'CapaOff', undefined]);
+  assert.match(csl.data.cape, /^[0-9a-f]{64}$/);
+  const still = readPng(await (await worker.fetch(new Request(`${ORIGIN}/csl/textures/${csl.data.cape}`), env, {})).arrayBuffer());
+  assert.deepStrictEqual([still.w, still.h], [64, 32]);
+  assert.strictEqual(still.px(1, 1), A.pixels(kopi, 0)[0][0]);
+  assert.strictEqual((await call('GET', '/csl/textures/' + 'ab'.repeat(32))).status, 404);
+
+  // cambiar a otra, quitársela
+  await call('POST', '/api/l/cape', { headers: off, body: { id: 'fire', key } });
+  assert.deepStrictEqual(readPng(await (await worker.fetch(new Request(`${ORIGIN}/capes/CapaOff.png`), env, {})).arrayBuffer()).h, 32 * 12);
+  assert.strictEqual((await call('GET', '/api/onyx/capes', { cookie: creator })).data.capes.find(c => c.id === 'fire').wearing, 1);
+  await call('POST', '/api/l/cape', { headers: off, body: { id: null, key } });
+  assert.strictEqual((await call('GET', '/capes/CapaOff.png')).status, 404);
+  assert.strictEqual((await call('GET', '/csl/CapaOff.json')).status, 404);
+  // el Creador se la quita a Steve: deja de verse
+  assert.strictEqual((await call('DELETE', '/api/onyx/capes/kopi/Steve', { cookie: creator })).status, 200);
+  assert.strictEqual((await call('GET', '/capes/Steve.png')).status, 404);
+  assert.strictEqual((await call('DELETE', '/api/onyx/capes/kopi/Steve', { cookie: creator })).status, 404);
+  assert.deepStrictEqual((await call('GET', '/api/l/capes', { headers: steve })).data, { owned: [], worn: null });
+  // todos los textos de la página de capas y del servidor están en los 4 idiomas
+  const sb = { localStorage: { getItem: () => null }, document: { documentElement: {} }, matchMedia: () => ({ matches: false, addEventListener() {} }) };
+  sb.window = sb;
+  vm.runInNewContext(fs.readFileSync(path.join(here, '..', 'public', 'js', 'i18n.js'), 'utf8'), sb);
+  const view = fs.readFileSync(path.join(here, '..', 'public', 'views', 'capes.js'), 'utf8');
+  const server = fs.readFileSync(path.join(here, '..', 'src', 'capes.js'), 'utf8').split('// ---------------------------------------------------------------- Creador')[1];
+  const keys = [...view.matchAll(/(?<![\w.$])t\('((?:[^'\\]|\\.)+)'/g), ...server.matchAll(/fail\(\d+, '\w+', '((?:[^'\\]|\\.)+)'\)/g)].map(x => x[1]);
+  keys.push(...A.CAPES.map(c => c.name).filter(n => n !== 'Kopi'), ...Object.values(A.RARITY).map(r => r.label), 'Capas de Kopi');
+  assert.ok(keys.length > 30, 'textos: ' + keys.length);
+  for (const k of keys) assert.ok(sb.I18N.has(k), 'falta traducir: ' + k);
 });
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

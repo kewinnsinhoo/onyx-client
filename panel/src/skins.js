@@ -10,6 +10,7 @@
 // Una cuenta no premium solo puede cambiar su skin desde el launcher que la subió la primera vez
 // (cada cuenta tiene una clave secreta que solo conoce ese launcher).
 import { json, fail, now, sha256, playerKey } from './util.js';
+import { cslCapeHash, cslCapeTexture } from './capes.js';
 
 const NAME_RE = /^[A-Za-z0-9_]{2,16}$/;
 const PREMIUM_TTL = 3 * 3600e3;      // cuánto se guarda la skin de un premium antes de volver a pedirla
@@ -177,20 +178,26 @@ export async function publicSkin(env, name, debug = false) {
 }
 
 // ---------------------------------------------------------------- mod del launcher (CustomSkinLoader, «CustomSkinAPI»)
-//   GET /csl/<nombre>.json      → { username, skins: { default|slim: <hash> } }   (404 si no tiene skin de Kopi)
-//   GET /csl/textures/<hash>    → la imagen PNG
+//   GET /csl/<nombre>.json      → { username, skins: { default|slim: <hash> }, cape: <hash> }
+//                                  (404 si no tiene ni skin ni capa de Kopi)
+//   GET /csl/textures/<hash>    → la imagen PNG (skin, o la capa de Kopi quieta)
 // El mod pide primero a Mojang (premium) desde el PC del jugador y después aquí (skins de Kopi).
 export async function cslApi(env, path) {
   const cache = { ...CORS, 'Cache-Control': 'public, max-age=60' };
   const tex = path.match(/^textures\/([0-9a-f]{64})$/);
   if (tex) {
     const png = await env.MEDIA.get('skinpng:' + tex[1], 'arrayBuffer');
-    if (!png) return new Response('Not found', { status: 404, headers: CORS });
+    if (!png) return (await cslCapeTexture(tex[1])) || new Response('Not found', { status: 404, headers: CORS });
     return new Response(png, { headers: { ...CORS, 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=31536000, immutable' } });
   }
   const m = path.match(/^([A-Za-z0-9_]{2,16})\.json$/);
   if (!m) return json({ error: 'not_found' }, 404, cache);
-  const row = await env.DB.prepare('SELECT name, variant, png_hash FROM skins WHERE name_key = ?').bind(playerKey(m[1])).first();
-  if (!row) return json({ error: 'not_found' }, 404, cache);
-  return json({ username: row.name, skins: { [row.variant === 'slim' ? 'slim' : 'default']: row.png_hash } }, 200, cache);
+  const key = playerKey(m[1]);
+  const row = await env.DB.prepare('SELECT name, variant, png_hash FROM skins WHERE name_key = ?').bind(key).first();
+  const cape = await cslCapeHash(env, key);
+  if (!row && !cape) return json({ error: 'not_found' }, 404, cache);
+  const out = { username: row ? row.name : cape.name };
+  if (row) out.skins = { [row.variant === 'slim' ? 'slim' : 'default']: row.png_hash };
+  if (cape) out.cape = cape.hash;
+  return json(out, 200, cache);
 }

@@ -232,6 +232,25 @@ CREATE TABLE skin_premium (
   value TEXT,
   signature TEXT,
   fetched_at INTEGER NOT NULL
+)`,
+  `-- Capas de Kopi: qué capas tiene cada jugador y cuál lleva puesta
+CREATE TABLE cape_owned (
+  player_key TEXT NOT NULL,          -- nombre de Minecraft en minúsculas
+  cape_id TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  source TEXT NOT NULL,              -- 'gift' (regalada desde el panel)
+  granted_by TEXT,
+  granted_by_name TEXT,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (player_key, cape_id)
+);
+CREATE INDEX cape_owned_cape ON cape_owned(cape_id);
+CREATE TABLE cape_worn (
+  player_key TEXT PRIMARY KEY,
+  player_name TEXT NOT NULL,
+  cape_id TEXT NOT NULL,
+  owner_hash TEXT,                   -- cuentas no premium: la clave secreta de su launcher (como la skin)
+  updated_at INTEGER NOT NULL
 )`
 ];
 

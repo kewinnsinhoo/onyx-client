@@ -66,7 +66,9 @@
     'brand.create': ['rocket', '{user} creó el launcher {target}'],
     'brand.update': ['rocket', '{user} cambió el launcher {target}'],
     'brand.build': ['rocket', '{user} mandó compilar el launcher {target}'],
-    'brand.rebuild': ['rocket', '{user} mandó recompilar todos los launchers de marca']
+    'brand.rebuild': ['rocket', '{user} mandó recompilar todos los launchers de marca'],
+    'cape.give': ['gift', '{user} regaló la capa {target} a {names}'],
+    'cape.take': ['sparkles', '{user} quitó la capa {target} a {name}']
   };
   window.activityText = (a) => {
     let [ic, tpl] = ACTIONS[a.action] || ['activity', a.action];
@@ -74,7 +76,7 @@
     const d = a.detail || {};
     const b = (x) => `<b>${esc(x)}</b>`;
     const vars = {
-      user: b(a.user_name || t('Alguien')), target: b(a.target || ''), from: b(d.from || ''), n: d.n || 1, code: b(d.code || ''),
+      user: b(a.user_name || t('Alguien')), target: b(a.action.startsWith('cape.') ? t(a.target || '') : (a.target || '')), from: b(d.from || ''), n: d.n || 1, code: b(d.code || ''),
       names: b((d.names || []).join(', ') + (d.n > (d.names || []).length ? '…' : '')), name: b(d.name || ''),
       role: b(roleName(d.role || '')), size: b(fmtSize(d.bytes || 0)),
       fields: b((d.fields || []).map(f => t(FIELD[f] || f)).join(', ') || t('algo'))

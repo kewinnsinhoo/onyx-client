@@ -11,7 +11,7 @@
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/auth/*", "/m/*", "/l/*", "/csl/*"]
+    "run_worker_first": ["/api/*", "/auth/*", "/m/*", "/l/*", "/csl/*", "/capes/*"]
   },
   "d1_databases": [{ "binding": "DB", "database_name": "onyx-panel-db" }],
   "kv_namespaces": [{ "binding": "MEDIA" }],
