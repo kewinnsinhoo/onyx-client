@@ -984,7 +984,7 @@ test('panel: errores legibles', () => {
     assert.deepStrictEqual(guard.foreign(tmp, managed, { packsOk: true }).packs, []);
     // durante la partida
     const before = guard.snapshot(tmp, managed);
-    put('mods/freecam.jar'); put('shaderpacks/BSL.zip'); put('config/server.toml', 'a=2'); put('config/nuevo.json');
+    put('mods/freecam.jar'); put('shaderpacks/BSL.zip'); put('config/server.toml', 'a=22'); put('config/nuevo.json');
     put('options.txt', 'fov:110'); put('logs/latest.log'); put('screenshots/a.png'); put('saves/mundo/level.dat');
     let c = guard.compare(tmp, before, guard.snapshot(tmp, managed), managed);
     assert.deepStrictEqual(c.mods, ['mods/freecam.jar']);
