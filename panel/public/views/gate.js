@@ -45,8 +45,11 @@
       <h1>${t('Aún no tienes studio')}</h1>
       <p>${t('Para entrar necesitas una invitación. Pídele a Kopi o al dueño de tu studio el enlace de invitación y ábrelo con esta cuenta.')}</p>
       <div class="pick" style="cursor:default;margin-bottom:16px"><span class="av" style="border-radius:50%">${S.me.user.avatar ? `<img src="${esc(S.me.user.avatar)}" alt="">` : initials(S.me.user.name)}</span><span><b>${esc(S.me.user.name)}</b><small>Discord</small></span></div>
+      <div class="idline"><span>${t('Tu ID de Discord')}</span><code class="mono">${esc(S.me.user.id)}</code><button class="btn sm" id="copy-id">${icon('copy')}${t('Copiar')}</button></div>
+      <p class="help" style="margin:-4px 0 16px">${t('Si ya tenías acceso con otra cuenta de Discord, cierra sesión y entra con esa.')}</p>
       <button class="btn" style="width:100%" id="out">${icon('logout')}${t('Cerrar sesión')}</button>`);
     $('#out').onclick = async () => { await fetch('/auth/logout', { method: 'POST' }); location.hash = '#/login'; location.reload(); };
+    $('#copy-id').onclick = () => copy(S.me.user.id);
   };
 
   V.offline = (e) => box(html`<div class="empty"><div class="ic">${icon('alert')}</div><h4>${t('No se pudo conectar')}</h4><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">${icon('refresh')}${t('Reintentar')}</button></div>`);

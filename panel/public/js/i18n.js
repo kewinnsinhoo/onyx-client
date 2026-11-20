@@ -1,6 +1,8 @@
 // Idiomas del panel: el texto en español es la clave; cada valor = [en, ca, fr].
 (function () {
   const ROWS = {
+    "Tu ID de Discord": ["Your Discord ID", "El teu ID de Discord", "Ton ID Discord"],
+    "Si ya tenías acceso con otra cuenta de Discord, cierra sesión y entra con esa.": ["If you already had access with another Discord account, sign out and sign in with that one.", "Si ja tenies accés amb un altre compte de Discord, tanca la sessió i entra amb aquell.", "Si tu avais déjà accès avec un autre compte Discord, déconnecte-toi et connecte-toi avec celui-là."],
     // Capas de Kopi
     "1 jugador": ["1 player", "1 jugador", "1 joueur"],
     "1 la lleva": ["1 wearing it", "1 la porta", "1 la porte"],
