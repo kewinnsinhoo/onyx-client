@@ -89,7 +89,9 @@
       ],
       "icon": "build/icon.png",
       "category": "public.app-category.games",
-      "identity": null,
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
       "artifactName": "Kopi-Client-${version}-${arch}.${ext}"
     },
     "linux": {
