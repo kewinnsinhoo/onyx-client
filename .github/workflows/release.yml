@@ -142,9 +142,10 @@ jobs:
 
   # Si GitHub canceló el trabajo de Mac sin darle nunca un Mac, se vuelve a pedir solo Mac (hasta 6 veces).
   # Si el Mac sí empezó y falló de verdad, no se reintenta.
+  # No se reintenta si alguien canceló a mano, ni si en main ya hay otra versión (la nueva trae su propio Mac).
   reintentar-mac:
-    needs: compilar-mac
-    if: ${{ always() && (inputs.mac || inputs.solo_mac) && !inputs.dry_run && inputs.intento != '6' }}
+    needs: [preparar, compilar-mac]
+    if: ${{ always() && !cancelled() && needs.preparar.result == 'success' && (inputs.mac || inputs.solo_mac) && !inputs.dry_run && inputs.intento != '6' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -155,8 +156,11 @@ jobs:
           RUN: ${{ github.run_id }}
           N: ${{ inputs.intento || '1' }}
           REF: ${{ github.ref_name }}
+          V: ${{ needs.preparar.outputs.version }}
         run: |
           set -euo pipefail
+          NOW=$(gh api "repos/$REPO/contents/package.json?ref=$REF" -q .content | base64 -d | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1)
+          if [ "$NOW" != "$V" ]; then echo "En $REF ya va la $NOW: no se reintenta el Mac de la $V"; exit 0; fi
           read -r STATUS RUNNER < <(gh api "repos/$REPO/actions/runs/$RUN/jobs" -q '.jobs[] | select(.name=="compilar-mac") | "\(.conclusion) \(.runner_name // "")"') || true
           echo "Mac: $STATUS, máquina: ${RUNNER:-ninguna}"
           if [ "$STATUS" = "cancelled" ] && [ -z "${RUNNER:-}" ]; then
