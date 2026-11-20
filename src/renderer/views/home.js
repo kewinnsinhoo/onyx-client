@@ -207,7 +207,6 @@
             <div class="grow"></div>
             ${st ? `<span class="state-pill ${st.cls}">${icon(st.staff ? 'crown' : st.k === 'soon' ? 'clock' : 'lock')}${esc(pill)}</span>` : ''}
             ${look.music && look.music.url ? `<button class="round" id="ins-music" title="${t('Música')}">${icon(musicMuted() ? 'volumeOff' : 'volume')}</button>` : ''}
-            <button class="round" id="ins-folder" title="${t('Abrir carpeta')}">${icon('folder')}</button>
             <button class="round sq" id="ins-more" title="${t('Más opciones')}">${icon('more')}</button>
           </div>
           <div class="bottom">
@@ -258,7 +257,6 @@
       const b = (s) => root.querySelector(s);
       if (b('#ins-play')) b('#ins-play').onclick = () => App.play(id);
       if (b('#ins-stop')) b('#ins-stop').onclick = () => onyx.instances.stop(id);
-      b('#ins-folder').onclick = () => onyx.app.openPath('instance', id);
       if (b('#ins-music')) b('#ins-music').onclick = () => { setMusicMuted(!musicMuted()); syncMusic(); render(); };
       if (b('#ins-sponsor') && look.sponsor && look.sponsor.url) b('#ins-sponsor').onclick = () => onyx.app.openExternal(look.sponsor.url);
       syncMusic();
@@ -316,7 +314,7 @@
         });
         on('report', App.reportModal);
         on('perf', perfModal);
-        on('shots', () => onyx.app.openPath('screenshots', id));
+        on('shots', () => App.go('gallery')); // en el launcher: la carpeta de la instancia no se abre (protege los mods)
         on('pack', async () => {
           try { const n = await onyx.instances.importPack(id); if (n != null) toast(t('{n} archivos instalados desde el pack', { n }), 'success'); }
           catch (e) { toast(e.message, 'error', 6000); }

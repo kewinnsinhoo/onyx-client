@@ -110,8 +110,6 @@
             `<button data-v="${v}" class="${(s.afterLaunch || 'minimize') === v ? 'on' : ''}">${t(l)}</button>`).join('')}
         </div></div>
       <div class="card"><h3>${t('Almacenamiento')}</h3>
-        <div class="setting-row"><div class="lbl"><div>${t('Carpeta de datos')}<div class="desc mono" style="user-select:text">${esc(S.info.gameDir || '')}</div></div></div>
-          <button class="btn btn-outline btn-sm" id="open-game">${icon('folder')}${t('Abrir')}</button></div>
         <div class="setting-row"><div class="lbl"><div>${t('Limpiar caché')}<div class="desc">${t('Borra datos temporales del launcher (no borra tus mundos).')}</div></div></div>
           <button class="btn btn-outline btn-sm" id="clear-cache">${t('Limpiar')}</button></div>
       </div>`;
@@ -127,7 +125,6 @@
       }
     });
     body.querySelectorAll('#after button').forEach(b => b.onclick = async () => { await App.saveSettings({ afterLaunch: b.dataset.v }); TABS.client(body); });
-    body.querySelector('#open-game').onclick = () => onyx.app.openPath('game');
     body.querySelector('#clear-cache').onclick = async () => { await onyx.app.clearCache(); toast(t('Caché limpiada'), 'success'); };
   };
 

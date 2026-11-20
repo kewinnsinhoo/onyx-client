@@ -66,7 +66,7 @@
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },
-    gallery: { list: () => wait([]), remove: wait, open: wait },
+    gallery: { list: () => wait([]), remove: wait, open: wait, copy: wait },
     referrals: {
       ranking: () => wait([{ code: 'NEXO', name: 'NexoStudio', players: 56 }, { code: 'KOPI', name: 'Kopi Studio', players: 36 }, { code: 'CRUX', name: 'Crux Network', players: 29 }]),
       link: (c) => wait({ code: c, name: 'Kopi Studio', linkedAt: Date.now() })

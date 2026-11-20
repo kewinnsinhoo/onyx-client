@@ -205,22 +205,24 @@ handle('app:info', async () => ({
   dataConnected: !!data.baseUrl(),
   msConfigured: !isPlaceholder(config.microsoftClientId),
   discordConfigured: !isPlaceholder(config.discordClientId),
-  gameDir: ROOT,
   packaged: app.isPackaged
 }));
 handle('app:openExternal', (url) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); });
-handle('app:openPath', (kind, id) => {
-  const map = {
-    game: ROOT,
-    logs: path.join(userData, 'logs'),
-    instance: id ? instances.dir(id) : ROOT,
-    screenshots: id ? path.join(instances.dir(id), 'screenshots') : ROOT
-  };
-  const p = map[kind] || ROOT;
+// Protección de mods: el launcher NUNCA abre la carpeta del juego ni la de una instancia.
+// Solo se puede abrir la de registros del launcher (para mandar un fallo).
+handle('app:openPath', (kind) => {
+  if (kind !== 'logs') throw new Error('Esta carpeta está protegida');
+  const p = path.join(userData, 'logs');
   fs.mkdirSync(p, { recursive: true });
   return shell.openPath(p);
 });
-handle('app:showItem', (p) => shell.showItemInFolder(p));
+// Solo las imágenes que guarda el launcher (Imágenes/Kopi Client), nunca archivos de las instancias
+handle('app:showItem', (p) => {
+  const dir = path.join(app.getPath('pictures'), 'Kopi Client');
+  const full = path.resolve(String(p || ''));
+  if (!full.startsWith(dir + path.sep)) throw new Error('Esta carpeta está protegida');
+  shell.showItemInFolder(full);
+});
 handle('app:relaunch', () => { app.relaunch(); app.exit(0); });
 handle('app:clearCache', async () => {
   await win.webContents.session.clearCache();
@@ -437,7 +439,10 @@ handle('gallery:delete', (p) => {
   fs.unlinkSync(p);
   return true;
 });
-handle('gallery:open', (p) => shell.openPath(p));
+const isShot = (p) => instances.screenshots().some(s => s.path === p);
+// Abre la captura con el visor de fotos (solo capturas: nunca otros archivos de la instancia)
+handle('gallery:open', (p) => { if (!isShot(p)) throw new Error('Archivo no permitido'); return shell.openPath(p); });
+handle('gallery:copy', (p) => { if (!isShot(p)) throw new Error('Archivo no permitido'); clipboard.writeImage(nativeImage.createFromPath(p)); return true; });
 
 // ---------- referidos ----------
 handle('referrals:ranking', (period) => referrals.ranking(period));

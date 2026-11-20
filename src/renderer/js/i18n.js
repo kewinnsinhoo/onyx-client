@@ -296,6 +296,7 @@
     ['Noche estrellada', 'Starry night', 'Nit estelada', 'Nuit étoilée'],
     ['Neón', 'Neon', 'Neó', 'Néon'],
     ['Kopi Rosa', 'Kopi Pink', 'Kopi Rosa', 'Kopi Rose'],
+    ['Esta carpeta está protegida', 'This folder is protected', 'Aquesta carpeta està protegida', 'Ce dossier est protégé'],
     ['Mi perfil', 'My profile', 'El meu perfil', 'Mon profil'],
     ['Copiar imagen', 'Copy image', 'Copia la imatge', 'Copier l’image'],
     ['Guardar tarjeta', 'Save card', 'Desa la targeta', 'Enregistrer la carte'],

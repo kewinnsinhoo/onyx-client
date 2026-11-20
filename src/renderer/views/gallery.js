@@ -26,14 +26,14 @@
       lb.innerHTML = html`<img src="${esc(s.url)}"><div class="row">
         <button class="btn btn-outline" data-a="prev">${icon('chevronLeft')}</button>
         <button class="btn btn-outline" data-a="open">${icon('external')}${t('Abrir')}</button>
-        <button class="btn btn-outline" data-a="folder">${icon('folder')}${t('Mostrar en carpeta')}</button>
+        <button class="btn btn-outline" data-a="copy">${icon('copy')}${t('Copiar imagen')}</button>
         <button class="btn btn-danger" data-a="del">${icon('trash')}${t('Eliminar')}</button>
         <button class="btn btn-outline" data-a="next">${icon('chevronRight')}</button>
         <button class="btn btn-ghost" data-a="close">${icon('close')}</button></div>`;
       lb.querySelector('[data-a=prev]').onclick = () => { i = (i - 1 + shots.length) % shots.length; draw(); };
       lb.querySelector('[data-a=next]').onclick = () => { i = (i + 1) % shots.length; draw(); };
       lb.querySelector('[data-a=open]').onclick = () => onyx.gallery.open(s.path);
-      lb.querySelector('[data-a=folder]').onclick = () => onyx.app.showItem(s.path);
+      lb.querySelector('[data-a=copy]').onclick = async () => { try { await onyx.gallery.copy(s.path); toast(t('Imagen copiada: pégala donde quieras'), 'success'); } catch (e) { toast(t(e.message, e.vars), 'error'); } };
       lb.querySelector('[data-a=close]').onclick = close;
       lb.querySelector('[data-a=del]').onclick = async () => {
         await onyx.gallery.remove(s.path);

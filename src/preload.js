@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('onyx', {
     info: () => call('app:info'),
     quit: () => call('app:quit'),
     openExternal: (url) => call('app:openExternal', url),
-    openPath: (kind, id) => call('app:openPath', kind, id),
+    openPath: (kind) => call('app:openPath', kind),
     showItem: (p) => call('app:showItem', p),
     relaunch: () => call('app:relaunch'),
     clearCache: () => call('app:clearCache')
@@ -100,7 +100,8 @@ contextBridge.exposeInMainWorld('onyx', {
   gallery: {
     list: () => call('gallery:list'),
     remove: (p) => call('gallery:delete', p),
-    open: (p) => call('gallery:open', p)
+    open: (p) => call('gallery:open', p),
+    copy: (p) => call('gallery:copy', p)
   },
   referrals: {
     ranking: (period) => call('referrals:ranking', period),
