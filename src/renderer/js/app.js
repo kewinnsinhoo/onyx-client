@@ -454,7 +454,7 @@
   // ---------- jugar ----------
   const STAGES = {
     version: 'Preparando versión', libraries: 'Descargando librerías', assets: 'Descargando recursos',
-    java: 'Preparando Java', loader: 'Instalando el loader', files: 'Sincronizando archivos', launching: 'Iniciando Minecraft', running: 'Jugando', exited: 'Cerrado'
+    java: 'Preparando Java', loader: 'Instalando el loader', unlock: 'Abriendo los mods', files: 'Sincronizando archivos', launching: 'Iniciando Minecraft', running: 'Jugando', exited: 'Cerrado'
   };
   function stageText(p) {
     if (!p) return '';

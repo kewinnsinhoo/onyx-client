@@ -1,5 +1,5 @@
 // Proceso principal de Kopi Client.
-const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage, clipboard, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -79,6 +79,17 @@ app.whenReady().then(() => {
   data.init(userData);
   panel.init(userData);
   instances.init(ROOT);
+  // Mods bajo llave: la llave la protege el sistema (Windows/macOS) para que no sirva en otro ordenador
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      require('./vault').setProtector({
+        protect: (k) => safeStorage.encryptString(k.toString('base64')),
+        unprotect: (buf) => Buffer.from(safeStorage.decryptString(buf), 'base64')
+      });
+    }
+  } catch (e) { log.warn('[mods bajo llave] Sin llave del sistema:', e.message); }
+  // Lo que se quedó abierto (apagón, el launcher se cerró con el juego…) vuelve bajo llave
+  instances.lockLeftovers().catch(e => log.warn('[mods bajo llave]', e.message));
   log.info(`${config.appName || 'Kopi Client'} ${app.getVersion()} en ${os.type()} ${os.release()} ${process.arch}${config.brand ? ` (marca ${config.brand.id})` : ''}`);
   // Un launcher de marca apoya a su studio desde el principio (referido)
   if (config.brand && config.brand.studio && !settingsStore.get().referral) {

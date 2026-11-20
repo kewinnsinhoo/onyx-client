@@ -194,6 +194,15 @@ Para que se cuenten solos:
 
 ---
 
+## Protección de mods (desde la 1.5.1)
+
+- **El launcher no abre nunca la carpeta del juego**: no hay botón de carpeta en las instancias, ni «Carpeta de datos» en Ajustes, y «Capturas» lleva a la Galería del launcher.
+- **Mods bajo llave (1.5.2):** mientras no se juega, los mods de cada instancia (todos los `.jar` de `mods/`, menos los públicos de Kopi) se guardan **cifrados** en `<carpeta de datos>/vault/<instancia>/`, con nombres al azar. En `mods/` no queda nada.
+  - Al pulsar **Jugar** se abren (paso «Abriendo los mods»), se sincroniza con el studio y empieza el juego. Al **cerrar el juego** vuelven bajo llave.
+  - Si el PC se apaga o el launcher se cierra con el juego abierto, se cierran solos la próxima vez que se abre el launcher.
+  - La llave es una por ordenador y la protege Windows/macOS: copiar la carpeta `vault` a otro PC no sirve. Si la llave se pierde, los mods se vuelven a descargar al jugar.
+  - **Lo que no se puede evitar:** mientras el juego está abierto, los mods tienen que estar sin cifrar (Minecraft los necesita). Es una protección muy fuerte contra quien busca en la carpeta, pero ningún launcher puede impedirlo al 100 %.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

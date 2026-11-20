@@ -9,6 +9,7 @@ const Sync = require('./sync');
 const { downloadAll, downloadFile, fetchJson } = require('./game/download');
 const skinmod = require('./skinmod');
 const perfmode = require('./perfmode');
+const vault = require('./vault');
 const game = require('./game/launch');
 const log = require('./logger');
 
@@ -19,6 +20,7 @@ function init(gameRoot) {
   root = gameRoot;
   skinmod.init(gameRoot);
   perfmode.init(gameRoot);
+  vault.init(gameRoot);
   store = new JsonStore(path.join(root, 'instances.json'), { instances: [], dismissed: [] });
 }
 
@@ -208,6 +210,24 @@ async function syncFiles(inst, gameDir, concurrency, progress) {
   inst.managedFiles = p.state.managed;
 }
 
+// Mods bajo llave (vault.js): se abren justo antes de jugar y se vuelven a guardar al cerrar el juego
+let leftovers = Promise.resolve(); // el cierre de lo que se quedó abierto al arrancar
+async function unlockMods(id, gameDir, progress) {
+  progress && progress({ stage: 'unlock' });
+  await leftovers.catch(() => {}); // primero termina de cerrar lo que se quedó abierto
+  try { await vault.open(id, gameDir); } catch (e) { log.warn('[mods bajo llave]', e.message); } // si falla, se descargan otra vez
+}
+async function lockMods(id, gameDir) {
+  if (running.has(id)) return;
+  try { await vault.seal(id, gameDir); } catch (e) { log.warn('[mods bajo llave]', e.message); }
+}
+// Al abrir el launcher: guarda bajo llave lo que se quedó abierto (y los mods de versiones anteriores)
+function lockLeftovers() {
+  const list = store.get().instances.filter(i => !running.has(i.id)).map(i => ({ id: i.id, gameDir: path.join(root, 'instances', i.id) }));
+  leftovers = vault.sealAll(list);
+  return leftovers;
+}
+
 // Mods que pone Kopi: modo rendimiento (si el jugador lo activó) y skins/capas (si el studio no lo desactivó).
 // Fabric API: una sola copia para los dos (la gestiona skinmod).
 async function kopiMods(inst, m, gameDir) {
@@ -244,11 +264,14 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     try { session = await panel.startPlay(account, id); }
     catch (e) {
       if ((e.code === 'not_open' || e.code === 'locked') && e.predownload) {
-        // Descarga anticipada: se deja todo listo para entrar al instante cuando abra
-        await syncFiles(inst, gameDir, concurrency, progress);
-        store.replace(d);
-        await kopiMods(inst, m, gameDir);
-        await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
+        // Descarga anticipada: se deja todo listo para entrar al instante cuando abra (y los mods, bajo llave)
+        await unlockMods(id, gameDir, progress);
+        try {
+          await syncFiles(inst, gameDir, concurrency, progress);
+          store.replace(d);
+          await kopiMods(inst, m, gameDir);
+          await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
+        } finally { await lockMods(id, gameDir); }
         const ready = new Error(e.code === 'locked' ? 'Todo descargado. Podrás jugar cuando el studio la abra.' : 'Todo descargado. La instancia abre el {date}');
         ready.code = 'predownloaded'; ready.vars = e.vars;
         throw ready;
@@ -259,7 +282,9 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
 
   let stopBeat = () => {};
   let kicked = false;
+  let launched = false;
   try {
+    await unlockMods(id, gameDir, progress);
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
     await kopiMods(inst, m, gameDir);
@@ -273,10 +298,12 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         const d2 = store.get();
         const i2 = d2.instances.find(x => x.id === id);
         if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
+        lockMods(id, gameDir); // el juego se cerró: los mods vuelven bajo llave
         onExit && onExit(code, { kicked });
       }
     });
     running.set(id, child);
+    launched = true;
     if (session) {
       stopBeat = panel.heartbeat(account, session.play, session.beatEvery, () => {
         kicked = true;
@@ -286,6 +313,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     }
   } catch (e) {
     if (session) panel.endPlay(account, session.play).catch(() => {});
+    if (!launched) await lockMods(id, gameDir); // no llegó a abrirse el juego
     throw e;
   }
   inst.lastPlayed = Date.now();
@@ -310,6 +338,7 @@ function remove(id, deleteFiles) {
   store.replace(d);
   if (deleteFiles) {
     try { fs.rmSync(path.join(root, 'instances', id), { recursive: true, force: true }); } catch { /* nada */ }
+    vault.drop(id);
   }
   return list();
 }
@@ -370,8 +399,11 @@ async function update(id, { settings, progress, account }) {
   await refreshManifest(inst, account);
   const gameDir = path.join(root, 'instances', id);
   fs.mkdirSync(gameDir, { recursive: true });
-  await syncFiles(inst, gameDir, settings.fastDownload ? 16 : 4, progress);
-  store.replace(d);
+  await unlockMods(id, gameDir, progress);
+  try {
+    await syncFiles(inst, gameDir, settings.fastDownload ? 16 : 4, progress);
+    store.replace(d);
+  } finally { await lockMods(id, gameDir); }
   return view(inst);
 }
 
@@ -382,6 +414,7 @@ function wipe(id) {
   const inst = d.instances.find(x => x.id === id);
   if (!inst) throw new Error('Instancia no encontrada');
   fs.rmSync(path.join(root, 'instances', id), { recursive: true, force: true });
+  vault.drop(id);
   inst.managedFiles = [];
   inst.syncState = null;
   store.replace(d);
@@ -389,7 +422,7 @@ function wipe(id) {
 }
 
 // "Instalar desde .onyxpack": un .zip con una carpeta overrides/ (mods, config, resourcepacks...)
-function importPack(id, file) {
+async function importPack(id, file) {
   const { extract, list } = require('./game/zip');
   const names = list(file);
   if (!names.length) throw new Error('El archivo está vacío');
@@ -397,7 +430,8 @@ function importPack(id, file) {
   fs.mkdirSync(gameDir, { recursive: true });
   const strip = names.some(n => n.startsWith('overrides/')) ? 'overrides/' : null;
   extract(file, gameDir, { strip, exclude: ['META-INF/'] });
+  await lockMods(id, gameDir); // los mods del pack, bajo llave
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, setPerfMode, lockLeftovers, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

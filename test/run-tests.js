@@ -833,3 +833,83 @@ test('panel: errores legibles', () => {
     passed++; console.log('  ✓ modo rendimiento: mods de optimización sin chocar con los del studio');
   } catch (e) { console.error('  ✗ modo rendimiento\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Mods bajo llave: cifrados mientras no se juega, iguales al abrirlos, nada útil en la carpeta
+(async () => {
+  try {
+    const crypto = require('crypto');
+    // copia propia (la prueba launcher ↔ panel corre a la vez y prepara su propia caja fuerte)
+    delete require.cache[require.resolve('../src/main/vault')];
+    const vault = require('../src/main/vault');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-vault-'));
+    // «llave del sistema» de prueba (en el launcher la pone safeStorage de Windows/macOS)
+    const prot = { protect: (k) => Buffer.from('P' + k.toString('hex')), unprotect: (b) => Buffer.from(b.toString().slice(1), 'hex') };
+    vault.init(tmp, { protector: prot });
+    const g = path.join(tmp, 'instances', 'evento');
+    const put = (rel, buf) => { fs.mkdirSync(path.dirname(path.join(g, rel)), { recursive: true }); fs.writeFileSync(path.join(g, rel), buf); };
+    const big = crypto.randomBytes(5 * 1024 * 1024 + 7); // un mod grande (5 MB)
+    const small = Buffer.from('PK\u0003\u0004 mod secreto de Kopi Studio');
+    put('mods/secreto.jar', big); put('mods/libs/otro.jar', small);
+    put('mods/kopi-skins-customskinloader-15.jar', 'publico'); put('config/ajuste.txt', 'cfg');
+    const old = new Date(Date.now() - 864e5); fs.utimesSync(path.join(g, 'mods/secreto.jar'), old, old);
+    const mtime = fs.statSync(path.join(g, 'mods/secreto.jar')).mtimeMs;
+    const exists = (rel) => fs.existsSync(path.join(g, rel));
+    const vdir = path.join(tmp, 'vault', 'evento');
+
+    // primera vez (mods de antes de esta versión): se guardan bajo llave y salen de mods/
+    let r = await vault.seal('evento', g);
+    assert.deepStrictEqual([r.sealed, r.removed], [2, 2]);
+    assert.ok(!exists('mods/secreto.jar') && !exists('mods/libs/otro.jar'), 'sin mods en la carpeta');
+    assert.ok(exists('mods/kopi-skins-customskinloader-15.jar') && exists('config/ajuste.txt'), 'lo público y las configs se quedan');
+    // en la caja fuerte no hay nada útil: nombres al azar y contenido cifrado
+    const blobs = fs.readdirSync(vdir).filter(f => f !== 'index.kv' && f.endsWith('.kv'));
+    assert.strictEqual(blobs.length, 2);
+    assert.ok(blobs.every(b => /^[0-9a-f]{32}\.kv$/.test(b)), 'nombres sin pistas');
+    const all = Buffer.concat(fs.readdirSync(vdir).map(f => fs.readFileSync(path.join(vdir, f))));
+    assert.ok(!all.includes(Buffer.from('mod secreto')) && !all.includes(Buffer.from('secreto.jar')) && !all.includes(big.subarray(1000, 1064)), 'ni el contenido ni los nombres se ven');
+    const keyFile = fs.readFileSync(path.join(tmp, 'vault', 'key'));
+    assert.ok(keyFile.toString().startsWith('P'), 'la llave la guarda el sistema');
+
+    // al abrir el launcher (ya estaba todo guardado): no se pierde nada
+    await vault.sealAll([{ id: 'evento', gameDir: g }]);
+    // jugar: se abren iguales, con su fecha (así la sincronización no los descarga otra vez)
+    assert.strictEqual(await vault.open('evento', g), 2);
+    assert.ok(fs.readFileSync(path.join(g, 'mods/secreto.jar')).equals(big), 'el mod grande sale idéntico');
+    assert.ok(fs.readFileSync(path.join(g, 'mods/libs/otro.jar')).equals(small));
+    assert.ok(Math.abs(fs.statSync(path.join(g, 'mods/secreto.jar')).mtimeMs - mtime) < 2);
+    // cerrar el juego sin cambios: no se cifra otra vez, solo se quitan de mods/
+    r = await vault.seal('evento', g);
+    assert.deepStrictEqual([r.sealed, r.removed], [0, 2]);
+    // el studio quita un mod y cambia otro: se guarda lo nuevo y lo viejo desaparece
+    await vault.open('evento', g);
+    fs.unlinkSync(path.join(g, 'mods/secreto.jar'));
+    put('mods/libs/otro.jar', Buffer.from('version 2'));
+    put('mods/nuevo.jar', Buffer.from('nuevo'));
+    r = await vault.seal('evento', g);
+    assert.deepStrictEqual([r.sealed, r.removed], [2, 2]);
+    assert.strictEqual(fs.readdirSync(vdir).filter(f => f !== 'index.kv' && f.endsWith('.kv')).length, 2, 'el cifrado viejo se borra');
+    assert.strictEqual(await vault.open('evento', g), 2);
+    assert.ok(!exists('mods/secreto.jar'));
+    assert.strictEqual(fs.readFileSync(path.join(g, 'mods/libs/otro.jar'), 'utf8'), 'version 2');
+    // el juego se cerró de golpe (apagón): al abrir el launcher vuelve bajo llave
+    await vault.sealAll([{ id: 'evento', gameDir: g }]);
+    assert.ok(!exists('mods/nuevo.jar') && !exists('mods/libs/otro.jar'));
+    // alguien toca un archivo cifrado: no se abre (y la sincronización lo descargará otra vez), sin romper nada
+    const one = fs.readdirSync(vdir).find(f => f !== 'index.kv' && f.endsWith('.kv'));
+    const b = fs.readFileSync(path.join(vdir, one)); b[b.length - 20] ^= 1; fs.writeFileSync(path.join(vdir, one), b);
+    assert.strictEqual(await vault.open('evento', g), 1);
+    // copiar la caja fuerte a otro PC (otra llave del sistema): no sirve de nada
+    await vault.seal('evento', g);
+    vault.init(tmp, { protector: { protect: (k) => k, unprotect: () => { throw new Error('otra máquina'); } } });
+    assert.strictEqual(await vault.open('evento', g), 0);
+    assert.ok(!exists('mods/nuevo.jar'));
+    // borrar la instancia borra su caja fuerte
+    vault.drop('evento');
+    assert.ok(!fs.existsSync(vdir));
+    // los cifrados pequeños (índice) se abren solo con su llave
+    const k = crypto.randomBytes(32);
+    assert.strictEqual(vault._openBuffer(vault._sealBuffer(Buffer.from('hola'), k), k).toString(), 'hola');
+    assert.throws(() => vault._openBuffer(vault._sealBuffer(Buffer.from('hola'), k), crypto.randomBytes(32)));
+    passed++; console.log('  ✓ mods bajo llave: cifrados al no jugar, idénticos al abrir');
+  } catch (e) { console.error('  ✗ mods bajo llave\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();
