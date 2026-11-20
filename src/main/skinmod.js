@@ -45,17 +45,25 @@ async function resolve(mc, loader, fetchJson) {
   }
 }
 
-// Configura CustomSkinLoader: Mojang primero y luego Kopi; respeta el resto de ajustes del jugador
+// Configura CustomSkinLoader. Orden (el primero que tenga skin gana):
+//  1) la skin que ya manda el servidor (servidores premium o con SkinsRestorer): no hace falta preguntar a nadie;
+//  2) Kopi: la skin elegida en el launcher por jugadores no premium;
+//  3) Mojang: la skin oficial de las cuentas premium.
+// Si Mojang contesta "demasiadas peticiones" (429), se usa la última skin conocida del jugador (caché local).
+// Respeta el resto de ajustes del jugador.
 function writeConfig(gameDir, panelBase) {
   const file = path.join(gameDir, 'CustomSkinLoader', 'CustomSkinLoader.json');
   let cfg = {};
   try { cfg = JSON.parse(fs.readFileSync(file, 'utf8')) || {}; } catch { cfg = {}; }
   const others = (Array.isArray(cfg.loadlist) ? cfg.loadlist : [])
-    .filter(x => x && !['mojang', 'kopi'].includes(String(x.name || '').toLowerCase()));
+    .filter(x => x && !['gameprofile', 'mojang', 'kopi'].includes(String(x.name || '').toLowerCase()));
   cfg.enable = true;
+  cfg.enableLocalProfileCache = true;
+  if (!(Number(cfg.cacheExpiry) >= 120)) cfg.cacheExpiry = 120;
   cfg.loadlist = [
-    { name: 'Mojang', type: 'MojangAPI' },
+    { name: 'GameProfile', type: 'GameProfile' },
     { name: 'Kopi', type: 'CustomSkinAPI', root: `${panelBase}/csl/` },
+    { name: 'Mojang', type: 'MojangAPI' },
     ...others
   ];
   fs.mkdirSync(path.dirname(file), { recursive: true });

@@ -643,9 +643,12 @@ test('panel: errores legibles', () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(g, 'CustomSkinLoader', 'CustomSkinLoader.json'), 'utf8'));
     assert.strictEqual(cfg.enable, true);
     assert.strictEqual(cfg.enableCape, true, 'respeta los demás ajustes');
-    assert.deepStrictEqual(cfg.loadlist.map(x => x.name), ['Mojang', 'Kopi', 'ElyBy']);
+    assert.deepStrictEqual(cfg.loadlist.map(x => x.name), ['GameProfile', 'Kopi', 'Mojang', 'ElyBy']);
     assert.strictEqual(cfg.loadlist[1].type, 'CustomSkinAPI');
     assert.strictEqual(cfg.loadlist[1].root, 'https://panel.onyxclient.site/csl/');
+    assert.strictEqual(cfg.loadlist[2].type, 'MojangAPI');
+    assert.strictEqual(cfg.enableLocalProfileCache, true);
+    assert.strictEqual(cfg.cacheExpiry, 120);
     // la segunda vez se recuerda la versión (sin preguntar a Modrinth)
     await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
     assert.strictEqual(calls.length, 1);
