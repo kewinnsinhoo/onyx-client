@@ -6,7 +6,7 @@
 # Los launchers 1.2.x buscan actualizaciones aquí (proveedor github) y los 1.3.x también
 # (releases/latest/download), así que todos se actualizan solos.
 name: Publicar nueva versión
-run-name: Publicar ${{ github.ref_name }}${{ inputs.solo_mac && ' (solo Mac)' || '' }}${{ inputs.dry_run && ' (prueba)' || '' }}
+run-name: Publicar ${{ github.ref_name }}${{ inputs.solo_mac && ' (solo Mac)' || '' }}${{ inputs.intento != '1' && format(' · intento {0}', inputs.intento) || '' }}${{ inputs.dry_run && ' (prueba)' || '' }}
 
 on:
   workflow_dispatch:
@@ -27,6 +27,10 @@ on:
         description: 'Al terminar, recompilar los launchers de marca'
         type: boolean
         default: false
+      intento:
+        description: 'Intento de Mac (lo pone solo el reintento automático; deja 1)'
+        type: string
+        default: '1'
 
 permissions:
   contents: read
@@ -99,7 +103,9 @@ jobs:
   compilar-mac:
     needs: preparar
     if: ${{ inputs.mac || inputs.solo_mac }}
-    runs-on: macos-15 # «macos-latest» (macOS 26) se quedó sin Macs libres el 20/11/2026
+    # A veces GitHub no encuentra un Mac libre: espera 15 min y cancela el trabajo sin empezarlo.
+    # Cada intento prueba una cola distinta (ver «reintentar-mac» abajo).
+    runs-on: ${{ fromJSON('{"1":"macos-latest","2":"macos-15","3":"macos-latest","4":"macos-15","5":"macos-latest","6":"macos-15"}')[inputs.intento || '1'] || 'macos-latest' }}
     continue-on-error: true
     timeout-minutes: 60
     permissions:
@@ -133,6 +139,30 @@ jobs:
           gh release upload "$V" "${BIN[@]}" --clobber
           gh release upload "$V" "${YML[@]}" --clobber
           printf '%s\n' "${BIN[@]}" "${YML[@]}"
+
+  # Si GitHub canceló el trabajo de Mac sin darle nunca un Mac, se vuelve a pedir solo Mac (hasta 6 veces).
+  # Si el Mac sí empezó y falló de verdad, no se reintenta.
+  reintentar-mac:
+    needs: compilar-mac
+    if: ${{ always() && (inputs.mac || inputs.solo_mac) && !inputs.dry_run && inputs.intento != '6' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          N: ${{ inputs.intento || '1' }}
+          REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          read -r STATUS RUNNER < <(gh api "repos/$REPO/actions/runs/$RUN/jobs" -q '.jobs[] | select(.name=="compilar-mac") | "\(.conclusion) \(.runner_name // "")"') || true
+          echo "Mac: $STATUS, máquina: ${RUNNER:-ninguna}"
+          if [ "$STATUS" = "cancelled" ] && [ -z "${RUNNER:-}" ]; then
+            gh workflow run release.yml --repo "$REPO" --ref "$REF" -f solo_mac=true -f intento=$((N + 1))
+            echo "Pedido el intento $((N + 1)) de Mac"
+          fi
 
   publicar:
     needs: [preparar, compilar]
