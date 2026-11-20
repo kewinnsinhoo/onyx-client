@@ -15,6 +15,7 @@ import { statsApi } from './studio-stats.js';
 import { hello, launcherStats } from './kopistats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport } from './guard.js';
 import { sendReport } from './reports.js';
+import { launcherStreams, studioStreams, refreshDue } from './streams.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -46,6 +47,7 @@ export default {
     ctx.waitUntil(runChecks(env));
     ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
     ctx.waitUntil(env.DB.prepare('DELETE FROM guard_live WHERE at IS NULL OR at < ?').bind(now() - 10 * 60e3).run()); // cámaras viejas
+    ctx.waitUntil(refreshDue(env).catch(e => console.warn('[directos]', e.message))); // quién está en directo
   }
 };
 
@@ -293,6 +295,7 @@ async function studioApi(c, parts, m) {
   if (a === 'invites') return invites(c, b, m);
   if (a === 'media') return mediaApi(c, b, m, sub, d);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
+  if (a === 'streams' && b) return studioStreams(c, b, m);
   if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
@@ -781,6 +784,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
   // Capas de Kopi: las que tiene el jugador y cuál lleva puesta
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
+  if (parts[0] === 'channels' || parts[0] === 'live') { const r = await launcherStreams(env, P, parts, m, req); if (r) return r; }
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
   // KopiGuard: el launcher avisa de lo que ha visto mientras se juega
   if (parts[0] === 'guard' && parts[1] === 'media' && m === 'POST') return guardMedia(env, P, req, u.searchParams);

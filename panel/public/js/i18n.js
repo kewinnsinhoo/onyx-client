@@ -3,6 +3,20 @@
   const ROWS = {
     "Tu ID de Discord": ["Your Discord ID", "El teu ID de Discord", "Ton ID Discord"],
     "Si ya tenías acceso con otra cuenta de Discord, cierra sesión y entra con esa.": ["If you already had access with another Discord account, sign out and sign in with that one.", "Si ja tenies accés amb un altre compte de Discord, tanca la sessió i entra amb aquell.", "Si tu avais déjà accès avec un autre compte Discord, déconnecte-toi et connecte-toi avec celui-là."],
+    // Directos
+    "Directos": ["Streams", "Directes", "Lives"],
+    "En directo ahora": ["Live now", "En directe ara", "En direct maintenant"],
+    "Los canales oficiales y los jugadores que están emitiendo esta instancia ahora mismo. En el launcher salen en la instancia.": ["Official channels and players streaming this instance right now. In the launcher they show up on the instance.", "Els canals oficials i els jugadors que estan emetent aquesta instància ara mateix. Al launcher surten a la instància.", "Les chaînes officielles et les joueurs qui diffusent cette instance en ce moment. Dans le launcher, ils apparaissent sur l’instance."],
+    "{n} viendo": ["{n} watching", "{n} mirant", "{n} spectateurs"],
+    "Canal oficial": ["Official channel", "Canal oficial", "Chaîne officielle"],
+    "marcado por el jugador": ["marked by the player", "marcat pel jugador", "indiqué par le joueur"],
+    "Ahora mismo nadie está en directo con esta instancia.": ["Nobody is streaming this instance right now.", "Ara mateix ningú no està en directe amb aquesta instància.", "Personne ne diffuse cette instance en ce moment."],
+    "{n} jugadores con canal están jugando ahora.": ["{n} players with a channel are playing now.", "{n} jugadors amb canal estan jugant ara.", "{n} joueurs avec une chaîne jouent en ce moment."],
+    "Los jugadores ponen su canal en el launcher, en Mi perfil.": ["Players add their channel in the launcher, in My profile.", "Els jugadors posen el seu canal al launcher, a El meu perfil.", "Les joueurs ajoutent leur chaîne dans le launcher, dans Mon profil."],
+    "Canales oficiales": ["Official channels", "Canals oficials", "Chaînes officielles"],
+    "Si el evento se emite en un canal vuestro, ponlo aquí: cuando esté en directo, sale el primero en el launcher.": ["If the event is streamed on your own channel, add it here: when it’s live, it shows first in the launcher.", "Si l’esdeveniment s’emet en un canal vostre, posa’l aquí: quan estigui en directe, surt el primer al launcher.", "Si l’événement est diffusé sur votre chaîne, ajoutez-la ici : quand elle est en direct, elle apparaît en premier dans le launcher."],
+    "Canales guardados": ["Channels saved", "Canals desats", "Chaînes enregistrées"],
+    "Se mira cada pocos minutos. TikTok no deja comprobarlo siempre: si no se puede, vale lo que marque el jugador en el launcher.": ["It’s checked every few minutes. TikTok doesn’t always allow checking: if it can’t, what the player marks in the launcher counts.", "Es mira cada pocs minuts. TikTok no sempre deixa comprovar-ho: si no es pot, val el que marqui el jugador al launcher.", "C’est vérifié toutes les quelques minutes. TikTok ne permet pas toujours de vérifier : sinon, c’est ce que le joueur indique dans le launcher qui compte."],
     // Uso del launcher
     "Desconocido": ["Unknown", "Desconegut", "Inconnu"],
     "Uso del launcher": ["Launcher usage", "Ús del launcher", "Utilisation du launcher"],
@@ -114,6 +128,7 @@
     "Clics por segundo": ["Clicks per second", "Clics per segon", "Clics par seconde"],
     "Golpes a varios a la vez": ["Hitting several at once", "Cops a diversos alhora", "Coups sur plusieurs à la fois"],
     "{user} creó otra clave del servidor para {target} (KopiGuard)": ["{user} created a new server key for {target} (KopiGuard)", "{user} va crear una altra clau del servidor per a {target} (KopiGuard)", "{user} a créé une nouvelle clé de serveur pour {target} (KopiGuard)"],
+    "{user} cambió los canales oficiales de {target}": ["{user} changed the official channels of {target}", "{user} ha canviat els canals oficials de {target}", "{user} a changé les chaînes officielles de {target}"],
     "Clave del servidor no válida": ["Invalid server key", "Clau del servidor no vàlida", "Clé de serveur non valide"],
     "Aviso no válido": ["Invalid report", "Avís no vàlid", "Alerte non valide"],
     "Cada detección importante llega con una foto y un vídeo de 10 s del juego.": ["Every important detection comes with a screenshot and a 10 s video of the game.", "Cada detecció important arriba amb una foto i un vídeo de 10 s del joc.", "Chaque détection importante arrive avec une capture et une vidéo de 10 s du jeu."],

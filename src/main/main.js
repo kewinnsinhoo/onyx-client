@@ -381,6 +381,12 @@ handle('capes:kopiWear', async (id) => {
   if (!acc) throw new Error('Inicia sesión para continuar');
   return panel.wearKopiCape(acc, accounts.skinKeyOf(acc.id), id);
 });
+// Directos: los canales del jugador (Twitch, TikTok, Kick) y quién está emitiendo una instancia
+const streamAcc = () => { const a = panelAccount(); if (!a || !panel.enabled()) throw new Error('Inicia sesión para continuar'); return a; };
+handle('streams:channels', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.streamChannels(a) : { channels: { twitch: '', tiktok: '', kick: '' }, manual: [] }; });
+handle('streams:save', async (ch) => panel.saveChannels(streamAcc(), ch || {}));
+handle('streams:markLive', async (platform, on) => panel.markLive(streamAcc(), platform, on));
+handle('streams:live', async (id) => { const a = panelAccount(); return a && panel.enabled() ? panel.liveOf(a, id).catch(() => []) : []; });
 // Perfil: la tarjeta como imagen (se guarda en Imágenes/Kopi Client y, si se pide, se copia)
 handle('profile:card', async (rect, copy) => {
   const img = await win.webContents.capturePage({ x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) });

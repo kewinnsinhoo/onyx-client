@@ -58,8 +58,22 @@ globalThis.fetch = async (u, opts = {}) => {
     if (!(f instanceof FormData) || !f.get('file') || !['classic', 'slim'].includes(f.get('variant'))) return new Response('{}', { status: 400 });
     return new Response(JSON.stringify({ success: true, skin: { texture: { data: { value: 'a29waS0' + mineskinCalls, signature: 'firma-mineskin' } } } }), { status: 200 });
   }
+  // Directos falsos: «ana» en directo en Twitch, «leo» en Kick; TikTok no responde (se usa lo marcado a mano)
+  if (s.startsWith('https://decapi.me/twitch/')) {
+    streamCalls++;
+    const [, kind, h] = s.split('/twitch/')[1].match(/^(\w+)\/(.+)$/) || [];
+    if (h !== 'ana') return new Response(`${h} is offline`, { status: 200 });
+    return new Response(kind === 'uptime' ? '1 hour, 3 minutes' : kind === 'title' ? 'Día 3 de IGNITE' : '1234', { status: 200 });
+  }
+  if (s.startsWith('https://kick.com/api/v2/channels/')) {
+    streamCalls++;
+    const h = s.split('/').pop();
+    return new Response(JSON.stringify({ slug: h, livestream: h === 'leo' ? { session_title: 'Kick en directo', viewer_count: 77, thumbnail: { url: 'https://img/kick.jpg' }, created_at: '2026-11-20T10:00:00Z' } : null }), { status: 200 });
+  }
+  if (s.startsWith('https://www.tiktok.com/api-live/')) { streamCalls++; return new Response('<html>bloqueado</html>', { status: 403 }); }
   throw new Error('fetch inesperado: ' + s);
 };
+let streamCalls = 0;
 let mineskinCalls = 0;
 
 async function call(method, p, { body, cookie, headers = {}, raw } = {}) {
@@ -1088,6 +1102,66 @@ await test('Uso del launcher: instalaciones, activos y países (anónimo)', asyn
   assert.ok(d.platforms.some(p => p.p === 'darwin' && p.n === 1));
   assert.ok(d.versions.some(v => v.v === '1.7.5'));
   assert.strictEqual((await call('GET', '/api/onyx/launcher', { cookie: other })).status, 403, 'solo el Creador');
+});
+
+await test('Directos: canales del jugador, oficiales y «En directo ahora»', async () => {
+  const { cleanHandle } = await import('../src/streams.js');
+  assert.strictEqual(cleanHandle('twitch', 'https://www.twitch.tv/Ana_GG?x=1'), 'ana_gg');
+  assert.strictEqual(cleanHandle('tiktok', 'https://www.tiktok.com/@leo.mc/live'), 'leo.mc');
+  assert.strictEqual(cleanHandle('kick', '@Leo'), 'leo');
+  assert.strictEqual(cleanHandle('twitch', 'a b'), null);
+  assert.strictEqual(cleanHandle('kick', ''), '');
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Directos' } });
+  const sid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${sid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true } } } });
+  const ana = await player('AnaStream', false), leo = await player('LeoKick', false), sin = await player('SinCanal', false);
+  // los canales del jugador
+  let r = await call('POST', '/api/l/channels', { headers: ana, body: { twitch: 'twitch.tv/ana', tiktok: '@ana.tt' } });
+  assert.deepStrictEqual(r.data.channels, { twitch: 'ana', tiktok: 'ana.tt', kick: '' });
+  assert.strictEqual((await call('POST', '/api/l/channels', { headers: ana, body: { kick: 'no vale!' } })).status, 400);
+  await call('POST', '/api/l/channels', { headers: leo, body: { kick: 'https://kick.com/leo', twitch: 'leo' } });
+  assert.strictEqual((await call('POST', '/api/l/channels/live', { headers: sin, body: { platform: 'tiktok', on: true } })).status, 400, 'sin canal no se marca');
+  // nadie juega: no sale nadie
+  r = await call('GET', `/api/l/live/${sid}`, { headers: sin });
+  assert.deepStrictEqual(r.data.live, []);
+  // juegan: Ana (Twitch en directo) y Leo (Kick en directo, Twitch apagado)
+  for (const h of [ana, leo, sin]) assert.strictEqual((await call('POST', '/api/l/play', { headers: h, body: { instance: sid } })).status, 200);
+  r = await call('GET', `/api/l/live/${sid}`, { headers: sin });
+  const live = r.data.live;
+  assert.deepStrictEqual(live.map(x => `${x.platform}:${x.handle}:${x.name}`).sort(), ['kick:leo:LeoKick', 'twitch:ana:AnaStream']);
+  const tw = live.find(x => x.platform === 'twitch');
+  assert.deepStrictEqual([tw.title, tw.viewers, tw.url], ['Día 3 de IGNITE', 1234, 'https://www.twitch.tv/ana']);
+  assert.ok(tw.thumb.includes('live_user_ana'));
+  assert.strictEqual(live[0].viewers, 1234, 'los que más gente tienen, primero');
+  // otra vez enseguida: no se vuelve a preguntar (vale 3 minutos)
+  const before = streamCalls;
+  await call('GET', `/api/l/live/${sid}`, { headers: sin });
+  assert.strictEqual(streamCalls, before);
+  // TikTok no se sabe: el jugador lo marca a mano
+  r = await call('POST', '/api/l/channels/live', { headers: ana, body: { platform: 'tiktok', on: true } });
+  assert.deepStrictEqual(r.data.manual, ['tiktok']);
+  r = await call('GET', `/api/l/live/${sid}`, { headers: sin });
+  assert.ok(r.data.live.some(x => x.platform === 'tiktok' && x.handle === 'ana.tt' && x.manual && x.url === 'https://www.tiktok.com/@ana.tt/live'));
+  // el studio: canales oficiales y quién está en directo
+  r = await call('POST', `/api/s/onyx-studios/streams/${sid}`, { cookie: creator, body: { channels: { kick: 'leo', twitch: 'https://twitch.tv/ana' } } });
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.data.channels, { twitch: 'ana', tiktok: '', kick: 'leo' });
+  assert.strictEqual(r.data.withChannel, 2);
+  assert.ok(r.data.live[0].official, 'los oficiales primero');
+  assert.strictEqual(r.data.live.filter(x => x.platform === 'twitch' && x.handle === 'ana').length, 1, 'sin repetir');
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/streams/${sid}`, { cookie: other })).status, 403);
+  // deja de jugar: ya no sale (salvo el canal oficial)
+  const plays = (await env.DB.prepare('SELECT id, player_key FROM plays WHERE instance_id = ? AND ended_at IS NULL').bind(sid).all()).results;
+  await env.DB.prepare('UPDATE plays SET ended_at = ? WHERE instance_id = ?').bind(Date.now(), sid).run();
+  r = await call('GET', `/api/l/live/${sid}`, { headers: sin });
+  assert.ok(r.data.live.every(x => x.official), JSON.stringify(r.data.live));
+  assert.ok(plays.length === 3);
+  // el cron: quita el «en directo» a mano de quien ya no juega
+  await worker.scheduled({}, env, { waitUntil: () => {} });
+  const { refreshDue } = await import('../src/streams.js');
+  await refreshDue(env);
+  r = await call('GET', '/api/l/channels', { headers: ana });
+  assert.deepStrictEqual(r.data.manual, []);
 });
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

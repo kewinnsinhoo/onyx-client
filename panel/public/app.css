@@ -237,6 +237,8 @@ textarea.input { height: auto; min-height: 84px; padding: 10px 12px; resize: ver
 .tabs { display: flex; gap: 2px; margin: 16px 0 20px; padding: 4px; border-radius: 13px; background: var(--card); border: 1px solid var(--line); width: fit-content; max-width: 100%; overflow-x: auto; }
 .tabs a { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 9px; font-weight: 600; font-size: 13.5px; color: var(--muted); white-space: nowrap; }
 .tabs a svg { width: 15px; height: 15px; }
+/* muchas pestañas: más juntas en pantallas medianas (si aún no caben, se desliza) */
+@media (max-width: 1500px) { .tabs a { padding: 0 10px; gap: 6px; font-size: 13px; } }
 .tabs a:hover { color: var(--text); }
 .tabs a.on { background: var(--accent-soft); color: var(--text); }
 .subnav { position: sticky; top: 84px; display: grid; gap: 2px; padding: 6px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
@@ -800,3 +802,32 @@ a.g-shot:hover { border-color: var(--accent); }
 
 .us-country { display: inline-flex; align-items: center; gap: 10px; }
 .us-flag { font-size: 18px; line-height: 1; }
+
+/* Directos (Twitch, TikTok, Kick) */
+.plat-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.plat-dot.twitch { background: #9146ff; box-shadow: 0 0 0 3px rgba(145, 70, 255, .18); }
+.plat-dot.kick { background: #53fc18; box-shadow: 0 0 0 3px rgba(83, 252, 24, .16); }
+.plat-dot.tiktok { background: linear-gradient(135deg, #25f4ee, #fe2c55); box-shadow: 0 0 0 3px rgba(254, 44, 85, .16); }
+.badge.live-b { background: rgba(255, 70, 85, .14); color: #ff6b78; margin-left: 8px; }
+.badge.live-b .dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4655; animation: livePulse 1.6s ease-in-out infinite; }
+@keyframes livePulse { 50% { opacity: .35; } }
+.live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 14px; }
+.live-card { display: block; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--card-2); color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
+.live-card:hover { transform: translateY(-2px); border-color: rgba(255, 70, 85, .45); }
+.lc-thumb { position: relative; aspect-ratio: 16 / 9; background: #0c0c14 center / cover no-repeat; }
+.lc-thumb.none { background: radial-gradient(80% 90% at 30% 20%, rgba(255, 70, 85, .25), transparent 60%), #0c0c14; }
+.lc-live { position: absolute; left: 10px; top: 10px; padding: 3px 7px; border-radius: 6px; background: #ff3347; color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; }
+.lc-v { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 11.5px; font-weight: 600; }
+.lc-v svg { width: 13px; height: 13px; }
+.lc-body { display: flex; gap: 10px; padding: 11px 12px 13px; align-items: flex-start; }
+.lc-body .plat-dot { margin-top: 5px; }
+.lc-body div { min-width: 0; display: grid; gap: 2px; }
+.lc-body b { font-size: 13.5px; }
+.lc-body span { font-size: 12px; color: var(--muted); }
+.lc-body i { font-style: normal; font-size: 12.5px; color: var(--text-2, var(--muted)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-mini { display: grid; justify-items: center; gap: 6px; padding: 26px 10px 18px; text-align: center; color: var(--muted); }
+.empty-mini svg { width: 28px; height: 28px; opacity: .55; }
+.empty-mini p { margin: 0; color: var(--text); font-weight: 600; }
+.plat-form { display: grid; gap: 10px; margin-top: 12px; }
+.plat-row { display: grid; grid-template-columns: 14px 70px 1fr; align-items: center; gap: 10px; }
+.plat-row b { font-size: 13.5px; }

@@ -68,6 +68,12 @@ contextBridge.exposeInMainWorld('onyx', {
   profile: {
     card: (rect, copy) => call('profile:card', rect, copy)
   },
+  streams: {
+    channels: () => call('streams:channels'),
+    save: (ch) => call('streams:save', ch),
+    markLive: (platform, on) => call('streams:markLive', platform, on),
+    live: (id) => call('streams:live', id)
+  },
   capes: {
     kopi: () => call('capes:kopi'),
     kopiWear: (id) => call('capes:kopiWear', id)

@@ -53,6 +53,20 @@
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
     },
     profile: { card: () => wait(null, 300) },
+    streams: (() => {
+      let ch = { channels: { twitch: 'kewinsinho', tiktok: 'kew.mc', kick: '' }, manual: [] };
+      const live = q.get('nolive') ? [] : [
+        { platform: 'twitch', handle: 'kopistudio', official: true, title: 'FINAL de IGNITE EXTREMO 3 · día 30', viewers: 4812, thumb: '../../web/img/arte-3.webp', url: 'https://www.twitch.tv/kopistudio' },
+        { platform: 'kick', handle: 'streamerana', name: 'StreamerAna', title: 'Sobreviviendo al día 30 sin vidas', viewers: 318, thumb: '../../web/img/arte-1.webp', url: 'https://kick.com/streamerana' },
+        { platform: 'tiktok', handle: 'leo.mc', name: 'LeoKick', title: '', viewers: 95, thumb: null, manual: true, url: 'https://www.tiktok.com/@leo.mc/live' }
+      ];
+      return {
+        channels: () => wait(ch),
+        save: (c) => { ch = { ...ch, channels: { ...ch.channels, ...c } }; return wait(ch); },
+        markLive: (pl, on) => { ch = { ...ch, manual: on ? [pl] : [] }; return wait(ch); },
+        live: (id) => wait(id === 'survival-onyx' ? live : [])
+      };
+    })(),
     capes: {
       kopi: () => wait({ owned: (q.has('capes') ? q.get('capes') : 'kopi,fire').split(',').filter(Boolean), worn: kopiWorn }),
       kopiWear: (id) => { kopiWorn = id || null; return wait({ ok: true, worn: kopiWorn }); }

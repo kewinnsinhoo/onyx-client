@@ -205,6 +205,12 @@ async function seed() {
   await run("UPDATE studios SET brand_allowed = 1 WHERE id = 'nova-estudios'");
   await run("INSERT INTO brands (id, studio_id, name, data, created_at, updated_at) VALUES ('nova-launcher', 'nova-estudios', 'Nova Launcher', ?, ?, ?)",
     JSON.stringify({ name: 'Nova Launcher', icon: '/m/0123456789abcdef0124/skin.webp', background: '/m/0123456789abcdef0123/fondo.webp', accent: '#f59e0b', accent2: '#ea580c', tagline: 'Los eventos de Nova, en un clic', discord: 'https://discord.gg/nova', web: 'https://nova.gg', onlyStudio: true }), t, t);
+  // Directos de ejemplo: dos jugadores jugando IGNITE y emitiendo, y el canal oficial
+  for (const [k, nm] of [['streamerana', 'StreamerAna'], ['leokick', 'LeoKick']]) await run('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)', 'live-' + k, 'ignite-extremo-3', 'onyx-studios', k, nm, t - 3600e3, t + 30 * DAY);
+  const ch = (owner, pl, h, title, viewers, thumb) => run('INSERT INTO channels (owner, platform, handle, live, title, viewers, thumb, live_since, checked_at) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)', owner, pl, h, title, viewers, thumb, t - 3600e3, t + 30 * DAY);
+  await ch('inst:ignite-extremo-3', 'twitch', 'kopistudio', 'FINAL de IGNITE EXTREMO 3 · día 30', 4812, '/m/0123456789abcdef0123/fondo.webp');
+  await ch('streamerana', 'kick', 'streamerana', 'Sobreviviendo al día 30 sin vidas', 318, '/m/0123456789abcdef0124/skin.webp');
+  await ch('leokick', 'tiktok', 'leo.mc', '', 95, null);
   const { runChecks } = await import('../src/extra.js');
   for (let i = 0; i < 3; i++) await runChecks(env, async () => new Response('ok'));
 }

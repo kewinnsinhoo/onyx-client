@@ -8,6 +8,9 @@
     const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3);
     return h ? `${h} h ${m} min` : `${m} min`;
   }
+  // Directos: nombre y cómo se ve el enlace de cada plataforma
+  const PLAT = { twitch: ['Twitch', 'twitch.tv/', 'twitch.tv/tu_canal'], tiktok: ['TikTok', 'tiktok.com/@', '@tu_usuario'], kick: ['Kick', 'kick.com/', 'kick.com/tu_canal'] };
+  V.PLAT = PLAT;
   const loaderName = (l) => ({ fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge', quilt: 'Quilt' }[l && l.type] || 'Vanilla');
 
   V.profile = function (root) {
@@ -19,9 +22,12 @@
     const last = S.instances.reduce((n, i) => Math.max(n, i.lastPlayed || 0), 0);
     const K = KopiCapes.list;
     const kopi = { owned: [], worn: null };
+    let ch = { twitch: '', tiktok: '', kick: '' }, chLoaded = false, draft = {};
     let viewer = null, capeTimer = 0;
 
     function render() {
+      // lo que estabas escribiendo no se pierde si la página se vuelve a pintar
+      root.querySelectorAll('[data-ch]').forEach(i => { if (!i.disabled) draft[i.dataset.ch] = i.value; });
       const mine = K.filter(c => kopi.owned.includes(c.id));
       const worn = kopi.worn && KopiCapes.get(kopi.worn);
       const max = played.length ? played[0].playTime : 1;
@@ -42,6 +48,7 @@
               ${isMsa ? `<span class="badge premium">${icon('check')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Sin premium')}</span>`}
               ${worn ? `<span class="badge pf-cape">${icon('cape')}${t('Capa {name}', { name: t(worn.name) })}</span>` : ''}
             </div>
+            ${Object.keys(PLAT).some(k => ch[k]) ? `<div class="pf-chans">${Object.keys(PLAT).filter(k => ch[k]).map(k => `<span class="pf-chan"><i class="plat-dot ${k}"></i>${esc(PLAT[k][1] + ch[k])}</span>`).join('')}</div>` : ''}
             <div class="pf-stats">
               <div><span>${t('Tiempo jugado')}</span><b>${fmtTime(total)}</b></div>
               <div><span>${t('Instancias jugadas')}</span><b>${played.length}</b></div>
@@ -70,7 +77,24 @@
             : `<div class="pf-empty">${icon('sparkles')}<span>${t('Aún no tienes capas de Kopi. Pronto podrás ganarlas jugando.')}</span></div>`}
           </section>
         </div>
+
+        <section class="card pf-sec pf-streams">
+          <div class="pf-h"><b>${icon('video')}${t('Tus directos')}</b><span class="pf-hint">${t('Cuando emitas mientras juegas, sales en «En directo ahora» de la instancia y el studio te ve.')}</span></div>
+          <div class="pf-plat">${Object.entries(PLAT).map(([k, [n, , ph]]) => html`<label class="pf-prow"><i class="plat-dot ${k}"></i><b>${n}</b>
+            <input class="input" data-ch="${k}" value="${esc(draft[k] ?? ch[k] ?? '')}" placeholder="${esc(ph)}" spellcheck="false" autocomplete="off" ${chLoaded ? '' : 'disabled'}></label>`).join('')}</div>
+          <div class="pf-sfoot"><span class="pf-hint">${t('Solo se usa para enseñar tu directo. Déjalo vacío para quitarlo.')}</span>
+            <button class="btn btn-primary btn-sm" id="pf-ch-save" ${chLoaded ? '' : 'disabled'}>${icon('check')}${t('Guardar')}</button></div>
+        </section>
       </div>`;
+
+      const save = root.querySelector('#pf-ch-save');
+      save.onclick = async () => {
+        const body = {};
+        root.querySelectorAll('[data-ch]').forEach(i => { body[i.dataset.ch] = i.value.trim(); });
+        busy(save, true);
+        try { const r = await onyx.streams.save(body); ch = r.channels; draft = {}; toast(t('Canales guardados'), 'success'); render(); }
+        catch (err) { toast(t(err.message, err.vars), 'error'); busy(save, false); }
+      };
 
       // la skin en 3D, andando, con la capa puesta (la de Kopi animada; si no, la oficial)
       if (viewer) { clearInterval(capeTimer); viewer.destroy(); }
@@ -100,6 +124,11 @@
     }
 
     render();
+    // Tus canales de directo (del panel)
+    onyx.streams.channels().then(r => {
+      if (!root.isConnected) return;
+      ch = (r && r.channels) || ch; chLoaded = true; render();
+    }).catch(() => { chLoaded = true; if (root.isConnected) render(); });
     // Las capas de Kopi vienen del panel: cuando lleguen, se vuelve a pintar
     onyx.capes.kopi().then(r => {
       if (!root.isConnected || !r) return;

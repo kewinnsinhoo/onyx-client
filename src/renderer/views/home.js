@@ -1,6 +1,6 @@
 // Inicio, lista de instancias y página de instancia.
 (function () {
-  const { esc, html, toast } = UI;
+  const { esc, html, toast, busy } = UI;
   const V = window.Views = window.Views || {};
   const shownNews = new Set(); // instancias cuyas novedades ya se enseñaron solas en esta sesión
 
@@ -174,6 +174,42 @@
       if (audio.paused) audio.play().catch(() => {});
     }
 
+    // Directos: quién está emitiendo esta instancia ahora (y «estoy en directo en TikTok» si juegas)
+    let live = [], myCh = null;
+    const PLATN = { twitch: 'Twitch', tiktok: 'TikTok', kick: 'Kick' };
+    const fmtViewers = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '') + 'K' : String(n);
+    function paintLive() {
+      const box = root.querySelector('#ins-live');
+      if (!box) return;
+      const p = S.progress[id];
+      const running = p && p.stage === 'running';
+      const tk = myCh && myCh.channels && myCh.channels.tiktok;
+      const tkOn = !!(myCh && (myCh.manual || []).includes('tiktok'));
+      if (!live.length && !(running && tk)) { box.innerHTML = ''; box.hidden = true; return; }
+      box.hidden = false;
+      box.innerHTML = html`<div class="live-h"><span class="live-pulse"></span><b>${t('En directo ahora')}</b>${live.length ? `<span class="live-n">${live.length}</span>` : ''}
+          <span class="grow"></span>
+          ${running && tk ? `<button class="btn btn-sm ${tkOn ? 'btn-primary' : 'btn-ghost'}" id="live-tk"><i class="plat-dot tiktok"></i>${tkOn ? t('Estás en directo en TikTok') : t('Estoy en directo en TikTok')}</button>` : ''}</div>
+        ${live.length ? html`<div class="live-row">${live.map((x, n) => html`<button class="live-card" data-live="${n}" title="${esc(x.url)}">
+            <span class="lc-thumb ${x.thumb ? '' : 'none'}" style="${x.thumb ? `background-image:${esc(cssUrl(x.thumb))}` : ''}">
+              <span class="lc-live">${t('EN DIRECTO')}</span>${x.viewers != null ? `<span class="lc-v">${icon('eye')}${fmtViewers(x.viewers)}</span>` : ''}
+              <span class="lc-go">${icon('external')}</span></span>
+            <span class="lc-body"><i class="plat-dot ${x.platform}"></i><span class="lc-tx"><b>${esc(x.official ? t('Canal oficial') : x.name || x.handle)}</b>
+              <small>${PLATN[x.platform]} · ${esc(x.handle)}</small>${x.title ? `<em>${esc(x.title)}</em>` : ''}</span></span></button>`).join('')}</div>`
+          : `<p class="live-empty">${t('Si emites, pulsa el botón para salir aquí y en el panel del studio.')}</p>`}`;
+      box.querySelectorAll('[data-live]').forEach(b => { b.onclick = () => onyx.app.openExternal(live[Number(b.dataset.live)].url); });
+      const tb = box.querySelector('#live-tk');
+      if (tb) tb.onclick = async () => {
+        busy(tb, true);
+        try { myCh = await onyx.streams.markLive('tiktok', !tkOn); toast(tkOn ? t('Ya no sales en directo') : t('Sales en directo en la instancia'), 'success'); await loadLive(); }
+        catch (e) { toast(t(e.message, e.vars), 'error'); busy(tb, false); }
+      };
+    }
+    async function loadLive() {
+      try { live = await onyx.streams.live(id) || []; } catch { live = []; }
+      if (alive) paintLive();
+    }
+
     const playersText = () => {
       if (!inst.server) return '—';
       if (status === undefined) return t('Comprobando...');
@@ -248,6 +284,8 @@
           <div class="pre-hint">${t('Descarga los archivos antes de la apertura.')}</div>
         </div>` : ''}
 
+        <div class="card ins-live" id="ins-live" hidden></div>
+
         <div class="stats">
           ${look.hideTech ? '' : html`<div class="stat"><span class="si">${icon('cpu')}</span><div><div class="k">${t('Versión')}</div><div class="v">${esc(inst.minecraft || '?')}</div></div></div>
           <div class="stat"><span class="si">${icon('sliders')}</span><div><div class="k">Loader</div><div class="v">${esc(loaderLabel(inst.loader, true))}</div></div></div>`}
@@ -278,6 +316,7 @@
       if (b('#ins-music')) b('#ins-music').onclick = () => { setMusicMuted(!musicMuted()); syncMusic(); render(); };
       if (b('#ins-sponsor') && look.sponsor && look.sponsor.url) b('#ins-sponsor').onclick = () => onyx.app.openExternal(look.sponsor.url);
       syncMusic();
+      paintLive();
       b('#ins-more').onclick = (e) => menu(e.currentTarget);
     };
 
@@ -405,6 +444,9 @@
     };
     refreshStatus();
     const timer = setInterval(refreshStatus, 30000);
+    loadLive();
+    onyx.streams.channels().then(r => { myCh = r; if (alive) paintLive(); }).catch(() => {});
+    const liveTimer = setInterval(() => { if (!document.hidden) loadLive(); }, 60000);
 
     const update = (pid) => {
       if (pid !== id) return;
@@ -430,6 +472,6 @@
     document.addEventListener('onyx:bg', onBg);
     const onFr = (e) => { if (e.detail && e.detail.id === id && alive) render(); };
     document.addEventListener('onyx:friends', onFr);
-    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); document.removeEventListener('onyx:friends', onFr); if (audio) { audio.pause(); audio = null; } };
+    return () => { alive = false; clearInterval(timer); clearInterval(liveTimer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); document.removeEventListener('onyx:friends', onFr); if (audio) { audio.pause(); audio = null; } };
   };
 })();

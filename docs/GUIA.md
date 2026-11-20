@@ -253,6 +253,17 @@ Para que se cuenten solos:
 - Tus amigos la ponen en **Conexión directa**, o en el launcher: **Jugar con amigos → Únete a tu amigo** y entran directos.
 - Si tus amigos no son premium, al abrir en LAN pon **Online Mode en OFF** (lo da e4all).
 
+## Directos: Twitch, TikTok y Kick (desde la 1.7.7)
+
+- **Jugadores**: en el launcher, **Mi perfil → Tus directos** ponen su canal. También sale en su tarjeta de perfil.
+- **Studio**: en el panel, **Instancia → Directos**:
+  - **Canales oficiales**: el canal donde emitís el evento. Cuando está en directo, sale el primero.
+  - **En directo ahora**: quién está emitiendo esa instancia en este momento.
+- En el launcher, la instancia enseña **«En directo ahora»** con miniatura, espectadores y un clic para abrir el directo.
+- Se mira cada 5 minutos, solo de quien está jugando (y los oficiales).
+- **Twitch** y **Kick** funcionan sin claves. Opcional, para más precisión: `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` y `KICK_CLIENT_ID` + `KICK_CLIENT_SECRET` como secretos del Worker.
+- **TikTok** no deja comprobarlo siempre. Mientras juega, el jugador tiene un botón **«Estoy en directo en TikTok»** (dura 6 horas o hasta que deja de jugar).
+
 ## Instancias siempre al día (desde la 1.7.7)
 
 - Mientras el launcher está abierto, descarga en segundo plano lo nuevo de tus instancias. Al darle a Jugar ya está todo.

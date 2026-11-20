@@ -310,7 +310,22 @@ CREATE TABLE installs (
 );
 CREATE INDEX installs_first ON installs(first_at);
 CREATE INDEX installs_last ON installs(last_at);
-CREATE TABLE install_days (day INTEGER NOT NULL, id TEXT NOT NULL, PRIMARY KEY (day, id))`
+CREATE TABLE install_days (day INTEGER NOT NULL, id TEXT NOT NULL, PRIMARY KEY (day, id))`,
+  // Directos: canales de Twitch, TikTok y Kick (de jugadores, o 'inst:<id>' = canal oficial de una instancia)
+  `CREATE TABLE channels (
+  owner TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  handle TEXT NOT NULL,
+  live INTEGER NOT NULL DEFAULT 0,
+  title TEXT,
+  viewers INTEGER,
+  thumb TEXT,
+  live_since INTEGER,
+  manual_until INTEGER,
+  checked_at INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (owner, platform)
+);
+CREATE INDEX channels_checked ON channels(checked_at)`
 ];
 
 export function statements(sql) {

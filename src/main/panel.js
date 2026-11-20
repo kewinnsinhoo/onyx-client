@@ -192,6 +192,12 @@ async function syncSkin(account, key, skin) {
 const kopiCapes = (account) => call(account, 'GET', 'capes');
 const wearKopiCape = (account, key, id) => call(account, 'POST', 'cape', { key, id: id || null });
 
+// Directos: tus canales ({ twitch, tiktok, kick }), «estoy en directo» a mano y quién emite una instancia
+const streamChannels = (account) => call(account, 'GET', 'channels');
+const saveChannels = (account, ch) => call(account, 'POST', 'channels', ch);
+const markLive = (account, platform, on) => call(account, 'POST', 'channels/live', { platform, on: !!on });
+const liveOf = (account, id) => call(account, 'GET', `live/${encodeURIComponent(id)}`).then(r => r.live || []);
+
 // «Enviar informe»: el panel lo reenvía al canal de Discord del equipo
 // data = { message, status, logs, screenshot (Buffer JPEG/PNG) }
 const sendReport = (account, data) => call(account, 'POST', 'report', {
@@ -227,4 +233,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

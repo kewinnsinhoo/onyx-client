@@ -3,7 +3,7 @@
   const V = window.Views;
   const TABS = [
     ['summary', 'info', 'Resumen'], ['news', 'megaphone', 'Novedades'], ['files', 'folder', 'Archivos'], ['look', 'sparkles', 'Personalización'],
-    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['players', 'activity', 'Jugadores']
+    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['streams', 'video', 'Directos'], ['players', 'activity', 'Jugadores']
   ];
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const genCode = () => { const a = crypto.getRandomValues(new Uint8Array(12)); const s = [...a].map(b => B32[b % 32]).join(''); return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`; };
@@ -67,7 +67,7 @@
     async function drawTab() {
       const el = $('#tab');
       if (timer) { clearInterval(timer); timer = null; }
-      const fn = { summary, news, files, look, game, launch, access, protect, players }[tab];
+      const fn = { summary, news, files, look, game, launch, access, protect, streams, players }[tab];
       await fn(el);
       if (!editable) $$('#tab input, #tab select, #tab textarea, #tab .option, #tab .chip, #tab [data-edit]').forEach(x => { x.disabled = true; });
     }
@@ -334,6 +334,46 @@
         $('#gd-hook', el).oninput = (e) => { g.webhook = e.target.value.trim(); changed(); };
       };
       draw();
+    }
+
+    // Directos: canales oficiales de la instancia y quién la está emitiendo ahora (Twitch, TikTok, Kick)
+    const PLAT = { twitch: ['Twitch', 'twitch.tv/…'], tiktok: ['TikTok', '@…'], kick: ['Kick', 'kick.com/…'] };
+    async function streams(el) {
+      el.innerHTML = `<div class="skel" style="height:300px"></div>`;
+      let s = await sapi('GET', `/streams/${encodeURIComponent(id)}`);
+      const viewersTxt = (n) => n == null ? '' : t('{n} viendo', { n: n.toLocaleString() });
+      const draw = () => {
+        el.innerHTML = html`
+          <div class="card"><div class="card-head"><div><h3>${icon('video')}${t('En directo ahora')}${s.live.length ? `<span class="badge live-b"><span class="dot"></span>${s.live.length}</span>` : ''}</h3>
+              <p class="sub">${t('Los canales oficiales y los jugadores que están emitiendo esta instancia ahora mismo. En el launcher salen en la instancia.')}</p></div>
+              <span class="grow"></span><button class="btn ghost sm" id="st-ref">${icon('refresh')}${t('Actualizar')}</button></div>
+            ${s.live.length ? html`<div class="live-grid">${s.live.map(x => html`<a class="live-card" href="${esc(x.url)}" target="_blank" rel="noopener">
+                <div class="lc-thumb ${x.thumb ? '' : 'none'}" style="${x.thumb ? `background-image:url('${esc(x.thumb)}')` : ''}">
+                  <span class="lc-live">${t('EN DIRECTO')}</span>${x.viewers != null ? `<span class="lc-v">${icon('eye')}${esc(viewersTxt(x.viewers))}</span>` : ''}</div>
+                <div class="lc-body"><span class="plat-dot ${x.platform}"></span><div><b>${esc(x.official ? t('Canal oficial') : x.name || x.handle)}</b>
+                  <span>${esc(PLAT[x.platform][0])} · ${esc(x.handle)}${x.manual ? ` · ${t('marcado por el jugador')}` : ''}</span>
+                  ${x.title ? `<i>${esc(x.title)}</i>` : ''}</div></div></a>`).join('')}</div>`
+              : html`<div class="empty-mini">${icon('video')}<p>${t('Ahora mismo nadie está en directo con esta instancia.')}</p>
+                <span class="help">${s.withChannel ? t('{n} jugadores con canal están jugando ahora.', { n: s.withChannel }) : t('Los jugadores ponen su canal en el launcher, en Mi perfil.')}</span></div>`}
+          </div>
+          <div class="card"><div class="card-head"><div><h3>${icon('star')}${t('Canales oficiales')}</h3>
+            <p class="sub">${t('Si el evento se emite en un canal vuestro, ponlo aquí: cuando esté en directo, sale el primero en el launcher.')}</p></div></div>
+            <div class="plat-form">${Object.entries(PLAT).map(([k, [n, ph]]) => html`<label class="plat-row"><span class="plat-dot ${k}"></span><b>${n}</b>
+              <input class="input" data-ch="${k}" placeholder="${esc(ph)}" value="${esc(s.channels[k] || '')}" spellcheck="false" autocomplete="off"></label>`).join('')}</div>
+            ${editable ? `<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" id="st-save">${icon('check')}${t('Guardar')}</button></div>` : ''}
+            <p class="help" style="margin:12px 0 0">${t('Se mira cada pocos minutos. TikTok no deja comprobarlo siempre: si no se puede, vale lo que marque el jugador en el launcher.')}</p></div>`;
+        $('#st-ref', el).onclick = async (e) => { busy(e.currentTarget, true); try { s = await sapi('GET', `/streams/${encodeURIComponent(id)}`); draw(); } catch (err) { fail(err); busy(e.currentTarget, false); } };
+        const save = $('#st-save', el);
+        if (save) save.onclick = async () => {
+          const channels = {};
+          $$('[data-ch]', el).forEach(i => { channels[i.dataset.ch] = i.value.trim(); });
+          busy(save, true);
+          try { s = await sapi('POST', `/streams/${encodeURIComponent(id)}`, { channels }); toast(t('Canales guardados')); draw(); }
+          catch (err) { fail(err); busy(save, false); }
+        };
+      };
+      draw();
+      timer = setInterval(async () => { if (document.hidden || document.activeElement && document.activeElement.matches('[data-ch]')) return; try { s = await sapi('GET', `/streams/${encodeURIComponent(id)}`); draw(); } catch { /* nada */ } }, 60e3);
     }
 
     // KopiGuard: el plugin del servidor y su clave
