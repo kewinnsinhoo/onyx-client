@@ -152,6 +152,7 @@
     ['Hecho por {s}', 'Made by {s}', 'Fet per {s}', 'Créé par {s}'],
     ['Idioma', 'Language', 'Idioma', 'Langue'],
     ['Información básica del estado', 'Basic status information', 'Informació bàsica de l’estat', 'Informations de base sur l’état'],
+    ['Espera un minuto antes de enviar otro informe', 'Wait a minute before sending another report', 'Espera un minut abans d’enviar un altre informe', 'Attends une minute avant d’envoyer un autre rapport'],
     ['Informe enviado. ¡Gracias!', 'Report sent. Thanks!', 'Informe enviat. Gràcies!', 'Rapport envoyé. Merci !'],
     ['Informe guardado en una carpeta para que lo compartas.', 'Report saved to a folder so you can share it.', 'Informe desat en una carpeta perquè el comparteixis.', 'Rapport enregistré dans un dossier pour que tu le partages.'],
     ['Inicia sesión para continuar', 'Sign in to continue', 'Inicia la sessió per continuar', 'Connecte-toi pour continuer'],

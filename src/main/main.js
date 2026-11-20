@@ -33,6 +33,7 @@ if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 let win = null;
 let gameLogBuffer = [];
+let lastPlayed = null; // última instancia lanzada (para los informes)
 
 function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
@@ -370,6 +371,7 @@ handle('instances:play', async (id) => {
   const account = await accounts.ensureFresh();
   syncOfflineSkin(account.id); // la skin no premium, lista para los servidores con Kopi Skins
   gameLogBuffer = [];
+  lastPlayed = id;
   presence.launching(instances.get(id));
   let v;
   try {
@@ -427,10 +429,14 @@ handle('referrals:link', async (code) => {
 // ---------- informes ----------
 handle('report:send', async (message) => {
   let screenshot = null;
-  try { screenshot = (await win.webContents.capturePage()).toPNG(); } catch { /* nada */ }
+  // JPEG: pesa mucho menos que PNG y cabe de sobra en Discord
+  try { screenshot = (await win.webContents.capturePage()).toJPEG(85); } catch { /* nada */ }
   const acc = accounts.active();
-  const status = report.statusInfo(app, acc, instances.list().length);
-  return report.send({ message, screenshot, status, gameLog: gameLogBuffer.join('').slice(-20000) }, path.join(userData, 'reports'))
+  const playing = lastPlayed ? (instances.get(lastPlayed) || {}).name : null;
+  const status = report.statusInfo(app, acc, instances.list().length, playing);
+  const pacc = panel.enabled() ? panelAccount() : null;
+  const toPanel = pacc ? (data) => panel.sendReport(pacc, data) : null;
+  return report.send({ message, screenshot, status, gameLog: gameLogBuffer.join('').slice(-20000), toPanel }, path.join(userData, 'reports'))
     .then((r) => { if (!r.sent && r.dir) shell.openPath(r.dir); return r; });
 });
 

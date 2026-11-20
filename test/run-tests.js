@@ -597,6 +597,19 @@ test('panel: errores legibles', () => {
     await instances.syncPanel(acc, { force: true });
     assert.ok(!instances.list().some(i => i.id === 'ignite-extremo-3'));
 
+    // Enviar informe: el panel lo reenvía a Discord; uno por minuto
+    const report = require('../src/main/report');
+    const rdir = path.join(tmp, 'reports');
+    const toPanel = (d) => panel.sendReport(acc, d);
+    const st0 = { version: '1.4.6', os: 'Test', ramGb: 8, instances: 1, instance: 'Ignite' };
+    const sent = await report.send({ message: 'no carga', screenshot: Buffer.from([0xff, 0xd8, 0xff, 1]), status: st0, gameLog: 'log', toPanel }, rdir);
+    assert.deepStrictEqual(sent, { sent: true });
+    const slow = await report.send({ message: 'otra', status: st0, toPanel }, rdir).catch(e => e);
+    assert.strictEqual(slow.code, 'slow');
+    // si el panel no responde: se guarda en una carpeta
+    const saved = await report.send({ message: 'sin panel', status: st0, toPanel: async () => { throw new panel.PanelError('x', 'offline'); } }, rdir);
+    assert.ok(!saved.sent && fs.existsSync(path.join(saved.dir, 'mensaje.txt')));
+
     // Referidos con el código del studio
     const st = await referrals.studios();
     assert.ok(st.some(x => x.code === 'ONYX-STUDIOS'));
@@ -604,7 +617,7 @@ test('panel: errores legibles', () => {
     assert.ok(ref.sent && ref.studio === 'onyx-studios');
     const rank = await referrals.ranking('all');
     assert.ok(rank[0].code === 'ONYX-STUDIOS' && rank[0].players >= 5);
-    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, referidos, skins)');
+    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, informes, referidos, skins)');
   } catch (e) { console.error('  ✗ launcher ↔ panel\n    ' + (e.stack || e.message)); process.exitCode = 1; }
   finally { srv.kill(); }
 })();

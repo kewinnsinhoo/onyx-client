@@ -39,7 +39,8 @@ const MESSAGES = {
   codes_off: 'Esta instancia ya no acepta códigos',
   instance: 'La instancia de este código ya no existe',
   not_verified: 'Mojang no confirmó tu cuenta. Vuelve a iniciar sesión con Microsoft.',
-  studio: 'Ese código de referido no existe'
+  studio: 'Ese código de referido no existe',
+  slow: 'Espera un minuto antes de enviar otro informe'
 };
 
 function fmtDate(ms) {
@@ -127,10 +128,10 @@ async function token(account, { fresh = false } = {}) {
 }
 
 // Llamada autenticada: si el token caducó, se pide otro una vez
-async function call(account, method, rel, body) {
-  try { return await request(method, rel, { body, token: await token(account) }); }
+async function call(account, method, rel, body, opts = {}) {
+  try { return await request(method, rel, { ...opts, body, token: await token(account) }); }
   catch (e) {
-    if (e.status === 401 && e.code === 'player') return request(method, rel, { body, token: await token(account, { fresh: true }) });
+    if (e.status === 401 && e.code === 'player') return request(method, rel, { ...opts, body, token: await token(account, { fresh: true }) });
     throw e;
   }
 }
@@ -161,6 +162,13 @@ async function syncSkin(account, key, skin) {
   return { ok: true };
 }
 
+// «Enviar informe»: el panel lo reenvía al canal de Discord del equipo
+// data = { message, status, logs, screenshot (Buffer JPEG/PNG) }
+const sendReport = (account, data) => call(account, 'POST', 'report', {
+  message: data.message || '', status: data.status || {}, logs: data.logs || '',
+  screenshot: data.screenshot ? Buffer.from(data.screenshot).toString('base64') : null
+}, { timeout: 60000 });
+
 // Lista pública de studios (para el código de referido) y su ranking
 async function publicGet(rel) {
   const b = base();
@@ -188,4 +196,4 @@ function heartbeat(account, play, everySec, onKick) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, sendReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

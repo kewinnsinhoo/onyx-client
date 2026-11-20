@@ -69,7 +69,7 @@ Repite esto con `onyx-client` y después con `onyx-data`:
 "discordInvite": "https://discord.gg/tu-invitacion",
 "reportWebhook": ""
 ```
-- `reportWebhook` (opcional): en tu Discord, abre los ajustes del canal → **Integraciones → Webhooks → Nuevo webhook → Copiar URL** y pégala aquí. Así los informes del botón ⚠ te llegan a ese canal. Si lo dejas vacío, el informe se guarda en el PC del jugador.
+- **Informes (botón ⚠ «Enviar informe») → Discord:** el launcher los manda al panel y el panel los reenvía a tu canal. En Discord: ajustes del canal → **Integraciones → Webhooks → Nuevo webhook → Copiar URL**. En Cloudflare → Workers → `onyx-panel` → Configuración → Variables y secretos → **Agregar** → tipo **Secreto**, nombre `DISCORD_REPORT_WEBHOOK`, valor la URL. (Así la URL no va dentro del launcher y nadie puede llenarte el canal de spam; además, máximo un informe por minuto por jugador.) `reportWebhook` aquí solo se usa si el panel no responde; mejor dejarlo vacío. Si nada funciona, el informe se guarda en el PC del jugador.
 
 Después, en GitHub Desktop: escribe un mensaje abajo a la izquierda (por ejemplo "configuración"), pulsa **Commit to main** y luego **Push origin**.
 

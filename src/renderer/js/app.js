@@ -339,7 +339,7 @@
           const r = await onyx.report.send(msg);
           close();
           toast(r.sent ? t('Informe enviado. ¡Gracias!') : t('Informe guardado en una carpeta para que lo compartas.'), 'success', 5000);
-        } catch (err) { m.parentElement.style.visibility = ''; toast(err.message, 'error'); busy(b, false); }
+        } catch (err) { m.parentElement.style.visibility = ''; toast(t(err.message, err.vars), 'error'); busy(b, false); }
       };
     }, { wide: false });
   }

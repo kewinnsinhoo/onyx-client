@@ -17,6 +17,9 @@ const env = { DB: makeD1(':memory:'), MEDIA: makeKV(), DEV_LOGIN: '1', CREATOR_D
 // En local no se habla con Mojang ni con MineSkin: respuestas de prueba (Kopi Skins)
 env.MOJANG_FETCH = async (u, o) => (/api\.mojang\.com\/users|session\/minecraft\/profile\//.test(String(u)) ? new Response(null, { status: 404 }) : fetch(u, o));
 env.MINESKIN_FETCH = async () => new Response(JSON.stringify({ skin: { texture: { data: { value: 'ZGV2', signature: 'firma-dev' } } } }), { status: 200 });
+// Informes: un webhook de prueba que solo lo apunta en la consola
+env.DISCORD_REPORT_WEBHOOK = 'https://discord.com/api/webhooks/1/dev';
+env.DISCORD_FETCH = async (u, o) => { console.log('[informe] ' + JSON.parse(o.body.get('payload_json')).embeds[0].description); return new Response(null, { status: 204 }); };
 env.ASSETS = {
   async fetch(req) {
     const u = new URL(req.url);

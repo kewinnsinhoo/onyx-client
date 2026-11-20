@@ -618,4 +618,41 @@ await test('Kopi Skins: skins en los servidores (premium y no premium)', async (
   assert.strictEqual((await call('GET', '/csl/PepeOff.json')).status, 404);
 });
 
+await test('informes del launcher → canal de Discord', async () => {
+  const yo = await player('Reportero', false);
+  const body = { message: 'No arranca @everyone', status: { version: '1.4.6', os: 'Windows 10', ramGb: 16, instances: 2 }, logs: 'linea 1\nlinea 2', screenshot: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]).toString('base64') };
+  // sin webhook configurado: el launcher lo guarda en una carpeta
+  assert.strictEqual((await call('POST', '/api/l/report', { headers: yo, body })).data.error, 'no_webhook');
+  env.DISCORD_REPORT_WEBHOOK = 'https://discord.com/api/webhooks/123/abc-DEF_9';
+  const sent = [];
+  env.DISCORD_FETCH = async (u, o) => { sent.push({ u, form: o.body }); return new Response(null, { status: 204 }); };
+  const r = await call('POST', '/api/l/report', { headers: yo, body });
+  assert.strictEqual(r.status, 200, JSON.stringify(r.data));
+  assert.strictEqual(sent.length, 1);
+  assert.strictEqual(sent[0].u, env.DISCORD_REPORT_WEBHOOK);
+  const p = JSON.parse(sent[0].form.get('payload_json'));
+  assert.deepStrictEqual(p.allowed_mentions, { parse: [] });
+  assert.strictEqual(p.embeds[0].description, 'No arranca @everyone');
+  assert.ok(p.embeds[0].fields[0].value.startsWith('Reportero'));
+  assert.strictEqual(p.embeds[0].image.url, 'attachment://captura.jpg');
+  assert.strictEqual(sent[0].form.get('files[0]').type, 'image/jpeg');
+  assert.strictEqual(await sent[0].form.get('files[1]').text(), 'linea 1\nlinea 2');
+  // uno por minuto
+  const again = await call('POST', '/api/l/report', { headers: yo, body });
+  assert.deepStrictEqual([again.status, again.data.error], [429, 'slow']);
+  assert.strictEqual(sent.length, 1);
+  // si Discord falla, se puede reintentar enseguida
+  const otro = await player('Reportero2', false);
+  env.DISCORD_FETCH = async () => new Response('x', { status: 500 });
+  assert.strictEqual((await call('POST', '/api/l/report', { headers: otro, body })).data.error, 'discord');
+  env.DISCORD_FETCH = async (u, o) => { sent.push({ u, form: o.body }); return new Response(null, { status: 204 }); };
+  assert.strictEqual((await call('POST', '/api/l/report', { headers: otro, body: { message: 'x' } })).status, 200);
+  // sin sesión del launcher, nada
+  assert.strictEqual((await call('POST', '/api/l/report', { body })).status, 401);
+  // un webhook que no es de Discord no se usa
+  env.DISCORD_REPORT_WEBHOOK = 'https://malo.example/x';
+  assert.strictEqual((await call('POST', '/api/l/report', { headers: await player('Reportero3', false), body })).data.error, 'no_webhook');
+  delete env.DISCORD_REPORT_WEBHOOK; delete env.DISCORD_FETCH;
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);
