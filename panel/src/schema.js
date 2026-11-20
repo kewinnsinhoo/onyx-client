@@ -295,7 +295,22 @@ CREATE TABLE guard_keys (
   created_at INTEGER NOT NULL,
   used_at INTEGER
 );
-ALTER TABLE plays ADD COLUMN snap TEXT     -- detección del servidor que espera foto y vídeo del launcher`
+ALTER TABLE plays ADD COLUMN snap TEXT     -- detección del servidor que espera foto y vídeo del launcher`,
+  `-- Uso del launcher (anónimo): cada instalación es un número al azar; país por Cloudflare, sin IP
+CREATE TABLE installs (
+  id TEXT PRIMARY KEY,
+  first_at INTEGER NOT NULL,
+  last_at INTEGER NOT NULL,
+  country TEXT,
+  version TEXT,
+  platform TEXT,
+  lang TEXT,
+  brand TEXT,
+  opens INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX installs_first ON installs(first_at);
+CREATE INDEX installs_last ON installs(last_at);
+CREATE TABLE install_days (day INTEGER NOT NULL, id TEXT NOT NULL, PRIMARY KEY (day, id))`
 ];
 
 export function statements(sql) {

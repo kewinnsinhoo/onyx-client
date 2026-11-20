@@ -12,6 +12,7 @@ import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
 import { statsApi } from './studio-stats.js';
+import { hello, launcherStats } from './kopistats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport } from './guard.js';
 import { sendReport } from './reports.js';
 import { deleteMediaKeys } from './media.js';
@@ -66,6 +67,8 @@ async function route(req, env, ctx) {
   if (p === '/auth/dev' && env.DEV_LOGIN === '1') return authDev(req, env, u);
 
   if (p.startsWith('/api/l/')) return launcherApi(req, env, u, p.slice(7), m, ctx);
+  // El launcher al abrirse (anónimo): para contar instalaciones, activos y países
+  if (p === '/api/hello' && m === 'POST') return hello(env, req, await readJson(req, 4096));
   // El plugin KopiGuard del servidor (se identifica con la clave de su instancia)
   if (p === '/api/srv/guard' && m === 'POST') return serverReport(env, ctx, await readJson(req, 16 * 1024));
   if (p.startsWith('/api/public/')) return publicApi(req, env, u, p.slice(12).split('/').filter(Boolean), m);
@@ -201,6 +204,7 @@ async function panelApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'onyx') {
     if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede entrar aquí');
     if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
+    if (parts[1] === 'launcher' && m === 'GET') return launcherStats(env, u.searchParams);
     if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m);
     if (parts[1] === 'capes') return creatorCapes({ env, user, req }, parts[2], parts[3], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);

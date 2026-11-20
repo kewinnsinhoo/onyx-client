@@ -1,6 +1,6 @@
 # Kopi Client Terms and Conditions
 
-**Last updated:** 20/11/2026 · **Version:** 1.3
+**Last updated:** 20/11/2026 · **Version:** 1.4
 
 > NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
@@ -24,7 +24,7 @@ Personal, non-commercial use only. Do not use the Launcher to bypass official li
 Instances may include mods and files by their respective authors, downloaded from their official sources. Each keeps its own licence. Official Minecraft files are downloaded directly from Mojang's servers.
 
 ## 7. Data
-Settings, encrypted accounts, instances, screenshots and logs stay on your device. Reports are only sent when you press "Send" and include a screenshot of the Launcher, recent logs and basic system information — never tokens or passwords. Referrals store your UUID, player name and the studio code. Discord linking only reads your username and avatar.
+Settings, encrypted accounts, instances, screenshots and logs stay on your device. Reports are only sent when you press "Send" and include a screenshot of the Launcher, recent logs and basic system information — never tokens or passwords. Referrals store your UUID, player name and the studio code. Discord linking only reads your username and avatar. When it opens, the Launcher sends an anonymous ping to count how many people use it: a random number for this install, the version, the system and the language. The country comes from the connection; your IP isn't stored and the ping doesn't include your name or account.
 
 ## 8. KopiGuard (studio anticheat)
 Some studios turn on KopiGuard in their instances to stop cheating. Those instances show a "KopiGuard" label in the Launcher. It only works in them and only while you play. While it is on, the Launcher:

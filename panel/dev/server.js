@@ -120,6 +120,22 @@ async function seed() {
       }
     }
   }
+  // Uso del launcher: instalaciones de ejemplo en 90 días
+  {
+    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const C = [['CO', 30], ['MX', 22], ['ES', 18], ['AR', 12], ['CL', 8], ['PE', 7], ['US', 5], ['VE', 4], ['EC', 3], ['FR', 2]];
+    const pick = () => { let r = rnd() * 111; for (const [c, w] of C) { if ((r -= w) < 0) return c; } return 'CO'; };
+    const today = Math.floor(t / DAY);
+    for (let i = 0; i < 420; i++) {
+      const id = (i + 1).toString(16).padStart(32, '0');
+      const first = today - Math.floor(Math.pow(rnd(), 0.7) * 90);
+      const plat = rnd() < 0.82 ? 'win32' : rnd() < 0.6 ? 'darwin' : 'linux';
+      const ver = rnd() < 0.7 ? '1.7.6' : rnd() < 0.6 ? '1.7.5' : '1.7.4';
+      let last = first;
+      for (let d = first; d <= today; d++) if (rnd() < 0.35) { last = d; await run('INSERT OR IGNORE INTO install_days (day, id) VALUES (?, ?)', d, id); }
+      await run('INSERT INTO installs (id, first_at, last_at, country, version, platform, lang, opens) VALUES (?, ?, ?, ?, ?, ?, ?, 1)', id, first * DAY + 36e5 * 15, last * DAY + 36e5 * 18, pick(), ver, plat, rnd() < 0.8 ? 'es' : rnd() < 0.5 ? 'en' : 'ca');
+    }
+  }
   // KopiGuard: activado en IGNITE con algunas detecciones de ejemplo
   {
     const row = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first();

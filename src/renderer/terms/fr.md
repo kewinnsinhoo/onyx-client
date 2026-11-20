@@ -1,6 +1,6 @@
 # Conditions générales d'utilisation de Kopi Client
 
-**Dernière mise à jour :** 20/11/2026 · **Version :** 1.3
+**Dernière mise à jour :** 20/11/2026 · **Version :** 1.4
 
 > PRODUIT MINECRAFT NON OFFICIEL. NON APPROUVÉ PAR MOJANG OU MICROSOFT ET NON ASSOCIÉ À EUX.
 
@@ -24,7 +24,7 @@ Uniquement pour un usage personnel et non commercial. Tu ne peux pas utiliser le
 Les instances peuvent contenir des mods et des fichiers de leurs auteurs, téléchargés depuis leurs sources officielles. Chacun conserve sa propre licence. Les fichiers officiels de Minecraft sont téléchargés directement depuis les serveurs de Mojang.
 
 ## 7. Données
-Les réglages, les comptes (chiffrés), les instances, les captures et les journaux restent sur ton appareil. Les rapports ne sont envoyés que si tu appuies sur « Envoyer » et contiennent une capture du Launcher, les derniers journaux et des informations de base sur le système ; jamais de jetons ni de mots de passe. Le parrainage enregistre ton UUID, ton nom de joueur et le code du studio. Si tu lies Discord, nous lisons seulement ton nom d'utilisateur et ton avatar.
+Les réglages, les comptes (chiffrés), les instances, les captures et les journaux restent sur ton appareil. Les rapports ne sont envoyés que si tu appuies sur « Envoyer » et contiennent une capture du Launcher, les derniers journaux et des informations de base sur le système ; jamais de jetons ni de mots de passe. Le parrainage enregistre ton UUID, ton nom de joueur et le code du studio. Si tu lies Discord, nous lisons seulement ton nom d'utilisateur et ton avatar. À l'ouverture, le Launcher envoie un signal anonyme pour compter combien de personnes l'utilisent : un numéro aléatoire pour cette installation, la version, le système et la langue. Le pays vient de la connexion ; ton IP n'est pas enregistrée et le signal ne contient ni ton nom ni ton compte.
 
 ## 8. KopiGuard (anticheat des studios)
 Certains studios activent KopiGuard dans leurs instances pour empêcher la triche. Ces instances affichent l'étiquette « KopiGuard » dans le Launcher. Il ne fonctionne que dans celles-ci et seulement pendant que tu joues. Quand il est actif, le Launcher :

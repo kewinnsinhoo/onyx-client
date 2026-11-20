@@ -1,6 +1,6 @@
 # Termes i condicions d'ús de Kopi Client
 
-**Última actualització:** 20/11/2026 · **Versió:** 1.3
+**Última actualització:** 20/11/2026 · **Versió:** 1.4
 
 > PRODUCTE NO OFICIAL DE MINECRAFT. NO ESTÀ APROVAT NI ASSOCIAT AMB MOJANG O MICROSOFT.
 
@@ -24,7 +24,7 @@ Només ús personal i no comercial. No pots fer servir el Launcher per saltar-te
 Les instàncies poden incloure mods i fitxers dels seus autors, descarregats de les seves fonts oficials. Cadascun conserva la seva llicència. Els fitxers oficials de Minecraft es descarreguen directament dels servidors de Mojang.
 
 ## 7. Dades
-Els ajustos, els comptes (xifrats), les instàncies, les captures i els registres es queden al teu equip. Els informes només s'envien si prems «Enviar» i inclouen una captura del Launcher, els últims registres i dades bàsiques del sistema; mai tokens ni contrasenyes. Els referits guarden el teu UUID, el teu nom de jugador i el codi de l'estudi. Si vincules Discord, només llegim el teu nom d'usuari i el teu avatar.
+Els ajustos, els comptes (xifrats), les instàncies, les captures i els registres es queden al teu equip. Els informes només s'envien si prems «Enviar» i inclouen una captura del Launcher, els últims registres i dades bàsiques del sistema; mai tokens ni contrasenyes. Els referits guarden el teu UUID, el teu nom de jugador i el codi de l'estudi. Si vincules Discord, només llegim el teu nom d'usuari i el teu avatar. En obrir-se, el Launcher envia un avís anònim per comptar quanta gent el fa servir: un número a l'atzar d'aquesta instal·lació, la versió, el sistema i l'idioma. El país surt de la connexió; la teva IP no es guarda i l'avís no porta el teu nom ni el teu compte.
 
 ## 8. KopiGuard (anticheat dels studios)
 Alguns studios activen KopiGuard a les seves instàncies per evitar trampes. Aquestes instàncies porten l'etiqueta «KopiGuard» al Launcher. Només funciona en elles i només mentre jugues. Mentre està actiu, el Launcher:

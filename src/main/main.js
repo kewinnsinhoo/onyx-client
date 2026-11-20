@@ -103,6 +103,14 @@ app.whenReady().then(() => {
   // Lo que cambie en el panel (lista manual, staff, instancias públicas...) aparece solo:
   // cada minuto y cada vez que vuelves a la ventana del launcher
   setInterval(() => kickPanelSync(), 60e3);
+  // Uso del launcher (anónimo): un número al azar de esta instalación, versión, sistema e idioma
+  const sayHello = () => {
+    let s = settingsStore.get();
+    if (!/^[a-f0-9]{32}$/.test(s.installId || '')) s = settingsStore.set({ installId: require('crypto').randomBytes(16).toString('hex') });
+    panel.hello({ install: s.installId, version: app.getVersion(), platform: process.platform, lang: s.language, brand: config.brand ? config.brand.id : null }).catch(() => {});
+  };
+  setTimeout(sayHello, 5000);
+  setInterval(sayHello, 12 * 3600e3);
   win.on('focus', () => kickPanelSync());
   const st = settingsStore.get();
   presence.init({

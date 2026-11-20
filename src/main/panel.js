@@ -66,6 +66,19 @@ function toError(body, status) {
   return e;
 }
 
+// Al abrirse (y cada 12 h): aviso anónimo para contar instalaciones, activos y países (sin nombre ni cuenta)
+async function hello({ install, version, platform, lang, brand }) {
+  const b = base();
+  if (!b) return false;
+  try {
+    const res = await fetchImpl(`${b}/api/hello`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ install, version, platform, lang, brand }), signal: AbortSignal.timeout(10000)
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
 async function request(method, rel, { body, raw, token, timeout = 15000 } = {}) {
   const b = base();
   if (!b) throw new PanelError('El launcher no está conectado al panel', 'no_panel');
@@ -214,4 +227,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

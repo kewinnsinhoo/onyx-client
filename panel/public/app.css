@@ -797,3 +797,6 @@ a.g-shot:hover { border-color: var(--accent); }
 .nw-chip.add { background: var(--ok-bg); color: var(--ok); }
 .nw-chip.up { background: rgba(96, 165, 250, .13); color: #7cb4ff; }
 .nw-chip.del { background: var(--bad-bg); color: var(--bad); }
+
+.us-country { display: inline-flex; align-items: center; gap: 10px; }
+.us-flag { font-size: 18px; line-height: 1; }

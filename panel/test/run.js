@@ -1072,4 +1072,22 @@ await test('Novedades: lo que escribe el studio y los mods que cambian', async (
   assert.deepStrictEqual(r.data.data.news.map(x => x.id), ['abc123def']);
 });
 
+await test('Uso del launcher: instalaciones, activos y países (anónimo)', async () => {
+  const id = (n) => n.toString(16).padStart(32, '0');
+  const hi = (n, country, extra = {}) => call('POST', '/api/hello', { headers: { 'cf-ipcountry': country }, body: { install: id(n), version: '1.7.6', platform: 'win32', lang: 'es', ...extra } });
+  assert.strictEqual((await call('POST', '/api/hello', { body: { install: 'hola' } })).status, 400);
+  await hi(1, 'CO'); await hi(2, 'CO'); await hi(3, 'ES', { platform: 'darwin', lang: 'ca' }); await hi(4, 'MX', { platform: 'linux', version: '1.7.5' });
+  await hi(1, 'CO'); // el mismo día otra vez: no cuenta doble
+  let r = await call('GET', '/api/onyx/launcher?days=7', { cookie: creator });
+  assert.strictEqual(r.status, 200);
+  const d = r.data;
+  assert.deepStrictEqual([d.total, d.activeToday, d.newToday], [4, 4, 4]);
+  assert.strictEqual(d.daily.length, 7);
+  assert.deepStrictEqual([d.daily[6].active, d.daily[6].fresh], [4, 4]);
+  assert.deepStrictEqual(d.countries[0], { c: 'CO', n: 2, active: 2 });
+  assert.ok(d.platforms.some(p => p.p === 'darwin' && p.n === 1));
+  assert.ok(d.versions.some(v => v.v === '1.7.5'));
+  assert.strictEqual((await call('GET', '/api/onyx/launcher', { cookie: other })).status, 403, 'solo el Creador');
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

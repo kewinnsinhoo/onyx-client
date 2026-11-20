@@ -1,6 +1,6 @@
 # Términos y condiciones de uso de Kopi Client
 
-**Última actualización:** 20/11/2026 · **Versión:** 1.3
+**Última actualización:** 20/11/2026 · **Versión:** 1.4
 
 > PRODUCTO NO OFICIAL DE MINECRAFT. NO ESTÁ APROBADO NI ASOCIADO CON MOJANG O MICROSOFT.
 
@@ -40,6 +40,7 @@ Las instancias pueden incluir mods, configuraciones u otros archivos de sus resp
 - **Al enviar un informe:** solo si tú pulsas «Enviar», mandamos una captura del Launcher, los últimos registros y datos básicos del sistema (versión, sistema operativo, memoria). Nunca enviamos tus tokens ni contraseñas.
 - **Referidos:** si vinculas un estudio, guardamos tu UUID, tu nombre de jugador y el código del estudio para contar apoyos.
 - **Discord:** si lo vinculas, solo leemos tu nombre de usuario y avatar para mostrarlos en el Launcher.
+- **Uso del Launcher:** al abrirse, el Launcher envía un aviso anónimo para contar cuánta gente lo usa: un número al azar de esta instalación, la versión, el sistema y el idioma. El país sale de la conexión; tu IP no se guarda y el aviso no lleva tu nombre ni tu cuenta.
 
 ## 8. KopiGuard (anticheat de los studios)
 Algunos studios activan KopiGuard en sus instancias para evitar trampas. Esas instancias llevan la etiqueta «KopiGuard» en el Launcher. Solo funciona en ellas y solo mientras juegas. Mientras está activo, el Launcher:
