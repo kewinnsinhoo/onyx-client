@@ -144,7 +144,10 @@ test('mods escondidos solo con Fabric Loader 0.14 o más nuevo', () => {
   assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.16.5' }), true);
   assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.14.0' }), true);
   assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: '0.11.7' }), false);
-  assert.strictEqual(fabricAddModsOk({ type: 'fabric' }), false);
+  // el panel guarda «latest» cuando el studio no elige versión (es el Fabric más nuevo)
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: 'latest' }), true);
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric' }), true);
+  assert.strictEqual(fabricAddModsOk({ type: 'fabric', version: 'rara' }), false);
 });
 
 test('argumentos de lanzamiento (antiguo, offline, mac)', () => {

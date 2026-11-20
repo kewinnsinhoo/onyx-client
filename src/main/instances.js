@@ -223,9 +223,12 @@ async function lockMods(id, gameDir) {
 }
 // Fabric: mientras se juega, los mods tampoco están en mods/: se cifran otra vez y se abren en una carpeta
 // temporal con nombre al azar que Fabric carga con -Dfabric.addMods. Si algo falla, se juega a la manera normal.
-// fabric.addMods es seguro desde Fabric Loader 0.14 (con versiones más viejas, a la manera normal)
+// fabric.addMods es seguro desde Fabric Loader 0.14 (con versiones más viejas, a la manera normal).
+// «latest»/«recommended» (o sin versión) es siempre el Fabric más nuevo: sirve.
 function fabricAddModsOk(loader) {
-  const v = String((loader && loader.version) || '').match(/^(\d+)\.(\d+)/);
+  const raw = String((loader && loader.version) || '').trim().toLowerCase();
+  if (!raw || raw === 'latest' || raw === 'recommended') return true;
+  const v = raw.match(/^(\d+)\.(\d+)/);
   return !!v && (Number(v[1]) > 0 || Number(v[2]) >= 14);
 }
 async function hideMods(id, gameDir, loader) {
