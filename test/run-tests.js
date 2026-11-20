@@ -1150,3 +1150,31 @@ test('Siempre al día: huella de la instancia', () => {
   assert.notStrictEqual(I.filesFp({ ...m, files: [{ path: 'mods/a.jar', url: 'u1', sha1: 'y' }, m.files[1]] }), fp, 'un mod actualizado sí');
   assert.notStrictEqual(I.filesFp({ ...m, loader: { type: 'fabric', version: '0.16.9' } }), fp, 'otro loader sí');
 });
+
+// Editor de skins: el espejo lleva cada píxel al lado contrario (y vuelve al mismo)
+test('Editor de skins: espejo izquierda ↔ derecha', () => {
+  const vm = require('vm');
+  const sb = { window: {}, UI: { esc: (s) => s, html: () => '', toast() {}, modal() {} } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'skineditor.js'), 'utf8'), sb);
+  const E = sb.window.SkinEditor;
+  for (const slim of [false, true]) {
+    const P = E.parts(slim);
+    let n = 0;
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+      if (!E.locate(P, x, y)) continue;
+      const m = E.mirrorOf(P, x, y);
+      if (!m) continue; // el centro exacto de una cara simétrica
+      const back = E.mirrorOf(P, m[0], m[1]);
+      assert.strictEqual(JSON.stringify(back), JSON.stringify([x, y]), `ida y vuelta (${x},${y})`); // otro «realm»: se comparan como texto
+      assert.strictEqual(E.locate(P, m[0], m[1]).layer, E.locate(P, x, y).layer, 'misma capa');
+      n++;
+    }
+    assert.ok(n > 1500, 'casi todos los píxeles tienen pareja');
+  }
+  const P = E.parts(false);
+  const J = (v) => JSON.stringify(v);
+  assert.strictEqual(J(E.mirrorOf(P, 8, 8)), J([15, 8]), 'cabeza: frente, izquierda ↔ derecha');
+  assert.strictEqual(J(E.mirrorOf(P, 44, 20)), J([39, 52]), 'brazo derecho (frente) → brazo izquierdo (frente)');
+  assert.strictEqual(J(E.mirrorOf(P, 40, 20)), J([43, 52]), 'lado derecho del brazo → lado izquierdo del otro');
+  assert.strictEqual(E.locate(P, 60, 2), null, 'fuera de la skin');
+});

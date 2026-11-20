@@ -34,6 +34,7 @@
         <div class="who"><span id="sk-head"></span><div><div class="n" id="sk-name"></div><div class="s" id="sk-state"></div></div></div>
         <div class="segmented" id="sk-variant"><button data-v="classic">${t('Clásico')}</button><button data-v="slim">Slim</button></div>
         <div class="grow"></div>
+        <button class="btn btn-outline" id="sk-edit">${icon('brush')}${t('Editar')}</button>
         <button class="btn btn-ghost" id="sk-discard">${t('Descartar')}</button>
         <button class="btn btn-primary btn-lg" id="sk-apply">${icon('check')}${t('Aplicar')}</button>
       </div>
@@ -90,6 +91,18 @@
 
     root.querySelectorAll('#sk-variant button').forEach(b => b.onclick = () => { preview.variant = b.dataset.v; drawPreview(); });
     $('#sk-discard').onclick = () => { preview = { ...current }; drawPreview(); };
+    // Editor de skins: lo que se guarda va a la biblioteca y queda de vista previa (falta pulsar Aplicar)
+    const openEditor = (from) => SkinEditor.open({
+      skin: from.skin, variant: from.variant, name: from.name && from.name !== (acc && acc.name) ? from.name : t('Mi skin'),
+      onSave: async ({ data, variant, name }) => {
+        await onyx.skins.libraryAdd({ name, data, variant });
+        preview = { skin: data, variant, name, source: 'library' };
+        drawPreview();
+        toast(t('Guardada en tu biblioteca. Pulsa Aplicar para ponértela.'), 'success', 5000);
+        if (tab === 'library') setTab('library');
+      }
+    });
+    $('#sk-edit').onclick = () => openEditor(preview);
     $('#sk-web').onclick = () => onyx.app.openExternal(isMsa ? `https://namemc.com/profile/${encodeURIComponent(acc.name)}` : 'https://namemc.com/minecraft-skins');
 
     $('#sk-apply').onclick = async (e) => {
@@ -159,11 +172,12 @@
       let list = [];
       try { list = await onyx.skins.library(); } catch (e) { toast(e.message, 'error'); }
       body.innerHTML = html`<div class="row" style="margin-bottom:14px"><div class="t" style="font-weight:700">${t('Biblioteca')} <span class="muted" style="font-weight:500">${list.length}</span></div>
-        <div class="grow"></div><button class="btn btn-outline btn-sm" id="lib-save">${icon('plus')}${t('Guardar la actual')}</button></div>
+        <div class="grow"></div><button class="btn btn-outline btn-sm" id="lib-new">${icon('brush')}${t('Crear una skin')}</button><button class="btn btn-outline btn-sm" id="lib-save">${icon('plus')}${t('Guardar la actual')}</button></div>
         <div class="skin-grid">${tile({ ...current, sub: t('Actual'), on: preview.skin === current.skin })}
         ${list.map(s => tile({ skin: s.data, variant: s.variant, name: s.name, sub: s.variant === 'slim' ? 'Slim' : t('Clásico'), id: s.id, on: preview.skin === s.data })).join('')}</div>`;
       bindTiles(body, 'library');
       body.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { await onyx.skins.libraryRemove(b.dataset.del); library(body); });
+      body.querySelector('#lib-new').onclick = () => openEditor({ skin: Skin3D.DEFAULT_DATA, variant: 'classic', name: t('Mi skin') });
       body.querySelector('#lib-save').onclick = async () => {
         try {
           const data = current.skin.startsWith('data:') ? current.skin : await onyx.skins.dataUrl(current.skin);
