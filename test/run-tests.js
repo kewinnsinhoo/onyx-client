@@ -1178,3 +1178,53 @@ test('Editor de skins: espejo izquierda ↔ derecha', () => {
   assert.strictEqual(J(E.mirrorOf(P, 40, 20)), J([43, 52]), 'lado derecho del brazo → lado izquierdo del otro');
   assert.strictEqual(E.locate(P, 60, 2), null, 'fuera de la skin');
 });
+
+// Jugar con amigos: pone e4all (o e4mc), lo quita al desactivar y lee la dirección del registro
+(async () => {
+  try {
+    delete require.cache[require.resolve('../src/main/perfmode')];
+    const perfmode = require('../src/main/perfmode');
+    const friends = require('../src/main/friends');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-friends-'));
+    perfmode.init(tmp);
+    const FAPI = 'P7dR8mSH';
+    const ver = (v, deps = []) => [{ version_number: v, version_type: 'release', dependencies: deps, files: [{ primary: true, url: `https://cdn.modrinth.com/${v}.jar`, hashes: { sha1: 's' }, size: 3 }] }];
+    const fetchJson = async (url) => {
+      const q = new URL(url).searchParams;
+      const loader = JSON.parse(q.get('loaders'))[0], mc = JSON.parse(q.get('game_versions'))[0];
+      const project = url.split('/project/')[1].split('/')[0];
+      if (project === 'e4all') return loader === 'fabric' && mc === '1.21.1' ? ver('2.3.0-fabric', [{ project_id: FAPI, dependency_type: 'required' }]) : [];
+      if (project === 'e4mc') return loader === 'neoforge' ? ver('6.2.3-neoforge') : [];
+      return [];
+    };
+    const downloadFile = async (t) => { fs.mkdirSync(path.dirname(t.dest), { recursive: true }); fs.writeFileSync(t.dest, 'jar'); };
+    const deps = { fetchJson, downloadFile };
+    const g = path.join(tmp, 'mundo');
+    const mods = () => { try { return fs.readdirSync(path.join(g, 'mods')).sort(); } catch { return []; } };
+
+    let r = await friends.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    assert.strictEqual(r.status, 'ok'); assert.strictEqual(r.mod, 'e4all'); assert.ok(r.needsFabricApi, 'e4all necesita Fabric API');
+    assert.deepStrictEqual(mods(), ['kopi-friends-e4all-2.3.0-fabric.jar']);
+    r = await friends.ensure(g, { mc: '1.21.1', loader: { type: 'neoforge' }, enabled: true }, deps);
+    assert.strictEqual(r.mod, 'e4mc', 'sin e4all: e4mc'); assert.deepStrictEqual(mods(), ['kopi-friends-e4mc-6.2.3-neoforge.jar'], 'el viejo se quita');
+    r = await friends.ensure(g, { mc: '1.21.1', loader: { type: 'vanilla' }, enabled: true }, deps);
+    assert.strictEqual(r.status, 'off'); assert.deepStrictEqual(mods(), [], 'vanilla: nada');
+    r = await friends.ensure(g, { mc: '1.0', loader: { type: 'forge' }, enabled: true }, deps);
+    assert.strictEqual(r.status, 'unsupported');
+    await friends.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    fs.writeFileSync(path.join(g, 'mods', 'e4mc-fabric-6.2.3.jar'), 'del studio');
+    r = await friends.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    assert.strictEqual(r.mod, 'studio'); assert.deepStrictEqual(mods(), ['e4mc-fabric-6.2.3.jar'], 'el studio ya lo trae: no se duplica');
+    fs.unlinkSync(path.join(g, 'mods', 'e4mc-fabric-6.2.3.jar'));
+    await friends.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: true }, deps);
+    await friends.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, enabled: false }, deps);
+    assert.deepStrictEqual(mods(), [], 'al desactivar se quita');
+
+    assert.strictEqual(friends.addressIn('[12:00:01] [Server thread/INFO]: Local game hosted on domain [Brave-Fox.E4MC.link]'), 'brave-fox.e4mc.link');
+    assert.strictEqual(friends.addressIn('[CHAT] Local game hosted on domain abc12.de.e4mc.link (click to copy)'), 'abc12.de.e4mc.link');
+    assert.strictEqual(friends.addressIn('Started serving on 51234'), null);
+    assert.strictEqual(friends.addressIn('visit e4mc.link for status'), null, 'el dominio solo, sin subdominio, no cuenta');
+    assert.ok(/^kopi-(skins|perf|friends)-/.test('kopi-friends-e4all-2.3.0.jar'));
+    console.log('  ✓ jugar con amigos: mod, versión, quitar y dirección');
+  } catch (e) { console.error('  ✗ jugar con amigos\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();

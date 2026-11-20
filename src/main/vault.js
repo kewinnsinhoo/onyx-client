@@ -20,7 +20,7 @@ const log = require('./logger');
 
 const MAGIC = Buffer.from('KOPV1');
 const HEAD = MAGIC.length + 12, TAG = 16;
-const PUBLIC = /^kopi-(skins|perf)-/;
+const PUBLIC = /^kopi-(skins|perf|friends)-/;
 
 let base = null, protector = null, cachedKey = null;
 

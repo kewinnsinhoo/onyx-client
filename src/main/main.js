@@ -36,6 +36,7 @@ if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 let win = null;
 let gameLogBuffer = [];
+let lastFriendsAddr = null; // dirección de «Jugar con amigos» de esta partida
 let lastPlayed = null; // última instancia lanzada (para los informes)
 
 function send(channel, payload) {
@@ -435,6 +436,7 @@ handle('instances:remove', (id, del) => instances.remove(id, del));
 handle('instances:setMemory', (id, mb) => instances.setMemory(id, mb));
 handle('instances:seenNews', (id) => instances.seenNews(id));
 handle('instances:setPerfMode', (id, on) => instances.setPerfMode(id, on));
+handle('instances:setFriendsMode', (id, on) => instances.setFriendsMode(id, on));
 handle('instances:stop', (id) => instances.stop(id));
 handle('instances:status', (id) => instances.serverStatus(id));
 handle('instances:wipe', (id) => instances.wipe(id));
@@ -448,11 +450,12 @@ handle('instances:importPack', async (id) => {
   if (r.canceled || !r.filePaths[0]) return null;
   return instances.importPack(id, r.filePaths[0]);
 });
-handle('instances:play', async (id) => {
+handle('instances:play', async (id, opts) => {
   const settings = settingsStore.get();
   const account = await accounts.ensureFresh();
   syncOfflineSkin(account.id); // la skin no premium, lista para los servidores con Kopi Skins
   gameLogBuffer = [];
+  lastFriendsAddr = null;
   lastPlayed = id;
   playStartedAt = Date.now();
   presence.launching(instances.get(id));
@@ -460,8 +463,17 @@ handle('instances:play', async (id) => {
   try {
     v = await instances.play(id, {
       account, settings, launcherVersion: app.getVersion(),
+      join: opts && opts.join,
       progress: (p) => send('instances:progress', { id, ...p }),
       onLog: (text) => {
+        // Jugar con amigos: el mundo se abrió por internet → la dirección para tus amigos
+        const addr = require('./friends').addressIn(text);
+        if (addr && addr !== lastFriendsAddr) {
+          lastFriendsAddr = addr;
+          try { clipboard.writeText(addr); } catch { /* nada */ }
+          send('instances:friends', { id, address: addr });
+          log.info(`[amigos] Mundo abierto: ${addr}`);
+        }
         gameLogBuffer.push(text);
         if (gameLogBuffer.length > 2000) gameLogBuffer.splice(0, gameLogBuffer.length - 2000);
         send('game:log', text);
@@ -486,6 +498,7 @@ handle('instances:play', async (id) => {
           });
           if (crash) log.warn(`[cierre] ${id}: ${crash.kind} ${JSON.stringify(crash.vars)}`);
         } catch (e) { log.warn('[cierre] No se pudo revisar el cierre:', e.message); }
+        if (lastFriendsAddr) { lastFriendsAddr = null; send('instances:friends', { id, address: null }); }
         send('instances:progress', { id, stage: 'exited', code, kicked: !!info.kicked, crash });
         presence.stopped();
         if (win && !win.isVisible()) win.show();

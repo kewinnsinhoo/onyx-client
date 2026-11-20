@@ -221,6 +221,7 @@
                 ${inst.guard ? `<span class="badge guard" title="${t('Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.')}">${icon('shield')}KopiGuard</span>` : ''}
                 ${(inst.news || []).length ? `<button class="badge news-b ${App.unseenNews(inst) ? 'new' : ''}" id="ins-news">${icon('megaphone')}${t('Novedades')}${App.unseenNews(inst) ? `<i>${App.unseenNews(inst)}</i>` : ''}</button>` : ''}
                 ${inst.perfMode ? `<span class="badge perf" title="${t('Modo rendimiento')}">${icon('zap')}${t('Rendimiento')}</span>` : ''}
+                ${inst.friendsMode ? `<button class="badge friends" id="ins-friends-b" title="${t('Jugar con amigos')}">${icon('users')}${t('Con amigos')}</button>` : ''}
               </div>
             </div>
             ${running
@@ -229,6 +230,10 @@
           </div>
           ${!p && S.bg && S.bg[id] ? html`<div class="bg-upd" title="${t('El launcher descarga lo nuevo de la instancia para que al darle a Jugar no tengas que esperar.')}">
             <span class="spin-dot"></span><span>${t('Poniéndose al día en segundo plano')}${S.bg[id].total ? ` · <b id="bg-pct">${Math.round((S.bg[id].done / S.bg[id].total) * 100)}%</b>` : ''}</span></div>` : ''}
+          ${running && S.friends && S.friends[id] ? html`<div class="friends-live">
+            <span class="fl-ico">${icon('globe')}</span>
+            <div class="fl-txt"><span>${t('Tu mundo está abierto. Pasa esta dirección a tus amigos:')}</span><b id="fl-addr">${esc(S.friends[id])}</b></div>
+            <button class="btn btn-primary btn-sm" id="fl-copy">${icon('copy')}${t('Copiar')}</button></div>` : ''}
           ${p && !running ? html`<div class="prog"><div class="progress"><i id="ins-bar" style="width:${pct == null ? 8 : pct}%"></i></div>
             <div class="progress-label"><span id="ins-stage">${esc(App.stageText(p))}</span><span id="ins-pct">${pct == null ? '' : pct + '%'}</span></div></div>` : ''}
         </div>
@@ -262,6 +267,8 @@
       const b = (s) => root.querySelector(s);
       if (b('#ins-play')) b('#ins-play').onclick = () => App.play(id);
       if (b('#ins-news')) b('#ins-news').onclick = () => App.newsModal(id);
+      if (b('#ins-friends-b')) b('#ins-friends-b').onclick = friendsModal;
+      if (b('#fl-copy')) b('#fl-copy').onclick = () => { navigator.clipboard.writeText(S.friends[id]).then(() => toast(t('Dirección copiada'), 'success')).catch(() => {}); };
       // Novedades sin ver: se enseñan solas una vez al abrir la instancia (no mientras se juega)
       if (App.unseenNews(inst) && !running && !p && !document.querySelector('.news-modal') && !shownNews.has(id)) {
         shownNews.add(id);
@@ -275,6 +282,46 @@
     };
 
     // Modo rendimiento: mods que hacen que el juego vaya más fluido (solo en este ordenador)
+    // Jugar con amigos: abre tu mundo por internet (sin tocar el router) o entra al de un amigo
+    function friendsModal() {
+      const can = ['fabric', 'forge', 'neoforge', 'quilt'].includes((inst.loader && inst.loader.type) || 'vanilla');
+      const on = !!inst.friendsMode;
+      const steps = [[t('Activa «Jugar con amigos» aquí'), t('El launcher añade lo necesario a esta instancia. Solo en tu ordenador.')],
+        [t('Entra a tu mundo y pulsa «Abrir en LAN»'), t('Pulsa Esc dentro del mundo. Si tus amigos no son premium, pon «Online Mode» en OFF.')],
+        [t('Pasa la dirección a tus amigos'), t('El launcher la copia sola y te la enseña aquí. Ellos la ponen en «Conexión directa».')]];
+      UI.modal((m, close) => {
+        m.classList.add('friends-modal');
+        m.innerHTML = html`<div class="m-ico">${icon('users')}</div>
+          <h2>${t('Jugar con amigos')}</h2>
+          <p class="sub">${t('Abre tu mundo de un jugador a tus amigos por internet. Sin abrir puertos del router ni programas aparte.')}</p>
+          <ol class="fr-steps">${steps.map(([a, d], n) => `<li><span class="n">${n + 1}</span><div><b>${esc(a)}</b><span>${esc(d)}</span></div></li>`).join('')}</ol>
+          ${can ? '' : `<p class="note">${t('Esta instancia es vanilla: para abrir tu mundo hace falta Fabric, Forge o NeoForge.')}</p>`}
+          <div class="fr-join">
+            <label>${t('¿Te pasaron una dirección? Únete a tu amigo')}</label>
+            <div class="row"><input class="input" id="fr-addr" placeholder="abc123.e4mc.link" spellcheck="false" autocomplete="off">
+              <button class="btn btn-outline" id="fr-go" disabled>${icon('play')}${t('Unirme')}</button></div>
+          </div>
+          <div class="actions"><button class="btn btn-ghost" data-a="no">${t('Cerrar')}</button>
+            ${can || on ? `<button class="btn ${on ? 'btn-ghost danger-text' : 'btn-primary'}" data-a="yes">${icon(on ? 'x' : 'users')}${on ? t('Desactivar') : t('Activar')}</button>` : ''}</div>`;
+        m.querySelector('[data-a=no]').onclick = close;
+        const addr = m.querySelector('#fr-addr'), go = m.querySelector('#fr-go');
+        const valid = () => /^[a-z0-9.-]+\.[a-z]{2,}(:\d{2,5})?$/i.test(addr.value.trim());
+        addr.oninput = () => { go.disabled = !valid(); };
+        addr.onkeydown = (e) => { if (e.key === 'Enter' && valid()) go.click(); };
+        go.onclick = () => { const a = addr.value.trim(); close(); App.play(id, { join: a }); };
+        const yes = m.querySelector('[data-a=yes]');
+        if (yes) yes.onclick = async () => {
+          try {
+            await onyx.instances.setFriendsMode(id, !on);
+            await App.loadInstances();
+            close();
+            render();
+            toast(on ? t('Jugar con amigos desactivado') : t('Jugar con amigos activado. Se aplica la próxima vez que pulses Jugar.'), 'success', 6000);
+          } catch (e) { toast(t(e.message, e.vars), 'error'); }
+        };
+      }, { wide: true });
+    }
+
     function perfModal() {
       const can = ['fabric', 'forge', 'neoforge'].includes((inst.loader && inst.loader.type) || 'vanilla');
       const on = !!inst.perfMode;
@@ -310,6 +357,7 @@
           <button class="dd-item" data-a="report">${icon('alert')}${t('Reportar un fallo')}</button>
           <button class="dd-item" data-a="pack">${icon('package')}${t('Instalar desde .onyxpack')}</button>
           <button class="dd-item" data-a="shots">${icon('image')}${t('Capturas')}</button>
+          <button class="dd-item" data-a="friends">${icon('users')}${t('Jugar con amigos')}<span class="dd-state ${inst.friendsMode ? 'on' : ''}">${inst.friendsMode ? t('Activado') : t('Desactivado')}</span></button>
           <button class="dd-item" data-a="perf">${icon('zap')}${t('Modo rendimiento')}<span class="dd-state ${inst.perfMode ? 'on' : ''}">${inst.perfMode ? t('Activado') : t('Desactivado')}</span></button>
           <div class="dd-sep"></div>
           <button class="dd-item danger" data-a="wipe">${icon('trash')}${t('Borrar archivos')}</button>
@@ -325,6 +373,7 @@
         });
         on('report', App.reportModal);
         on('perf', perfModal);
+        on('friends', friendsModal);
         on('shots', () => App.go('gallery')); // en el launcher: la carpeta de la instancia no se abre (protege los mods)
         on('pack', async () => {
           try { const n = await onyx.instances.importPack(id); if (n != null) toast(t('{n} archivos instalados desde el pack', { n }), 'success'); }
@@ -379,6 +428,8 @@
       else render();
     };
     document.addEventListener('onyx:bg', onBg);
-    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); if (audio) { audio.pause(); audio = null; } };
+    const onFr = (e) => { if (e.detail && e.detail.id === id && alive) render(); };
+    document.addEventListener('onyx:friends', onFr);
+    return () => { alive = false; clearInterval(timer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); document.removeEventListener('onyx:friends', onFr); if (audio) { audio.pause(); audio = null; } };
   };
 })();

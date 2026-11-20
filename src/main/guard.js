@@ -21,7 +21,7 @@ const SAFE_APPS = /^(chrome|msedge|firefox|opera|opera_gx|brave|vivaldi|safari|a
 
 const squash = (v) => String(v || '').toLowerCase().replace(/[\s_.-]+/g, '');
 const isJar = (rel) => /\.jar$/i.test(rel);
-const isKopi = (rel) => /^kopi-(skins|perf)-/i.test(path.posix.basename(rel));
+const isKopi = (rel) => /^kopi-(skins|perf|friends)-/i.test(path.posix.basename(rel));
 const under = (rel, base) => rel === base || rel.startsWith(base + '/');
 const packOf = (rel) => { const [top, name] = rel.split('/'); return PACK_DIRS.includes(top) && name ? `${top}/${name}` : null; };
 

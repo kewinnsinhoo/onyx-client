@@ -245,6 +245,23 @@ Para que se cuenten solos:
 - Se pueden volver a ver en Ajustes → Acerca de → **Novedades del launcher**.
 - Están en `src/renderer/js/changelog.js`, contadas para el jugador y en es, en, ca y fr. **Cada versión nueva tiene que tener su entrada arriba del todo**: si no, la prueba «Novedades del launcher al día» falla y no se puede publicar sin darse cuenta.
 
+## Jugar con amigos (desde la 1.7.7)
+
+- En la instancia: botón **⋯ → Jugar con amigos → Activar**. Solo hace falta en el ordenador de quien abre el mundo.
+- El launcher pone el mod **e4all** (o **e4mc** si no hay versión) como `mods/kopi-friends-*.jar`. Funciona con Fabric, Quilt, Forge y NeoForge; en vanilla no.
+- Dentro del mundo: **Esc → Abrir en LAN**. El launcher ve la dirección (algo como `abc.e4mc.link`), **la copia sola** y la enseña en la instancia con un botón **Copiar**.
+- Tus amigos la ponen en **Conexión directa**, o en el launcher: **Jugar con amigos → Únete a tu amigo** y entran directos.
+- Si tus amigos no son premium, al abrir en LAN pon **Online Mode en OFF** (lo da e4all).
+
+## Instancias siempre al día (desde la 1.7.7)
+
+- Mientras el launcher está abierto, descarga en segundo plano lo nuevo de tus instancias. Al darle a Jugar ya está todo.
+- Se puede apagar en **Ajustes → Instancias siempre al día**.
+
+## Editor de skins (desde la 1.7.7)
+
+- **Skins → Editar** (la skin que llevas) o **Crear una skin**. Lápiz, goma, cuentagotas, cubo, espejo, capas, deshacer y vista 3D. Se guarda en tu biblioteca.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

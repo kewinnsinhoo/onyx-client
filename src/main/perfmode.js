@@ -112,4 +112,4 @@ async function dropNeedingFabricApi(gameDir, { mc, loader }, deps) {
   }
 }
 
-module.exports = { init, ensure, dropNeedingFabricApi, PREFIX, MODS };
+module.exports = { init, ensure, dropNeedingFabricApi, resolve, PREFIX, MODS };

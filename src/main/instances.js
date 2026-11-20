@@ -11,6 +11,7 @@ const skinmod = require('./skinmod');
 const perfmode = require('./perfmode');
 const vault = require('./vault');
 const guard = require('./guard');
+const friends = require('./friends');
 const capture = require('./capture');
 const game = require('./game/launch');
 const log = require('./logger');
@@ -68,6 +69,7 @@ function view(i) {
     playTime: i.playTime || 0,
     memoryMb: i.memoryMb || null,
     perfMode: !!i.perfMode,
+    friendsMode: !!i.friendsMode,
     guard: !!(m.guard && m.guard.enabled), // KopiGuard: el studio vigila las trampas en esta instancia
     // Novedades del studio (la más nueva primero) y hasta cuándo las ha visto el jugador.
     // Si nunca las vio, cuentan como vistas las de antes de añadir la instancia (no se le llena de avisos viejos).
@@ -309,12 +311,19 @@ async function kopiMods(inst, m, gameDir) {
   const deps = { fetchJson, downloadFile };
   const perf = await perfmode.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.perfMode }, deps)
     .catch(e => { log.warn('[rendimiento]', e.message); return { needsFabricApi: false }; });
-  const skins = await skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base(), needFabricApi: perf.needsFabricApi }, deps);
-  if (perf.needsFabricApi && !skins.fabricApi) await perfmode.dropNeedingFabricApi(gameDir, { mc: m.minecraft, loader: m.loader }, deps).catch(() => {});
-  return { perf, skins };
+  // Jugar con amigos: el mod que abre tu mundo por internet
+  const fr = await friends.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.friendsMode }, deps)
+    .catch(e => { log.warn('[amigos]', e.message); return { needsFabricApi: false }; });
+  const needFabricApi = perf.needsFabricApi || fr.needsFabricApi;
+  const skins = await skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base(), needFabricApi }, deps);
+  if (needFabricApi && !skins.fabricApi) {
+    if (perf.needsFabricApi) await perfmode.dropNeedingFabricApi(gameDir, { mc: m.minecraft, loader: m.loader }, deps).catch(() => {});
+    if (fr.needsFabricApi) friends.drop(gameDir);
+  }
+  return { perf, skins, friends: fr };
 }
 
-async function play(id, { account, settings, launcherVersion, progress, onLog, onExit, onStart }) {
+async function play(id, { account, settings, launcherVersion, progress, onLog, onExit, onStart, join }) {
   if (running.has(id)) throw new Error('Esta instancia ya se está ejecutando');
   const d = store.get();
   const inst = d.instances.find(x => x.id === id);
@@ -333,6 +342,9 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   fs.mkdirSync(gameDir, { recursive: true });
   const concurrency = settings.fastDownload ? 16 : 4;
   const gameInfo = { id, minecraft: m.minecraft, loader: m.loader || { type: 'vanilla' }, java: m.java, server: m.server, memoryMb: inst.memoryMb || null };
+  // Unirse a un amigo: entra directo a la dirección que te pasó (abc.e4mc.link)
+  const jm = /^([a-z0-9.-]+\.[a-z]{2,})(?::(\d{2,5}))?$/i.exec(String(join || '').trim());
+  if (jm) gameInfo.server = { address: jm[1].toLowerCase(), port: Number(jm[2]) || 25565, autoJoin: true };
 
   // El panel decide si puede entrar ahora (horario, bloqueo, plazas, baneos...)
   let session = null;
@@ -442,6 +454,13 @@ function remove(id, deleteFiles) {
 }
 
 // Modo rendimiento de una instancia (se aplica la próxima vez que se juegue)
+function setFriendsMode(id, on) {
+  const d = store.get();
+  const i = d.instances.find(x => x.id === id);
+  if (i) { i.friendsMode = !!on; store.replace(d); }
+  return i ? view(i) : null;
+}
+
 function setPerfMode(id, on) {
   const d = store.get();
   const i = d.instances.find(x => x.id === id);
@@ -542,4 +561,4 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };

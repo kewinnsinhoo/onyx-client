@@ -621,7 +621,7 @@
     const base = t(STAGES[p.stage] || p.stage);
     return p.total > 1 ? `${base} · ${p.done}/${p.total}` : base;
   }
-  async function play(id) {
+  async function play(id, opts) {
     if (!S.account) return showLogin();
     const inst = S.instances.find(i => i.id === id);
     if (inst && inst.premium && S.account.type !== 'msa') {
@@ -631,7 +631,7 @@
     S.progress[id] = { stage: 'version' };
     document.dispatchEvent(new CustomEvent('onyx:progress', { detail: { id } }));
     try {
-      await onyx.instances.play(id);
+      await onyx.instances.play(id, opts);
       pushNotification({ title: t('Jugando a {name}', { name: inst ? inst.name : id }), kind: 'success' });
     } catch (e) {
       delete S.progress[id];
@@ -666,6 +666,15 @@
       else S.progress[p.id] = p;
       if ((p.stage === 'running') !== (was === 'running')) renderChrome();
       document.dispatchEvent(new CustomEvent('onyx:progress', { detail: p }));
+    });
+    // Jugar con amigos: tu mundo se abrió por internet (la dirección ya está copiada)
+    S.friends = {};
+    if (onyx.instances.onFriends) onyx.instances.onFriends((f) => {
+      if (f.address) {
+        S.friends[f.id] = f.address;
+        toast(t('Tu mundo está abierto. Dirección copiada: {addr}', { addr: f.address }), 'success', 9000);
+      } else delete S.friends[f.id];
+      document.dispatchEvent(new CustomEvent('onyx:friends', { detail: f }));
     });
     // Instancias siempre al día: lo que se descarga en segundo plano
     S.bg = {};
