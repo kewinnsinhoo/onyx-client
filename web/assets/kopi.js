@@ -16,6 +16,7 @@
       'dl.win': 'Instalador · 64 bits (Intel / AMD)', 'dl.linux': '64 bits', 'dl.pronto': 'Próximamente',
       'opts.legal1': 'Al descargar Kopi Client aceptas nuestros', 'opts.legal2': 'términos de uso',
       'opts.nota': 'Windows puede avisar de que el programa no es conocido: pulsa «Más información» y «Ejecutar de todas formas».',
+      'opts.mac': 'En Mac, la primera vez Apple avisa de que no puede verificar la app: ve a Ajustes del Sistema → Privacidad y seguridad y pulsa «Abrir igualmente». Si dice que está «dañada», abre Terminal y escribe: xattr -cr "/Applications/Kopi Client.app"',
       'foot.estado': 'Estado de los servicios', 'foot.legal': 'Legal', 'foot.terminos': 'Términos de uso',
       'foot.aviso': 'Kopi Client no es un producto oficial de Minecraft. No está aprobado ni asociado con Mojang ni con Microsoft.',
       'mac': 'Mac'
@@ -31,6 +32,7 @@
       'dl.win': 'Installer · 64-bit (Intel / AMD)', 'dl.linux': '64-bit', 'dl.pronto': 'Coming soon',
       'opts.legal1': 'By downloading Kopi Client you agree to our', 'opts.legal2': 'terms of use',
       'opts.nota': 'Windows may warn that the app isn’t recognised: click “More info” and then “Run anyway”.',
+      'opts.mac': 'On Mac, the first time Apple warns it can’t verify the app: go to System Settings → Privacy & Security and click “Open Anyway”. If it says the app is “damaged”, open Terminal and run: xattr -cr "/Applications/Kopi Client.app"',
       'foot.estado': 'Service status', 'foot.legal': 'Legal', 'foot.terminos': 'Terms of use',
       'foot.aviso': 'Kopi Client is not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.',
       'mac': 'Mac'
