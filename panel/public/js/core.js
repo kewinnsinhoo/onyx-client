@@ -110,10 +110,37 @@
     return data;
   };
   window.sapi = (method, path, body, opts) => api(method, `/s/${encodeURIComponent(S.studio.id)}${path}`, body, opts);
-  window.upload = async (file) => {
-    if (file.size > 25 * 1024 * 1024) throw new Error(t('El archivo pasa de 25 MB'));
-    return sapi('POST', `/media?name=${encodeURIComponent(file.name)}`, undefined, { raw: file, type: file.type || 'application/octet-stream' });
+  // Subir un archivo: de una vez si es pequeño; en trozos de 20 MB si es grande (hasta 500 MB).
+  // onProgress(0..1) se llama mientras sube.
+  window.MAX_UPLOAD_MB = 500;
+  window.uploadBlob = async (blob, name, type, onProgress) => {
+    type = type || blob.type || 'application/octet-stream';
+    if (blob.size > MAX_UPLOAD_MB * 1048576) throw new Error(t('El archivo pasa de {n} MB', { n: MAX_UPLOAD_MB }));
+    if (blob.size <= 20 * 1048576) {
+      const r = await sapi('POST', `/media?name=${encodeURIComponent(name)}`, undefined, { raw: blob, type });
+      if (onProgress) onProgress(1);
+      return r;
+    }
+    const up = await sapi('POST', '/media/upload', { name, type, size: blob.size });
+    let done = 0, next = 0;
+    const one = async () => {
+      while (next < up.parts) {
+        const n = next++;
+        const part = blob.slice(n * up.chunk, Math.min(blob.size, (n + 1) * up.chunk));
+        for (let tries = 0; ; tries++) {
+          try { await sapi('PUT', `/media/upload/${up.id}/${n}`, undefined, { raw: part, type: 'application/octet-stream' }); break; }
+          catch (e) { if (tries >= 2 || e.status === 404) throw e; await new Promise(r => setTimeout(r, 1500 * (tries + 1))); }
+        }
+        done++;
+        if (onProgress) onProgress(done / up.parts * 0.97);
+      }
+    };
+    await Promise.all([one(), one(), one()]); // tres trozos a la vez
+    const r = await sapi('POST', `/media/upload/${up.id}/done`);
+    if (onProgress) onProgress(1);
+    return r;
   };
+  window.upload = (file, onProgress) => uploadBlob(file, file.name, file.type, onProgress);
   window.pickFile = (accept) => new Promise((resolve) => {
     const i = document.createElement('input');
     i.type = 'file'; if (accept) i.accept = accept; i.multiple = accept === '*';

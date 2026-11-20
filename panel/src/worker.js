@@ -10,6 +10,7 @@ import { peaksByDay } from './stats.js';
 import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from './extra.js';
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
+import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
 
@@ -17,7 +18,9 @@ const SESSION_DAYS = 30;
 const LEVEL = { viewer: 1, editor: 2, admin: 3, owner: 4 };
 const ROLES = Object.keys(LEVEL);
 const ACTIVE_MS = 90e3; // una partida cuenta como "jugando" si dio señales en los últimos 90 s
-const MAX_UPLOAD = 25 * 1024 * 1024;
+const MAX_UPLOAD = 25 * 1024 * 1024;     // subida de una vez (KV guarda como mucho 25 MB por valor)
+const CHUNK = 20 * 1024 * 1024;          // los archivos grandes se suben y se guardan en trozos de 20 MB
+const MAX_FILE = 500 * 1024 * 1024;      // tamaño máximo de un archivo subido en trozos
 const UPLOAD_TYPES = /^(image\/(png|jpeg|webp|gif)|video\/(webm|mp4)|audio\/(mpeg|ogg|wav|webm)|application\/(java-archive|zip|x-zip-compressed|json|octet-stream|x-java-archive)|text\/plain)$/;
 
 export default {
@@ -273,7 +276,7 @@ async function studioApi(c, parts, m) {
   if (a === 'history' && m === 'GET') return json(await history(env, studio.id));
   if (a === 'referrals' && m === 'GET') return json(await referrals(env, studio.id));
   if (a === 'invites') return invites(c, b, m);
-  if (a === 'media') return mediaApi(c, b, m);
+  if (a === 'media') return mediaApi(c, b, m, sub, d);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
@@ -579,8 +582,9 @@ async function invites(c, token, m) {
 }
 
 // ---------------------------------------------------------------- archivos subidos (KV)
-async function mediaApi(c, mid, m) {
+async function mediaApi(c, mid, m, sub, step) {
   const { env, studio, user } = c;
+  if (mid === 'upload') return chunkedUpload(c, m, sub, step);
   if (m === 'GET' && !mid) {
     const rows = (await env.DB.prepare('SELECT id, name, type, size, sha1, created_at FROM media WHERE studio_id = ? ORDER BY created_at DESC LIMIT 500').bind(studio.id).all()).results;
     return json({ media: rows.map(r => ({ ...r, url: `/m/${r.id}/${encodeURIComponent(r.name)}` })) });
@@ -607,9 +611,64 @@ async function mediaApi(c, mid, m) {
   if (m === 'DELETE' && mid) {
     const row = await env.DB.prepare('SELECT id FROM media WHERE id = ? AND studio_id = ?').bind(mid, studio.id).first();
     if (!row) fail(404, 'media', 'Archivo no encontrado');
-    if (env.MEDIA) await env.MEDIA.delete(`m:${mid}`);
+    if (env.MEDIA) await deleteMediaKeys(env, mid);
     await env.DB.prepare('DELETE FROM media WHERE id = ?').bind(mid).run();
     return json({ ok: true });
+  }
+  fail(405, 'method', 'Método no permitido');
+}
+
+// Archivos grandes: 1) POST upload {name,type,size} → id  2) PUT upload/<id>/<n> cada trozo  3) POST upload/<id>/done
+async function chunkedUpload(c, m, id, step) {
+  const { env, studio, user } = c;
+  c.need('editor');
+  if (!env.MEDIA) fail(500, 'config', 'Falta el almacén de archivos (KV MEDIA)');
+  if (m === 'POST' && !id) {
+    const b = await readJson(c.req);
+    const type = String(b.type || 'application/octet-stream').split(';')[0].trim() || 'application/octet-stream';
+    if (!UPLOAD_TYPES.test(type)) fail(415, 'type', 'Tipo de archivo no permitido');
+    const size = Number(b.size);
+    if (!Number.isInteger(size) || size <= 0) fail(400, 'empty', 'El archivo está vacío');
+    if (size > MAX_FILE) fail(413, 'too_large', `El archivo pasa de ${MAX_FILE / 1048576} MB`);
+    await checkStorageLimit(env, studio, size);
+    const name = str(b.name || 'archivo', 120).replace(/[^\w.\-() ]+/g, '_');
+    const nid = randomToken(10);
+    const chunk = Number(env.UPLOAD_CHUNK) || CHUNK; // (las pruebas usan trozos pequeños)
+    const parts = Math.ceil(size / chunk);
+    await env.MEDIA.put(`up:${nid}`, JSON.stringify({ studio: studio.id, user: user.id, name, type, size, parts, chunk }), { expirationTtl: 86400 });
+    return json({ id: nid, chunk, parts }, 201);
+  }
+  if (!/^[0-9a-f]{20}$/.test(id || '')) fail(404, 'upload', 'Subida no encontrada');
+  const raw = await env.MEDIA.get(`up:${id}`);
+  const up = raw ? JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw)) : null;
+  if (!up || up.studio !== studio.id) fail(404, 'upload', 'La subida caducó. Vuelve a intentarlo.');
+  if (m === 'PUT' && /^\d+$/.test(step || '')) {
+    const n = Number(step);
+    if (n >= up.parts) fail(400, 'part', 'Trozo no válido');
+    const want = n < up.parts - 1 ? up.chunk : up.size - up.chunk * (up.parts - 1);
+    const body = new Uint8Array(await c.req.arrayBuffer());
+    if (body.length !== want) fail(400, 'part', 'El trozo no llegó completo');
+    await env.MEDIA.put(`m:${id}:${n}`, body);
+    return json({ ok: true, part: n });
+  }
+  if (m === 'POST' && step === 'done') {
+    // Huella SHA-1 del archivo entero (el launcher la comprueba al descargar), trozo a trozo
+    const hasher = typeof crypto.DigestStream === 'function' ? new crypto.DigestStream('SHA-1') : null;
+    const writer = hasher ? hasher.getWriter() : null;
+    const all = hasher ? null : [];
+    for (let n = 0; n < up.parts; n++) {
+      const part = await env.MEDIA.get(`m:${id}:${n}`, 'arrayBuffer');
+      if (!part) fail(400, 'part', `Falta el trozo ${n + 1} de ${up.parts}`);
+      if (writer) await writer.write(new Uint8Array(part)); else all.push(new Uint8Array(part));
+    }
+    let sha1;
+    if (writer) { await writer.close(); sha1 = [...new Uint8Array(await hasher.digest)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+    else { const buf = new Uint8Array(up.size); let o = 0; for (const a of all) { buf.set(a, o); o += a.length; } sha1 = await sha1Bytes(buf); }
+    await env.MEDIA.put(`m:${id}:meta`, JSON.stringify({ type: up.type, name: up.name, size: up.size, parts: up.parts }));
+    await env.DB.prepare('INSERT INTO media (id, studio_id, name, type, size, sha1, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, studio.id, up.name, up.type, up.size, sha1, user.id, now()).run();
+    await env.MEDIA.delete(`up:${id}`);
+    return json({ id, name: up.name, type: up.type, size: up.size, sha1, url: `/m/${id}/${encodeURIComponent(up.name)}` }, 201);
   }
   fail(405, 'method', 'Método no permitido');
 }
@@ -618,7 +677,28 @@ async function serveMedia(p, env) {
   const id = p.split('/')[2];
   if (!/^[0-9a-f]{20}$/.test(id || '') || !env.MEDIA) return new Response('Not found', { status: 404 });
   const { value, metadata } = await env.MEDIA.getWithMetadata(`m:${id}`, { type: 'stream' });
-  if (!value) return new Response('Not found', { status: 404 });
+  if (!value) {
+    // Archivo grande guardado en trozos: se envía seguido, trozo a trozo
+    const raw = await env.MEDIA.get(`m:${id}:meta`);
+    if (!raw) return new Response('Not found', { status: 404 });
+    const meta = JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw));
+    let n = 0;
+    const stream = new ReadableStream({
+      async pull(ctrl) {
+        if (n >= meta.parts) return ctrl.close();
+        const part = await env.MEDIA.get(`m:${id}:${n++}`, 'arrayBuffer');
+        if (!part) return ctrl.error(new Error('falta un trozo'));
+        ctrl.enqueue(new Uint8Array(part));
+      }
+    });
+    return new Response(stream, { headers: {
+      'Content-Type': meta.type || 'application/octet-stream',
+      'Content-Length': String(meta.size),
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Access-Control-Allow-Origin': '*',
+      'X-Content-Type-Options': 'nosniff'
+    } });
+  }
   return new Response(value, { headers: {
     'Content-Type': (metadata && metadata.type) || 'application/octet-stream',
     'Cache-Control': 'public, max-age=31536000, immutable',

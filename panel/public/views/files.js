@@ -2,7 +2,7 @@
 // Los archivos son una lista de rutas (mods/sodium.jar...). Las carpetas salen de esas rutas,
 // más las que se crean a mano (data.dirs), aunque estén vacías.
 (function () {
-  const MAX = 25 * 1024 * 1024;
+  const MAX = 500 * 1024 * 1024; // igual que MAX_UPLOAD_MB (los grandes se suben en trozos)
   const TEXT = /\.(json5?|toml|txt|cfg|conf|properties|ya?ml|ini|mcmeta|snbt|js|md|csv|lang|xml)$/i;
   const JUNK = /(^|\/)(\.DS_Store|Thumbs\.db|desktop\.ini|__MACOSX\/.*)$/i;
   const MR = 'https://api.modrinth.com/v2';
@@ -106,8 +106,7 @@
     return errors;
   }
 
-  const putBlob = (blob, name, type = 'application/octet-stream') =>
-    sapi('POST', `/media?name=${encodeURIComponent(name)}`, undefined, { raw: blob, type });
+  const putBlob = (blob, name, type = 'application/octet-stream', onProgress) => uploadBlob(blob, name, type, onProgress);
 
   // ---------------------------------------------------------------- menú desplegable
   function dropdown(anchor, items) {
@@ -232,7 +231,7 @@
           ${!folders.length && !list.length ? `<div class="fm-empty">${st.q ? `<p>${t('Nada coincide con «{q}».', { q: esc(st.q) })}</p>` : html`<div class="ic">${icon('folder')}</div><h4>${st.cwd ? t('Carpeta vacía') : t('Sin archivos')}</h4>
             <p>${editable ? t('Arrastra aquí archivos o carpetas, o usa Subir. Para mods, Importar → Modrinth.') : t('Todavía no hay archivos.')}</p>`}</div>` : ''}
         </div>
-        <p class="help" style="margin:12px 0 0">${t('Máximo 25 MB por archivo subido. Los mods más grandes se añaden desde Modrinth o con un enlace.')}</p>
+        <p class="help" style="margin:12px 0 0">${t('Máximo 500 MB por archivo subido. Los mods también se pueden añadir desde Modrinth o con un enlace.')}</p>
       </div>`;
       bind();
     }
@@ -338,7 +337,9 @@
       const done = [];
       setProg(0, t('Subiendo {i} de {n}…', { i: 0, n: ok.length }));
       const errs = await pool(ok, 4, async (x) => {
-        const r = await putBlob(x.file, x.file.name);
+        // Los archivos grandes enseñan su propio progreso mientras suben
+        const big1 = x.file.size > 20 * 1048576 ? (f) => setProg(Math.round(f * 100), t('Subiendo {name} · {p}%', { name: x.rel, p: Math.round(f * 100) })) : null;
+        const r = await putBlob(x.file, x.file.name, x.file.type || 'application/octet-stream', big1);
         done.push({ path: join(target, x.rel), url: r.url, sha1: r.sha1, size: r.size, name: x.file.name, at: Date.now() });
       }, (i, n, x) => setProg(Math.round(i / n * 100), t('Subiendo {i} de {n} · {name}', { i, n, name: x.rel })));
       const d = D();
@@ -354,7 +355,7 @@
     }
     function tooBig(big) {
       modal((m, close) => {
-        m.innerHTML = html`<div class="mh"><h3>${icon('alert')}${t('Archivos de más de 25 MB')}</h3></div><div class="mb">
+        m.innerHTML = html`<div class="mh"><h3>${icon('alert')}${t('Archivos de más de 500 MB')}</h3></div><div class="mb">
           <p style="margin:0 0 10px">${t('Estos no se han subido. Si son mods, búscalos en Importar → Modrinth; si no, súbelos a otro sitio y añádelos con un enlace.')}</p>
           <ul class="fm-biglist">${big.map(x => `<li><span>${esc(x.rel)}</span><b>${fmtSize(x.file.size)}</b></li>`).join('')}</ul></div>
           <div class="mf"><button class="btn primary" id="ok">${t('Entendido')}</button></div>`;

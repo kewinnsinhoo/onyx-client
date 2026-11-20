@@ -295,6 +295,40 @@ await test('studios, invitaciones y roles', async () => {
   assert.strictEqual((await call('PATCH', `/api/s/${sid}/members/333`, { cookie: other, body: { role: 'editor' } })).status, 200);
 });
 
+await test('archivos grandes: subida en trozos', async () => {
+  env.UPLOAD_CHUNK = '1000';
+  const big = new Uint8Array(2500).map((_, i) => (i * 7) % 256);
+  const base = '/api/s/onyx-studios/media/upload';
+  const st = await call('POST', base, { cookie: creator, body: { name: 'pack grande.zip', type: 'application/zip', size: big.length } });
+  assert.strictEqual(st.status, 201, JSON.stringify(st.data));
+  assert.deepStrictEqual([st.data.chunk, st.data.parts], [1000, 3]);
+  const id = st.data.id;
+  const part = (n) => big.slice(n * 1000, (n + 1) * 1000);
+  // un trozo incompleto no vale; otro usuario sin permiso tampoco puede subir
+  assert.strictEqual((await call('PUT', `${base}/${id}/0`, { cookie: creator, raw: big.slice(0, 10), headers: { 'Content-Type': 'application/octet-stream' } })).status, 400);
+  assert.strictEqual((await call('PUT', `${base}/${id}/0`, { cookie: other, raw: part(0), headers: { 'Content-Type': 'application/octet-stream' } })).status, 403);
+  for (const n of [2, 0]) assert.strictEqual((await call('PUT', `${base}/${id}/${n}`, { cookie: creator, raw: part(n), headers: { 'Content-Type': 'application/octet-stream' } })).status, 200);
+  assert.strictEqual((await call('POST', `${base}/${id}/done`, { cookie: creator })).status, 400, 'falta un trozo');
+  await call('PUT', `${base}/${id}/1`, { cookie: creator, raw: part(1), headers: { 'Content-Type': 'application/octet-stream' } });
+  const done = await call('POST', `${base}/${id}/done`, { cookie: creator });
+  assert.strictEqual(done.status, 201, JSON.stringify(done.data));
+  const crypto = await import('node:crypto');
+  assert.strictEqual(done.data.sha1, crypto.createHash('sha1').update(big).digest('hex'), 'huella del archivo entero');
+  assert.strictEqual(done.data.size, 2500);
+  // se descarga entero (el launcher no nota la diferencia)
+  const get = await worker.fetch(new Request(ORIGIN + done.data.url), env, {});
+  assert.strictEqual(get.headers.get('Content-Length'), '2500');
+  assert.deepStrictEqual(new Uint8Array(await get.arrayBuffer()), big);
+  assert.ok((await call('GET', '/api/s/onyx-studios/media', { cookie: creator })).data.media.some(m => m.id === id && m.size === 2500));
+  // la subida ya no sirve otra vez; demasiado grande no; borrar quita todos los trozos
+  assert.strictEqual((await call('POST', `${base}/${id}/done`, { cookie: creator })).status, 404);
+  assert.strictEqual((await call('POST', base, { cookie: creator, body: { name: 'x.zip', type: 'application/zip', size: 600 * 1048576 } })).status, 413);
+  assert.strictEqual((await call('DELETE', `/api/s/onyx-studios/media/${id}`, { cookie: creator })).status, 200);
+  assert.ok(![...env.MEDIA._map.keys()].some(k => k.startsWith(`m:${id}`)), 'sin trozos sueltos');
+  assert.strictEqual((await worker.fetch(new Request(ORIGIN + done.data.url), env, {})).status, 404);
+  delete env.UPLOAD_CHUNK;
+});
+
 await test('archivos subidos y papelera', async () => {
   const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
   const up = await call('POST', '/api/s/onyx-studios/media?name=fondo.png', { cookie: creator, headers: { 'Content-Type': 'image/png' }, raw: png });

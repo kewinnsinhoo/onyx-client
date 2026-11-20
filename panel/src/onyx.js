@@ -2,6 +2,7 @@
 // registro de actividad, avisos del launcher, ajustes globales, límites y espacio de los studios.
 import { json, fail, now, str, int, url as cleanUrl, readJson, randomToken, NAME_RE, playerKey } from './util.js';
 import { peaksByDay } from './stats.js';
+import { deleteMediaKeys } from './media.js';
 
 const ACTIVE_MS = 90e3;
 const DAY = 864e5;
@@ -85,7 +86,7 @@ export async function orphanMedia(env, sid) {
 export async function cleanOrphans(env, sid) {
   const list = await orphanMedia(env, sid);
   for (const m of list) {
-    if (env.MEDIA) await env.MEDIA.delete(`m:${m.id}`);
+    if (env.MEDIA) await deleteMediaKeys(env, m.id);
     await env.DB.prepare('DELETE FROM media WHERE id = ?').bind(m.id).run();
   }
   return { files: list.length, bytes: list.reduce((a, m) => a + (m.size || 0), 0) };
