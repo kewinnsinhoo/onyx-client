@@ -831,3 +831,71 @@ a.g-shot:hover { border-color: var(--accent); }
 .plat-form { display: grid; gap: 10px; margin-top: 12px; }
 .plat-row { display: grid; grid-template-columns: 14px 70px 1fr; align-items: center; gap: 10px; }
 .plat-row b { font-size: 13.5px; }
+
+/* Insignias */
+.bdg-medal { display: block; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .35)); }
+.bdg-medal.r-legendary.on { filter: drop-shadow(0 6px 16px rgba(255, 150, 60, .35)); }
+.bdg-medal.r-epic.on { filter: drop-shadow(0 6px 16px rgba(160, 80, 255, .3)); }
+.bdg-shine { animation: bdgShine 3.2s ease-in-out infinite; }
+@keyframes bdgShine { 0%, 55% { transform: rotate(20deg) translateX(-30px); } 100% { transform: rotate(20deg) translateX(120px); } }
+.bdg-r { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.bdg-r.r-common { color: #aab3c5; } .bdg-r.r-rare { color: #6cb6ff; } .bdg-r.r-epic { color: #d38bff; } .bdg-r.r-legendary { color: #ffc757; }
+.bdg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.bdg-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 22px 16px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; cursor: pointer; text-align: center; transition: transform .15s, border-color .15s; position: relative; overflow: hidden; }
+.bdg-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 90px; opacity: .5; pointer-events: none; }
+.bdg-card.r-rare::before { background: radial-gradient(60% 100% at 50% 0, rgba(108, 182, 255, .18), transparent); }
+.bdg-card.r-epic::before { background: radial-gradient(60% 100% at 50% 0, rgba(211, 139, 255, .2), transparent); }
+.bdg-card.r-legendary::before { background: radial-gradient(60% 100% at 50% 0, rgba(255, 199, 87, .22), transparent); }
+.bdg-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.bdg-card .bdg-m { margin-bottom: 4px; }
+.bdg-card b { font-size: 14.5px; }
+.bdg-card p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.bdg-foot { display: flex; justify-content: space-between; gap: 8px; width: 100%; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.bdg-foot > span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
+.bdg-foot > span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; display: block; text-align: left; }
+.bdg-foot > span:first-child svg { vertical-align: -2px; margin-right: 5px; }
+.bdg-foot > span:last-child { flex: none; }
+.bdg-foot svg { width: 13px; height: 13px; flex: none; }
+.bdg-card .bdg-foot { margin-top: 10px; }
+.bdg-empty .bdg-demo { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+.bdg-special { margin-top: 18px; }
+.bdg-sp { display: grid; gap: 10px; margin-top: 12px; }
+.bdg-sprow { display: grid; grid-template-columns: auto 1fr 320px; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); }
+.bdg-spt { display: grid; gap: 3px; min-width: 0; }
+.bdg-spt > span { font-size: 12.5px; color: var(--muted); }
+.bdg-who { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.bdg-who small { color: var(--muted); font-size: 12px; }
+.bdg-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 4px 0 9px; border-radius: 7px; background: var(--card); border: 1px solid var(--line); font-size: 12px; font-weight: 600; }
+.bdg-chip button { border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; padding: 2px; border-radius: 5px; }
+.bdg-chip button:hover { color: var(--text); background: var(--card-2); }
+.bdg-chip svg { width: 12px; height: 12px; }
+.bdg-give { display: flex; gap: 8px; }
+.bdg-give .input { flex: 1; min-width: 0; }
+.bdg-ed, .bdg-det { display: grid; grid-template-columns: 220px 1fr; gap: 22px; }
+.bdg-prev { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 14px; border-radius: 16px; background: radial-gradient(90% 70% at 50% 20%, rgba(255, 255, 255, .06), transparent), var(--card-2); border: 1px solid var(--line); text-align: center; align-self: start; }
+.bdg-prev b { font-size: 15px; }
+.bdg-prev p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.bdg-prev small { font-size: 12px; color: var(--muted); }
+.bdg-form { display: grid; gap: 12px; }
+.bdg-ed .field, .bdg-det .field { margin: 0; }
+.bdg-icons { display: flex; flex-wrap: wrap; gap: 6px; }
+.bdg-icons button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.bdg-icons button svg { width: 18px; height: 18px; }
+.bdg-icons button.on { border-color: var(--accent, #c56cf0); color: var(--text); background: var(--card); box-shadow: 0 0 0 3px rgba(197, 108, 240, .18); }
+.bdg-colors { display: flex; gap: 8px; flex-wrap: wrap; }
+.bdg-colors button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; display: grid; place-items: center; background: var(--card-2); color: var(--muted); }
+.bdg-colors button svg { width: 15px; height: 15px; }
+.bdg-colors button.on { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .15); }
+.bdg-rule { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.bdg-rule select { flex: 1; }
+.bdg-h { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.bdg-h .input { width: 90px; }
+.bdg-main { min-width: 0; display: grid; gap: 14px; align-content: start; }
+.bdg-hh { display: flex; align-items: center; gap: 8px; }
+.bdg-hh small { color: var(--muted); }
+.bdg-list { display: grid; gap: 6px; max-height: 340px; overflow: auto; }
+.bdg-li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--card-2); }
+.bdg-li b { font-size: 13px; }
+.bdg-li small { color: var(--muted); font-size: 12px; }
+.bdg-li small { margin-left: auto; }
+.bdg-hh small { margin-left: auto; }

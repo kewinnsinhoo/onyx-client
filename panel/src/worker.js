@@ -16,6 +16,7 @@ import { hello, launcherStats } from './kopistats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport } from './guard.js';
 import { sendReport } from './reports.js';
 import { launcherStreams, studioStreams, refreshDue } from './streams.js';
+import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -208,6 +209,7 @@ async function panelApi(req, env, u, path, m, ctx) {
     if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
     if (parts[1] === 'launcher' && m === 'GET') return launcherStats(env, u.searchParams);
     if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m);
+    if (parts[1] === 'badges') return creatorBadges(env, user, m, req);
     if (parts[1] === 'capes') return creatorCapes({ env, user, req }, parts[2], parts[3], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);
   }
@@ -296,6 +298,7 @@ async function studioApi(c, parts, m) {
   if (a === 'media') return mediaApi(c, b, m, sub, d);
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
   if (a === 'streams' && b) return studioStreams(c, b, m);
+  if (a === 'badges') return studioBadges(c, b, m, sub);
   if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }
@@ -784,6 +787,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
   // Capas de Kopi: las que tiene el jugador y cuál lleva puesta
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
+  if (parts[0] === 'badges') { const r = await launcherBadges(env, P, parts, m, req, u.searchParams); if (r) return r; }
   if (parts[0] === 'channels' || parts[0] === 'live') { const r = await launcherStreams(env, P, parts, m, req); if (r) return r; }
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
   // KopiGuard: el launcher avisa de lo que ha visto mientras se juega

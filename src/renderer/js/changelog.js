@@ -4,6 +4,30 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.7.7', date: '2026-11-20', items: [
+      ['award', 'Insignias: gánalas jugando (horas, rachas, eventos, juego limpio y alguna secreta). Pon tus 3 favoritas en la vitrina y salen en tu tarjeta de perfil.',
+        'Badges: earn them by playing (hours, streaks, events, fair play and a few secret ones). Put your 3 favourites in your showcase and they show on your profile card.',
+        'Insígnies: guanya-les jugant (hores, ratxes, esdeveniments, joc net i alguna secreta). Posa les teves 3 preferides a la vitrina i surten a la teva targeta de perfil.',
+        'Badges : gagne-les en jouant (heures, séries, événements, fair-play et quelques secrets). Mets tes 3 préférés en vitrine et ils apparaissent sur ta carte de profil.'],
+      ['users', 'Jugar con amigos: abre tu mundo a tus amigos por internet sin tocar el router. El launcher copia la dirección solo.',
+        'Play with friends: open your world to your friends over the internet without touching your router. The launcher copies the address for you.',
+        'Jugar amb amics: obre el teu món als teus amics per internet sense tocar el router. El launcher copia l’adreça sol.',
+        'Jouer avec des amis : ouvre ton monde à tes amis par internet sans toucher à ta box. Le launcher copie l’adresse tout seul.'],
+      ['video', 'Directos: pon tu canal de Twitch, TikTok o Kick en Mi perfil y sal en «En directo ahora» de la instancia cuando emitas.',
+        'Streams: add your Twitch, TikTok or Kick channel in My profile and show up in the instance’s “Live now” when you stream.',
+        'Directes: posa el teu canal de Twitch, TikTok o Kick a El meu perfil i surt a «En directe ara» de la instància quan emetis.',
+        'Lives : ajoute ta chaîne Twitch, TikTok ou Kick dans Mon profil et apparais dans « En direct maintenant » de l’instance quand tu diffuses.'],
+      ['brush', 'Editor de skins: retoca tu skin o crea una nueva con lápiz, cubo, espejo y vista 3D.',
+        'Skin editor: touch up your skin or make a new one with pencil, bucket, mirror and 3D view.',
+        'Editor de skins: retoca la teva skin o crea’n una de nova amb llapis, cubell, mirall i vista 3D.',
+        'Éditeur de skins : retouche ton skin ou crée-en un nouveau avec crayon, pot de peinture, miroir et vue 3D.'],
+      ['refresh', 'Instancias siempre al día: lo nuevo se descarga mientras el launcher está abierto, así al darle a Jugar entras al momento.',
+        'Always up to date: new stuff downloads while the launcher is open, so when you click Play you’re in right away.',
+        'Instàncies sempre al dia: el que és nou es descarrega mentre el launcher està obert, i en prémer Jugar entres al moment.',
+        'Instances toujours à jour : les nouveautés se téléchargent pendant que le launcher est ouvert, donc en cliquant sur Jouer tu entres tout de suite.']
+    ]
+  },
+  {
     v: '1.7.6', date: '2026-11-20', items: [
       ['sparkles', 'Al actualizarse, el launcher te enseña lo que trae cada versión (¡como ahora!).',
         'After updating, the launcher shows you what each version brings (like right now!).',

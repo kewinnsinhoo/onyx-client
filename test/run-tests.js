@@ -1228,3 +1228,28 @@ test('Editor de skins: espejo izquierda ↔ derecha', () => {
     console.log('  ✓ jugar con amigos: mod, versión, quitar y dirección');
   } catch (e) { console.error('  ✗ jugar con amigos\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Insignias: la medalla es la misma en el launcher y en el panel, y se dibuja bien
+try {
+  const a = fs.readFileSync(path.join(__dirname, '../src/renderer/js/badges-ui.js'), 'utf8');
+  const b = fs.readFileSync(path.join(__dirname, '../panel/public/js/badges-ui.js'), 'utf8');
+  assert.strictEqual(a, b, 'panel/public/js/badges-ui.js debe ser una copia de src/renderer/js/badges-ui.js');
+  const vm = require('vm');
+  const ctx = { window: {} };
+  vm.runInNewContext(a, ctx);
+  const B = ctx.window.Badge;
+  const on = B.medal({ icon: 'trophy', rarity: 'legendary', earned: true }, 64);
+  assert.ok(on.includes('bdg-shine') && on.includes('#ffd96b'), 'legendaria: dorada y con brillo');
+  const off = B.medal({ icon: 'moon', rarity: 'rare', earned: false, secret: true });
+  assert.ok(off.includes('locked') && !off.includes('#6cb6ff'), 'bloqueada: gris');
+  assert.ok(off.includes(B.path('question')) && !off.includes(B.path('moon')), 'secreta sin ganar: interrogación');
+  assert.ok(B.medal({ icon: 'star', rarity: 'rare', earned: true, color: '#3ddc84' }).includes('#'), 'color propio');
+  // los iconos de las insignias del panel existen todos
+  const src = fs.readFileSync(path.join(__dirname, '../panel/src/badges.js'), 'utf8');
+  const used = [...src.match(/const ICONS = \[(.*?)\]/)[1].matchAll(/'(\w+)'/g)].map(m => m[1]).concat([...src.matchAll(/icon: '(\w+)'/g)].map(m => m[1]));
+  for (const i of used) assert.ok(B.path(i), 'falta el icono ' + i);
+  // los textos de las insignias de Kopi están traducidos
+  const i18n = fs.readFileSync(path.join(__dirname, '../src/renderer/js/i18n.js'), 'utf8');
+  for (const m of src.matchAll(/(?:name|desc): '((?:[^'\\]|\\.)*)'/g)) assert.ok(i18n.includes(`['${m[1]}',`), 'sin traducir: ' + m[1]);
+  console.log('  ✓ insignias: medallas iguales, bloqueadas, secretas y traducidas');
+} catch (e) { console.error('  ✗ insignias\n    ' + (e.stack || e.message)); process.exitCode = 1; }

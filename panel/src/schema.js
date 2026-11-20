@@ -325,7 +325,41 @@ CREATE TABLE install_days (day INTEGER NOT NULL, id TEXT NOT NULL, PRIMARY KEY (
   checked_at INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (owner, platform)
 );
-CREATE INDEX channels_checked ON channels(checked_at)`
+CREATE INDEX channels_checked ON channels(checked_at)`,
+  // Insignias: las del studio, las dadas a mano, cuándo se ganó cada una y la vitrina (3 favoritas)
+  `CREATE TABLE studio_badges (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  rarity TEXT NOT NULL DEFAULT 'rare',
+  data TEXT,
+  created_by TEXT,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+CREATE INDEX studio_badges_studio ON studio_badges(studio_id);
+CREATE TABLE badge_grants (
+  badge_id TEXT NOT NULL,
+  player_key TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  granted_by TEXT,
+  granted_at INTEGER NOT NULL,
+  PRIMARY KEY (badge_id, player_key)
+);
+CREATE INDEX badge_grants_player ON badge_grants(player_key);
+CREATE TABLE player_badges (
+  player_key TEXT NOT NULL,
+  badge_id TEXT NOT NULL,
+  earned_at INTEGER NOT NULL,
+  PRIMARY KEY (player_key, badge_id)
+);
+CREATE INDEX player_badges_badge ON player_badges(badge_id);
+CREATE TABLE player_showcase (
+  player_key TEXT PRIMARY KEY,
+  showcase TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+)`
 ];
 
 export function statements(sql) {

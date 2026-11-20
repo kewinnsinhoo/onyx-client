@@ -68,6 +68,10 @@ contextBridge.exposeInMainWorld('onyx', {
   profile: {
     card: (rect, copy) => call('profile:card', rect, copy)
   },
+  badges: {
+    list: () => call('badges:list'),
+    showcase: (ids) => call('badges:showcase', ids)
+  },
   streams: {
     channels: () => call('streams:channels'),
     save: (ch) => call('streams:save', ch),

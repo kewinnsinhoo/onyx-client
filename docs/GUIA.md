@@ -253,6 +253,24 @@ Para que se cuenten solos:
 - Tus amigos la ponen en **Conexión directa**, o en el launcher: **Jugar con amigos → Únete a tu amigo** y entran directos.
 - Si tus amigos no son premium, al abrir en LAN pon **Online Mode en OFF** (lo da e4all).
 
+## Insignias (desde la 1.7.7)
+
+- **Jugadores**: en el launcher, **Mi perfil → Insignias**. Las ganan jugando y eligen 3 para su **vitrina**, que sale en su tarjeta. Cuando ganan una nueva, aparece una animación.
+- **De Kopi** (salen solas):
+  - Horas: 1, 10, 100, 500 y 1000.
+  - Rachas de 7 y 30 días.
+  - Explorador: 5 y 15 instancias.
+  - **Juego limpio**: 50 h con KopiGuard sin sanciones.
+  - **Pionero**: empezó antes de 2027.
+  - **Aniversario**: un año.
+  - **Apoyo a un studio**.
+  - **Staff de studio**.
+  - Secretas: **Noctámbulo** y **Madrugador**.
+- **Eventos**: quien juega la instancia de un evento mientras está en marcha gana la insignia de ese evento.
+- **Del studio**: en el panel, **Jugadores → Insignias → Nueva insignia**. Pones nombre, icono, color y rareza, y eliges cómo se gana: **a mano** (escribes los nombres) o **sola** (X horas en una instancia, o jugarla).
+- **Especiales** (solo el Creador, en esa misma página): **Equipo Kopi** y **Beta tester**.
+- Todo se calcula en el panel con las partidas: nadie puede darse una insignia desde el launcher.
+
 ## Directos: Twitch, TikTok y Kick (desde la 1.7.7)
 
 - **Jugadores**: en el launcher, **Mi perfil → Tus directos** ponen su canal. También sale en su tarjeta de perfil.

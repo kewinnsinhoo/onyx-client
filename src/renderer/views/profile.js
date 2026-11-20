@@ -23,6 +23,11 @@
     const K = KopiCapes.list;
     const kopi = { owned: [], worn: null };
     let ch = { twitch: '', tiktok: '', kick: '' }, chLoaded = false, draft = {};
+    let bd = S.badges; // insignias (del panel)
+    const CATS = [['time', 'Tiempo jugado'], ['streak', 'Rachas'], ['explore', 'Explorador'], ['fair', 'Juego limpio'], ['seniority', 'Antigüedad'], ['community', 'Comunidad'],
+      ['special', 'Especiales'], ['event', 'Eventos'], ['studio', 'De los studios'], ['secret', 'Secretas']];
+    const unitTxt = (p) => p.unit === 'h' ? t('{a} / {b} h', { a: p.cur, b: p.max }) : p.unit === 'd' ? t('{a} / {b} días', { a: Math.floor(p.cur), b: p.max }) : t('{a} / {b} instancias', { a: p.cur, b: p.max });
+    const showcased = () => (bd ? bd.showcase.map(id => bd.badges.find(b => b.id === id)).filter(Boolean) : []);
     let viewer = null, capeTimer = 0;
 
     function render() {
@@ -48,6 +53,7 @@
               ${isMsa ? `<span class="badge premium">${icon('check')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Sin premium')}</span>`}
               ${worn ? `<span class="badge pf-cape">${icon('cape')}${t('Capa {name}', { name: t(worn.name) })}</span>` : ''}
             </div>
+            ${showcased().length ? `<div class="pf-vit">${showcased().map(b => `<span class="pf-vb" title="${esc(App.badgeName(b))}">${Badge.medal(b, 40)}<small>${esc(App.badgeName(b))}</small></span>`).join('')}</div>` : ''}
             ${Object.keys(PLAT).some(k => ch[k]) ? `<div class="pf-chans">${Object.keys(PLAT).filter(k => ch[k]).map(k => `<span class="pf-chan"><i class="plat-dot ${k}"></i>${esc(PLAT[k][1] + ch[k])}</span>`).join('')}</div>` : ''}
             <div class="pf-stats">
               <div><span>${t('Tiempo jugado')}</span><b>${fmtTime(total)}</b></div>
@@ -78,6 +84,16 @@
           </section>
         </div>
 
+        ${bd ? html`<section class="card pf-sec pf-badges">
+          <div class="pf-h"><b>${icon('award')}${t('Insignias')}<span class="pf-bn">${bd.badges.filter(b => b.earned).length} / ${bd.badges.length}</span></b>
+            <span class="pf-hint">${t('Pulsa una para verla. Las 3 de tu vitrina salen en tu tarjeta.')}</span></div>
+          <div class="pf-bcats">${CATS.map(([c, n]) => { const list = bd.badges.filter(b => b.cat === c); return list.length ? html`<div class="pf-bcat"><span class="pf-bct">${t(n)}</span><div class="pf-bgrid">${list.map(b => html`<button class="pf-bt ${b.earned ? 'on' : ''} r-${b.rarity}" data-bd="${esc(b.id)}">
+              ${bd.showcase.includes(b.id) ? `<span class="pf-star" title="${t('En tu vitrina')}">${icon('star')}</span>` : ''}
+              ${Badge.medal(b, 50)}<b>${esc(!b.earned && b.secret ? '???' : App.badgeName(b))}</b>
+              ${!b.earned && b.progress ? `<span class="pf-bp"><i style="width:${Math.round(b.progress.cur / b.progress.max * 100)}%"></i></span><small>${esc(unitTxt(b.progress))}</small>` : `<small>${b.earned ? t(Badge.rarityName[b.rarity]) : t('Bloqueada')}</small>`}
+            </button>`).join('')}</div></div>` : ''; }).join('')}</div>
+        </section>` : ''}
+
         <section class="card pf-sec pf-streams">
           <div class="pf-h"><b>${icon('video')}${t('Tus directos')}</b><span class="pf-hint">${t('Cuando emitas mientras juegas, sales en «En directo ahora» de la instancia y el studio te ve.')}</span></div>
           <div class="pf-plat">${Object.entries(PLAT).map(([k, [n, , ph]]) => html`<label class="pf-prow"><i class="plat-dot ${k}"></i><b>${n}</b>
@@ -87,6 +103,7 @@
         </section>
       </div>`;
 
+      root.querySelectorAll('[data-bd]').forEach(el => { el.onclick = () => badgeModal(bd.badges.find(b => b.id === el.dataset.bd)); });
       const save = root.querySelector('#pf-ch-save');
       save.onclick = async () => {
         const body = {};
@@ -125,6 +142,38 @@
 
     render();
     // Tus canales de directo (del panel)
+    // Una insignia en grande: cómo se gana, cuándo la ganaste y ponerla o quitarla de la vitrina
+    function badgeModal(b) {
+      const hidden = !b.earned && b.secret;
+      UI.modal((m, close) => {
+        const inVit = bd.showcase.includes(b.id);
+        m.classList.add('bd-modal', 'r-' + b.rarity);
+        m.innerHTML = html`<div class="bd-big ${b.earned ? 'on' : ''}">${Badge.medal(b, 112)}</div>
+          <h2>${esc(hidden ? '???' : App.badgeName(b))}</h2>
+          <span class="bdg-r r-${b.rarity}">${t(Badge.rarityName[b.rarity])}</span>
+          <p class="sub">${esc(hidden ? t('Es secreta: descubre tú cómo se gana.') : App.badgeDesc(b))}${b.studio ? `<br><small>${t('De {studio}', { studio: esc(b.studio) })}</small>` : ''}</p>
+          ${b.earned ? `<span class="bd-when">${icon('check')}${t('Ganada {when}', { when: UI.timeAgo(b.at) })}</span>`
+            : b.progress ? `<div class="bd-prog"><span class="pf-bp"><i style="width:${Math.round(b.progress.cur / b.progress.max * 100)}%"></i></span><small>${esc(unitTxt(b.progress))}</small></div>` : ''}
+          <div class="actions"><button class="btn btn-ghost" data-a="no">${t('Cerrar')}</button>
+            ${b.earned ? `<button class="btn ${inVit ? 'btn-ghost' : 'btn-primary'}" data-a="vit">${icon('star')}${inVit ? t('Quitar de la vitrina') : t('Poner en la vitrina')}</button>` : ''}</div>`;
+        m.querySelector('[data-a=no]').onclick = close;
+        const v = m.querySelector('[data-a=vit]');
+        if (v) v.onclick = async () => {
+          let ids = bd.showcase.filter(x => x !== b.id);
+          if (!inVit) ids = [b.id, ...ids].slice(0, 3);
+          UI.busy(v, true);
+          try {
+            const r = await onyx.badges.showcase(ids);
+            bd = { ...bd, showcase: r.showcase }; S.badges = bd;
+            close(); render();
+            toast(inVit ? t('Quitada de tu vitrina') : t('En tu vitrina. Sale en tu tarjeta.'), 'success');
+          } catch (e) { toast(t(e.message, e.vars), 'error'); UI.busy(v, false); }
+        };
+      });
+    }
+    // Insignias: se piden al panel (y se avisa de las nuevas)
+    App.checkBadges().then(r => { if (r && root.isConnected) { bd = r; render(); } }).catch(() => {});
+
     onyx.streams.channels().then(r => {
       if (!root.isConnected) return;
       ch = (r && r.channels) || ch; chLoaded = true; render();

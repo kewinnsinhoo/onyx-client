@@ -387,6 +387,9 @@ handle('streams:channels', async () => { const a = panelAccount(); return a && p
 handle('streams:save', async (ch) => panel.saveChannels(streamAcc(), ch || {}));
 handle('streams:markLive', async (platform, on) => panel.markLive(streamAcc(), platform, on));
 handle('streams:live', async (id) => { const a = panelAccount(); return a && panel.enabled() ? panel.liveOf(a, id).catch(() => []) : []; });
+// Insignias
+handle('badges:list', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.badges(a) : null; });
+handle('badges:showcase', async (ids) => panel.setShowcase(streamAcc(), Array.isArray(ids) ? ids.slice(0, 3) : []));
 // Perfil: la tarjeta como imagen (se guarda en Imágenes/Kopi Client y, si se pide, se copia)
 handle('profile:card', async (rect, copy) => {
   const img = await win.webContents.capturePage({ x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) });

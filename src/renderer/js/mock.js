@@ -53,6 +53,38 @@
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
     },
     profile: { card: () => wait(null, 300) },
+    badges: (() => {
+      const now = Date.now(), D = 864e5;
+      const b = (id, cat, icon, rarity, name, desc, earned, extra = {}) => ({ id, cat, icon, rarity, name, desc, earned, at: earned ? now - (extra.ago || 3) * D : undefined, ...extra });
+      const list = [
+        b('hours-1', 'time', 'clock', 'common', 'Primer paso', 'Juega 1 hora', true, { ago: 40 }),
+        b('hours-10', 'time', 'clock', 'common', 'Calentando', 'Juega 10 horas', true, { ago: 20 }),
+        b('hours-100', 'time', 'clock', 'rare', 'Veterano', 'Juega 100 horas', false, { progress: { cur: 64.5, max: 100, unit: 'h' } }),
+        b('hours-500', 'time', 'clock', 'epic', 'Leyenda viva', 'Juega 500 horas', false, { progress: { cur: 64.5, max: 500, unit: 'h' } }),
+        b('hours-1000', 'time', 'crown', 'legendary', 'Inmortal', 'Juega 1000 horas', false, { progress: { cur: 64.5, max: 1000, unit: 'h' } }),
+        b('streak-7', 'streak', 'flame', 'rare', 'Racha de 7', 'Juega 7 días seguidos', true, { ago: 6 }),
+        b('streak-30', 'streak', 'flame', 'epic', 'Imparable', 'Juega 30 días seguidos', false, { progress: { cur: 12, max: 30, unit: 'd' } }),
+        b('explorer-5', 'explore', 'compass', 'common', 'Explorador', 'Juega 5 instancias distintas', false, { progress: { cur: 3, max: 5, unit: 'i' } }),
+        b('explorer-15', 'explore', 'compass', 'rare', 'Trotamundos', 'Juega 15 instancias distintas', false, { progress: { cur: 3, max: 15, unit: 'i' } }),
+        b('fair-50', 'fair', 'shield', 'epic', 'Juego limpio', 'Juega 50 horas con KopiGuard sin ninguna sanción', true, { ago: 2 }),
+        b('pioneer', 'seniority', 'rocket', 'legendary', 'Pionero', 'Empezaste a jugar con Kopi antes de 2027', true, { ago: 50 }),
+        b('anniversary', 'seniority', 'cake', 'epic', 'Aniversario', 'Un año jugando con Kopi', false, { progress: { cur: 52, max: 365, unit: 'd' } }),
+        b('supporter', 'community', 'heart', 'common', 'Apoyo a un studio', 'Elige el studio que te trajo a Kopi', true, { ago: 30 }),
+        b('studio-staff', 'special', 'badge', 'rare', 'Staff de studio', 'Eres staff de una instancia', false),
+        b('kopi-beta', 'special', 'flask', 'epic', 'Beta tester', 'Ayudaste a probar Kopi antes que nadie', true, { ago: 45 }),
+        b('kopi-team', 'special', 'sparkles', 'legendary', 'Equipo Kopi', 'Forma parte del equipo de Kopi', false),
+        b('ev:final', 'event', 'calendar', 'epic', 'Gran final IGNITE', 'Jugaste el evento mientras estaba en marcha', true, { studio: 'Kopi Studio', color: '#ff5ec4', ago: 1 }),
+        b('sb:campeon', 'studio', 'trophy', 'legendary', 'Campeón de IGNITE 3', 'Ganó la final del evento', true, { custom: true, studio: 'Kopi Studio', ago: 0.1 }),
+        b('sb:superviviente', 'studio', 'skull', 'epic', 'Superviviente', '10 horas en IGNITE EXTREMO 3', false, { custom: true, studio: 'Kopi Studio', progress: { cur: 7.5, max: 10, unit: 'h' } }),
+        b('night-owl', 'secret', 'moon', 'rare', 'Noctámbulo', 'Juega entre las 3 y las 5 de la madrugada', true, { secret: true, ago: 4 }),
+        b('early-bird', 'secret', 'sunrise', 'rare', 'Madrugador', 'Juega entre las 5 y las 7 de la mañana', false, { secret: true })
+      ];
+      let showcase = ['sb:campeon', 'pioneer', 'fair-50'];
+      return {
+        list: () => wait({ badges: list, showcase, facts: { hours: 64.5, streak: 12, instances: 3 } }),
+        showcase: (ids) => { showcase = ids; return wait({ ok: true, showcase }); }
+      };
+    })(),
     streams: (() => {
       let ch = { channels: { twitch: 'kewinsinho', tiktok: 'kew.mc', kick: '' }, manual: [] };
       const live = q.get('nolive') ? [] : [

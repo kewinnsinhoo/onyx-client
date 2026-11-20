@@ -211,6 +211,14 @@ async function seed() {
   await ch('inst:ignite-extremo-3', 'twitch', 'kopistudio', 'FINAL de IGNITE EXTREMO 3 · día 30', 4812, '/m/0123456789abcdef0123/fondo.webp');
   await ch('streamerana', 'kick', 'streamerana', 'Sobreviviendo al día 30 sin vidas', 318, '/m/0123456789abcdef0124/skin.webp');
   await ch('leokick', 'tiktok', 'leo.mc', '', 95, null);
+  // Insignias de ejemplo del studio
+  const sbg = (id, name, desc, rarity, d) => run('INSERT INTO studio_badges (id, studio_id, name, description, rarity, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, 'onyx-studios', name, desc, rarity, JSON.stringify(d), t);
+  await sbg('campeon', 'Campeón de IGNITE 3', 'Ganó la final del evento', 'legendary', { icon: 'trophy', rule: { type: 'manual' } });
+  await sbg('superviviente', 'Superviviente', '10 horas en IGNITE EXTREMO 3', 'epic', { icon: 'skull', rule: { type: 'hours', instance: 'ignite-extremo-3', hours: 10 } });
+  await sbg('dia-uno', 'Estuve el día 1', 'Jugó el primer día de la serie', 'rare', { icon: 'calendar', color: '#2ec4f1', rule: { type: 'played', instance: 'ignite-extremo-3' } });
+  await sbg('torneo', 'Torneo PvP', 'Participó en el torneo', 'common', { icon: 'sword', rule: { type: 'manual' } });
+  for (const [b, k, n] of [['sb:campeon', 'streamerana', 'StreamerAna'], ['sb:torneo', 'leokick', 'LeoKick'], ['sb:torneo', 'streamerana', 'StreamerAna'], ['kopi-beta', 'kewinsinho', 'Kewinsinho']]) await run('INSERT INTO badge_grants (badge_id, player_key, player_name, granted_at) VALUES (?, ?, ?, ?)', b, k, n, t - 86400e3);
+  for (const [b, k] of [['sb:superviviente', 'streamerana'], ['sb:dia-uno', 'streamerana'], ['sb:dia-uno', 'leokick']]) await run('INSERT INTO player_badges (player_key, badge_id, earned_at) VALUES (?, ?, ?)', k, b, t - 3600e3);
   const { runChecks } = await import('../src/extra.js');
   for (let i = 0; i < 3; i++) await runChecks(env, async () => new Response('ok'));
 }

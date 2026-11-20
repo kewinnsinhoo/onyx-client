@@ -1164,4 +1164,91 @@ await test('Directos: canales del jugador, oficiales y «En directo ahora»', as
   assert.deepStrictEqual(r.data.manual, []);
 });
 
+await test('Insignias: cálculo puro (horas, rachas, madrugada, eventos, reglas)', async () => {
+  const B = await import('../src/badges.js');
+  const H = 3600e3, D = 864e5, base = Date.UTC(2026, 10, 1, 12);
+  // 5 días seguidos (2 h al día), un hueco, y 2 días más; una partida de 3:30 a 4:30 en Bogotá (UTC-5 → 8:30 UTC)
+  const plays = [0, 1, 2, 3, 4, 6, 7].map(d => ({ instance_id: d < 3 ? 'a' : 'b', start: base + d * D, end: base + d * D + 2 * H }));
+  plays.push({ instance_id: 'c', start: Date.UTC(2026, 10, 10, 8, 30), end: Date.UTC(2026, 10, 10, 9, 30) });
+  const f = B.playerFacts(plays, { tz: -300, guarded: new Set(['b']), at: base + 400 * D });
+  assert.strictEqual(f.hours, 15);
+  assert.strictEqual(f.fairHours, 8);
+  assert.strictEqual(f.streak, 5);
+  assert.strictEqual(f.instances, 3);
+  assert.ok(f.night && !f.early, 'de 3:30 a 4:30 hora local: noctámbulo');
+  assert.ok(!B.playerFacts(plays, { tz: 0 }).night, 'en UTC eran las 8:30: no');
+  const st = Object.fromEntries(B.builtinState(f, { supporter: true }).map(x => [x.id, x]));
+  assert.ok(st['hours-10'].earned && !st['hours-100'].earned);
+  assert.strictEqual(st['hours-100'].cur, 15);
+  assert.ok(!st['streak-7'].earned && st['streak-7'].cur === 5);
+  assert.ok(st.pioneer.earned && st.anniversary.earned && st.supporter.earned && st['night-owl'].earned);
+  assert.ok(!st['kopi-team'].earned && !st['studio-staff'].earned);
+  assert.ok(!B.builtinState({ ...f, fairHours: 60 }, { sanctioned: true }).find(x => x.id === 'fair-50').earned, 'con sanción no hay juego limpio');
+  // una partida colgada (sin final) no cuenta más de 24 h
+  assert.strictEqual(B.playerFacts([{ instance_id: 'x', start: 0, end: 30 * D }]).hours, 24);
+  // reglas del studio y eventos
+  assert.deepStrictEqual(B.ruleState({ type: 'hours', instance: 'b', hours: 10 }, plays), { earned: false, cur: 8, max: 10 });
+  assert.ok(B.ruleState({ type: 'played', instance: 'c' }, plays).earned);
+  assert.strictEqual(B.ruleState({ type: 'manual' }, plays), null);
+  assert.ok(B.playedEvent({ instance_id: 'a', starts_at: base + H, ends_at: null }, plays));
+  assert.ok(!B.playedEvent({ instance_id: 'a', starts_at: base + 3 * H, ends_at: base + 5 * H }, plays));
+});
+
+await test('Insignias: launcher, vitrina, studio (a mano y solas) y especiales del Creador', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Insignias' } });
+  const iid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true } } } });
+  const h = await player('Medallas', false);
+  // juega 3 horas (partida vieja ya acabada) y ahora otra
+  const t = Date.now();
+  await env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind('old-medallas', iid, 'onyx-studios', 'medallas', 'Medallas', t - 5 * 3600e3, t - 2 * 3600e3, t - 2 * 3600e3).run();
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: h, body: { instance: iid } })).status, 200);
+  let r = await call('GET', '/api/l/badges?tz=-300', { headers: h });
+  assert.strictEqual(r.status, 200);
+  const by = Object.fromEntries(r.data.badges.map(b => [b.id, b]));
+  assert.ok(by['hours-1'].earned && by['hours-1'].at, 'una hora: ganada y con fecha');
+  assert.ok(!by['hours-10'].earned && by['hours-10'].progress.cur >= 3);
+  assert.ok(by.pioneer.earned);
+  assert.ok(by['night-owl'].secret);
+  assert.ok(r.data.showcase.includes('pioneer'), 'sin elegir: las más raras');
+  const firstAt = by['hours-1'].at;
+  r = await call('GET', '/api/l/badges', { headers: h });
+  assert.strictEqual(r.data.badges.find(b => b.id === 'hours-1').at, firstAt, 'la fecha no cambia');
+  // vitrina
+  assert.strictEqual((await call('POST', '/api/l/badges/showcase', { headers: h, body: { ids: ['hours-1000'] } })).status, 400, 'no la tiene');
+  r = await call('POST', '/api/l/badges/showcase', { headers: h, body: { ids: ['hours-1', 'pioneer'] } });
+  assert.deepStrictEqual(r.data.showcase, ['hours-1', 'pioneer']);
+  assert.deepStrictEqual((await call('GET', '/api/l/badges', { headers: h })).data.showcase, ['hours-1', 'pioneer']);
+  // el studio crea dos: una a mano y otra sola (2 horas en la instancia)
+  assert.strictEqual((await call('POST', '/api/s/onyx-studios/badges', { cookie: creator, body: { name: '' } })).status, 400);
+  assert.strictEqual((await call('POST', '/api/s/onyx-studios/badges', { cookie: creator, body: { name: 'X', rule: { type: 'hours', instance: 'otra' } } })).status, 400);
+  const man = (await call('POST', '/api/s/onyx-studios/badges', { cookie: creator, body: { name: 'Ganador IGNITE', rarity: 'legendary', icon: 'trophy', color: '#FFAA00' } })).data;
+  const auto = (await call('POST', '/api/s/onyx-studios/badges', { cookie: creator, body: { name: 'Superviviente', rule: { type: 'hours', instance: iid, hours: 2 }, icon: 'nope' } })).data;
+  assert.strictEqual(man.color, '#ffaa00');
+  assert.strictEqual(auto.icon, 'star', 'icono raro → estrella');
+  r = await call('POST', `/api/s/onyx-studios/badges/${man.id}/grant`, { cookie: creator, body: { names: 'Medallas, mal-nombre!, Otro_1' } });
+  assert.strictEqual(r.data.holders, 2);
+  r = await call('GET', '/api/l/badges', { headers: h });
+  const sb = r.data.badges.filter(b => b.custom).map(b => `${b.name}:${b.earned}:${b.studio}`).sort();
+  assert.deepStrictEqual(sb, ['Ganador IGNITE:true:Kopi Studio', 'Superviviente:true:Kopi Studio']);
+  r = await call('GET', '/api/s/onyx-studios/badges', { cookie: creator });
+  assert.strictEqual(r.data.badges.find(b => b.id === auto.id).holders, 1, 'la automática ya la tiene 1');
+  assert.strictEqual((await call('POST', '/api/s/onyx-studios/badges', { cookie: other, body: { name: 'Hack' } })).status, 403);
+  // quitar a mano
+  await call('DELETE', `/api/s/onyx-studios/badges/${man.id}/grant`, { cookie: creator, body: { names: 'Medallas' } });
+  r = await call('GET', '/api/l/badges', { headers: h });
+  assert.ok(!r.data.badges.some(b => b.id === 'sb:' + man.id), 'quitada');
+  // especiales del Creador
+  assert.strictEqual((await call('POST', '/api/onyx/badges', { cookie: other, body: { badge: 'kopi-team', names: 'Medallas' } })).status, 403);
+  r = await call('POST', '/api/onyx/badges', { cookie: creator, body: { badge: 'kopi-team', names: 'Medallas' } });
+  assert.strictEqual(r.data.special.find(s => s.id === 'kopi-team').players[0].name, 'Medallas');
+  r = await call('GET', '/api/l/badges', { headers: h });
+  assert.ok(r.data.badges.find(b => b.id === 'kopi-team').earned);
+  // borrar la insignia del studio
+  assert.strictEqual((await call('DELETE', `/api/s/onyx-studios/badges/${auto.id}`, { cookie: creator })).status, 200);
+  r = await call('GET', '/api/l/badges', { headers: h });
+  assert.ok(!r.data.badges.some(b => b.id === 'sb:' + auto.id));
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

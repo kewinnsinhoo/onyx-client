@@ -127,6 +127,7 @@
     go('home');
     if (firstTime && S.account) toast(t('¡Bienvenido, {name}!', { name: S.account.name }), 'success');
     whatsNew().catch(() => {});
+    setTimeout(() => checkBadges().catch(() => {}), 2500);
   }
 
   function offlineModal(done) {
@@ -383,6 +384,46 @@
     await saveSettings({ lastSeenVersion: cur }).catch(() => {});
     if (list.length) setTimeout(() => changesModal(list, { updated: true }), 700);
   }
+  // ---------- insignias: ¿hay alguna nueva? ----------
+  // Se miran al abrir el launcher y al acabar de jugar. La primera vez se guardan sin avisar (si no, saldrían todas).
+  S.badges = null;
+  async function checkBadges() {
+    const r = await onyx.badges.list();
+    if (!r || !r.badges) return null;
+    S.badges = r;
+    document.dispatchEvent(new CustomEvent('onyx:badges', { detail: r }));
+    const earned = r.badges.filter(b => b.earned).map(b => b.id);
+    const seen = S.settings.seenBadges;
+    if (!Array.isArray(seen)) { await saveSettings({ seenBadges: earned }).catch(() => {}); return r; }
+    const fresh = r.badges.filter(b => b.earned && !seen.includes(b.id));
+    if (fresh.length) {
+      await saveSettings({ seenBadges: [...new Set([...seen, ...earned])] }).catch(() => {});
+      const R = Badge.RARITIES;
+      fresh.sort((a, b) => R.indexOf(b.rarity) - R.indexOf(a.rarity));
+      newBadgeModal(fresh);
+    }
+    return r;
+  }
+  const badgeName = (b) => b.custom || b.cat === 'event' ? b.name : t(b.name);
+  const badgeDesc = (b) => b.custom ? b.desc : t(b.desc);
+  // La medalla aparece girando con rayos de luz detrás; si son varias, se ven en fila
+  function newBadgeModal(list) {
+    const b = list[0];
+    modal((m, close) => {
+      m.classList.add('nb-modal', 'r-' + b.rarity);
+      m.innerHTML = html`<div class="nb-rays"></div>
+        <div class="nb-medal">${Badge.medal(b, 132)}</div>
+        <span class="nb-k">${list.length > 1 ? t('¡{n} insignias nuevas!', { n: list.length }) : t('¡Insignia nueva!')}</span>
+        <h2>${esc(badgeName(b))}</h2>
+        <span class="bdg-r r-${b.rarity}">${t(Badge.rarityName[b.rarity])}</span>
+        <p class="sub">${esc(badgeDesc(b))}${b.studio ? ` · ${esc(b.studio)}` : ''}</p>
+        ${list.length > 1 ? `<div class="nb-more">${list.slice(1, 7).map(x => `<span title="${esc(badgeName(x))}">${Badge.medal(x, 40)}</span>`).join('')}</div>` : ''}
+        <div class="actions"><button class="btn btn-ghost" data-a="no">${t('Cerrar')}</button><button class="btn btn-primary" data-a="yes">${icon('user')}${t('Ver en mi perfil')}</button></div>`;
+      m.querySelector('[data-a=no]').onclick = close;
+      m.querySelector('[data-a=yes]').onclick = () => { close(); go('profile'); };
+    });
+  }
+
   const allChanges = () => changesModal((window.CHANGELOG || []).filter(e => vcmp(e.v, S.info.version) <= 0), { updated: false });
 
   // ---------- novedades de la instancia ----------
@@ -660,6 +701,7 @@
       if (p.stage === 'exited') {
         delete S.progress[p.id];
         loadInstances().then(renderChrome);
+        setTimeout(() => checkBadges().catch(() => {}), 4000); // ¿ganó alguna insignia jugando?
         if (p.kicked) toast(t('El studio ha cerrado la instancia'), 'error', 9000);
         else if (p.crash) crashModal(p.id, p.crash); // se cerró con un error: qué pasó y cómo arreglarlo
       }
@@ -713,7 +755,7 @@
   }
 
   window.App = {
-    go, rerender, play, stageText, crashModal, newsModal, unseenNews, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    go, rerender, play, stageText, checkBadges, newBadgeModal, badgeName, badgeDesc, crashModal, newsModal, unseenNews, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
     loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);
