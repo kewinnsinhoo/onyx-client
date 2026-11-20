@@ -1,5 +1,8 @@
 // Proceso principal de Kopi Client.
 const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage, clipboard, safeStorage } = require('electron');
+// KopiGuard (Windows): la captura moderna de ventanas (WGC) hace que Windows pinte un borde amarillo alrededor
+// del juego mientras se le mira. Con estas dos funciones apagadas, Chromium usa la captura clásica, sin borde.
+if (process.platform === 'win32') app.commandLine.appendSwitch('disable-features', 'AllowWgcWindowCapturer,AllowWgcScreenCapturer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
