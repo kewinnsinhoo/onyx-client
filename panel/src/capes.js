@@ -104,7 +104,7 @@ export async function cslCapeTexture(hash) {
 async function checkOwner(env, P, key) {
   if (P.verified) return null;
   const prem = await env.DB.prepare('SELECT 1 FROM player_tokens WHERE player_key = ? AND verified = 1 LIMIT 1').bind(P.key).first();
-  if (prem) fail(403, 'premium', 'Esta cuenta es premium: inicia sesión con Microsoft para cambiar la capa');
+  if (prem) fail(403, 'premium_cape', 'Esta cuenta es premium: inicia sesión con Microsoft para cambiar la capa');
   const secret = String(key || '');
   if (secret.length < 24 || secret.length > 128) fail(400, 'key', 'Falta la clave de la cuenta');
   const owner = await sha256('kopi-skin:' + secret);
@@ -116,7 +116,7 @@ async function checkOwner(env, P, key) {
 
 export async function launcherCapes(env, P, parts, m, req) {
   if (parts[0] === 'capes' && m === 'GET') {
-    const owned = (await env.DB.prepare('SELECT cape_id FROM cape_owned WHERE player_key = ? ORDER BY created_at').bind(P.key).all()).results
+    const owned = (await env.DB.prepare('SELECT cape_id FROM cape_owned WHERE player_key = ? ORDER BY created_at, rowid').bind(P.key).all()).results
       .map(r => r.cape_id).filter(id => CAPE_IDS.includes(id));
     const worn = await wornRow(env, P.key);
     return json({ owned, worn: worn ? worn.cape_id : null });
@@ -153,7 +153,7 @@ export async function creatorCapes(c, id, name, m) {
   if (!name && m === 'GET') {
     const rows = (await env.DB.prepare(`SELECT o.player_name AS name, o.created_at, o.granted_by_name AS by_name, (w.cape_id IS NOT NULL) AS wearing
       FROM cape_owned o LEFT JOIN cape_worn w ON w.player_key = o.player_key AND w.cape_id = o.cape_id
-      WHERE o.cape_id = ? ORDER BY o.created_at DESC`).bind(id).all()).results;
+      WHERE o.cape_id = ? ORDER BY o.created_at DESC, o.rowid DESC`).bind(id).all()).results;
     return json({ owners: rows.map(r => ({ name: r.name, at: r.created_at, by: r.by_name || null, wearing: !!r.wearing })) });
   }
   if (!name && m === 'POST') {

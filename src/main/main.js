@@ -311,6 +311,17 @@ handle('skins:setCape', async (capeId) => {
   await skins.setCape(acc.accessToken, capeId);
   return accounts.refreshProfile(acc.id);
 });
+// Capas de Kopi (regaladas desde el panel): cuáles tiene la cuenta activa y cuál lleva puesta
+handle('capes:kopi', async () => {
+  const acc = panelAccount();
+  if (!acc || !panel.enabled()) return { owned: [], worn: null };
+  return panel.kopiCapes(acc);
+});
+handle('capes:kopiWear', async (id) => {
+  const acc = panelAccount();
+  if (!acc) throw new Error('Inicia sesión para continuar');
+  return panel.wearKopiCape(acc, accounts.skinKeyOf(acc.id), id);
+});
 handle('skins:screenshot', async (rect) => {
   const img = await win.webContents.capturePage(rect ? {
     x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height)

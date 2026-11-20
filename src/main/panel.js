@@ -40,7 +40,11 @@ const MESSAGES = {
   instance: 'La instancia de este código ya no existe',
   not_verified: 'Mojang no confirmó tu cuenta. Vuelve a iniciar sesión con Microsoft.',
   studio: 'Ese código de referido no existe',
-  slow: 'Espera un minuto antes de enviar otro informe'
+  slow: 'Espera un minuto antes de enviar otro informe',
+  premium_cape: 'Esta cuenta es premium: inicia sesión con Microsoft para cambiar la capa',
+  not_owned: 'Todavía no tienes esta capa',
+  taken: 'Este nombre lo usa otro jugador',
+  cape: 'Esa capa no existe'
 };
 
 function fmtDate(ms) {
@@ -162,6 +166,11 @@ async function syncSkin(account, key, skin) {
   return { ok: true };
 }
 
+// Capas de Kopi: las que tiene el jugador ({ owned: [ids], worn: id|null }) y ponerse una (id o null para quitarla).
+// Las cuentas no premium se protegen con la misma clave secreta que su skin.
+const kopiCapes = (account) => call(account, 'GET', 'capes');
+const wearKopiCape = (account, key, id) => call(account, 'POST', 'cape', { key, id: id || null });
+
 // «Enviar informe»: el panel lo reenvía al canal de Discord del equipo
 // data = { message, status, logs, screenshot (Buffer JPEG/PNG) }
 const sendReport = (account, data) => call(account, 'POST', 'report', {
@@ -196,4 +205,4 @@ function heartbeat(account, play, everySec, onKick) {
   };
 }
 
-module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, sendReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, sendReport, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

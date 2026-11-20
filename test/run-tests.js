@@ -582,6 +582,22 @@ test('panel: errores legibles', () => {
     assert.deepStrictEqual([pub.source, pub.variant, pub.signature], ['kopi', 'slim', 'firma-dev']);
     assert.ok((await panel.syncSkin({ ...acc, type: 'msa' }, key, { png, variant: 'slim' })).skipped, 'las premium no suben nada');
 
+    // Capas de Kopi: el Creador la regala en el panel; el launcher la ve, se la pone y el juego la pide
+    const login = await fetch(`http://localhost:${port}/auth/dev?id=111&name=kew`, { redirect: 'manual' });
+    const cookie = login.headers.getSetCookie().find(c => c.startsWith('onyx_s=')).split(';')[0];
+    const gift = await fetch(`http://localhost:${port}/api/onyx/capes/kopi`, { method: 'POST', headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Probador' }) });
+    assert.strictEqual(gift.status, 200);
+    assert.deepStrictEqual(await panel.kopiCapes(acc), { owned: ['kopi'], worn: null });
+    assert.strictEqual((await panel.wearKopiCape(acc, key, 'kopi')).worn, 'kopi');
+    const capeImg = await fetch(`http://localhost:${port}/capes/Probador.png`);
+    assert.deepStrictEqual([capeImg.status, capeImg.headers.get('content-type')], [200, 'image/png']);
+    const notMine = await panel.wearKopiCape(acc, key, 'void').catch(e => e);
+    assert.deepStrictEqual([notMine.code, notMine.message], ['not_owned', 'Todavía no tienes esta capa']);
+    const other = await panel.wearKopiCape(acc, 'otra-clave-de-otro-launcher-123456', null).catch(e => e);
+    assert.deepStrictEqual([other.code, other.message], ['taken', 'Este nombre lo usa otro jugador']);
+    assert.strictEqual((await panel.wearKopiCape(acc, key, null)).worn, null);
+    assert.strictEqual((await fetch(`http://localhost:${port}/capes/Probador.png`)).status, 404);
+
     // Si el studio te quita el acceso, desaparece sola de la lista (y al intentar jugar)
     const raw = JSON.parse(fs.readFileSync(path.join(tmp, 'instances.json'), 'utf8'));
     raw.instances.push({ id: 'ya-no-es-mia', manifest: { id: 'ya-no-es-mia', source: 'panel', name: 'Vieja' }, addedAt: 1 });
@@ -617,7 +633,7 @@ test('panel: errores legibles', () => {
     assert.ok(ref.sent && ref.studio === 'onyx-studios');
     const rank = await referrals.ranking('all');
     assert.ok(rank[0].code === 'ONYX-STUDIOS' && rank[0].players >= 5);
-    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, informes, referidos, skins)');
+    passed++; console.log('  ✓ launcher ↔ panel (códigos, jugar, latido, informes, referidos, skins, capas)');
   } catch (e) { console.error('  ✗ launcher ↔ panel\n    ' + (e.stack || e.message)); process.exitCode = 1; }
   finally { srv.kill(); }
 })();
@@ -637,6 +653,9 @@ test('panel: errores legibles', () => {
       const loader = JSON.parse(q.get('loaders'))[0], mc = JSON.parse(q.get('game_versions'))[0];
       if (mc === '1.0') return [];
       if (loader === 'quilt') return [];
+      // Cape Provider solo existe (en esta prueba) para Fabric 1.21.1; Fabric API para todo Fabric
+      if (url.includes('/project/cape-provider/')) return loader === 'fabric' && mc === '1.21.1' ? [{ version_number: '5.0.0.0-legacy+1.21.1', version_type: 'release', files: [{ primary: true, url: 'https://cdn.modrinth.com/cape-provider.jar', hashes: { sha1: 'c' }, size: 5 }] }] : [];
+      if (url.includes('/project/fabric-api/')) return [{ version_number: '0.116.7+1.21.1', version_type: 'release', files: [{ primary: true, url: 'https://cdn.modrinth.com/fabric-api.jar', hashes: { sha1: 'f' }, size: 5 }] }];
       return [{ version_number: `${latest}-${loader}`, version_type: 'release', files: [{ primary: true, url: `https://cdn.modrinth.com/csl-${loader}-${latest}.jar`, hashes: { sha1: 'x' }, size: 10 }] }];
     };
     const got = [];
@@ -651,7 +670,9 @@ test('panel: errores legibles', () => {
     // Fabric 1.21.1: se baja la versión que toca y se configura Mojang → Kopi → lo demás
     let r = await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
     assert.strictEqual(r.status, 'ok');
-    assert.deepStrictEqual(mods(), ['kopi-skins-customskinloader-15.0.0-fabric.jar']);
+    assert.strictEqual(r.capes, 'ok');
+    // + capas animadas: Cape Provider y Fabric API (la instancia no la traía)
+    assert.deepStrictEqual(mods(), ['kopi-skins-cape-provider-5.0.0.0-legacy+1.21.1.jar', 'kopi-skins-customskinloader-15.0.0-fabric.jar', 'kopi-skins-fabric-api-0.116.7+1.21.1.jar']);
     assert.ok(calls[0].includes('/project/idMHQ4n2/version') && calls[0].includes('1.21.1'));
     const cfg = JSON.parse(fs.readFileSync(path.join(g, 'CustomSkinLoader', 'CustomSkinLoader.json'), 'utf8'));
     assert.strictEqual(cfg.enable, true);
@@ -662,9 +683,22 @@ test('panel: errores legibles', () => {
     assert.strictEqual(cfg.loadlist[2].type, 'MojangAPI');
     assert.strictEqual(cfg.enableLocalProfileCache, true);
     assert.strictEqual(cfg.cacheExpiry, 120);
+    assert.strictEqual(cfg.forceLoadAllTextures, true);
+    // Cape Provider: la capa de Kopi primero, animada, también para jugadores no premium
+    const capeCfg = () => JSON.parse(fs.readFileSync(path.join(g, 'config', 'cape-provider', 'config.json'), 'utf8'));
+    let cc = capeCfg();
+    assert.deepStrictEqual(cc.activeProviderIds, ['kopi', 'minecraftcapes']);
+    assert.deepStrictEqual(cc.remoteCustomProviders[0], { id: 'kopi', name: 'Kopi Client', uriTemplate: 'https://panel.onyxclient.site/capes/$name.png', textureResolverId: 'sprite', homepage: 'https://onyxclient.site' });
+    assert.deepStrictEqual([cc.validateProfile, cc.useDefaultProvider, cc.enableElytraTexture, cc.animatedCapesHandling], [false, true, true, 'ON']);
+    // respeta lo que el jugador cambió en el mod
+    fs.writeFileSync(path.join(g, 'config', 'cape-provider', 'config.json'), JSON.stringify({ ...cc, activeProviderIds: ['optifine', 'kopi'], remoteCustomProviders: [{ id: 'mio', name: 'Mío', uriTemplate: 'https://x/$id' }], animatedCapesHandling: 'FROZEN' }));
     // la segunda vez se recuerda la versión (sin preguntar a Modrinth)
     await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
-    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls.length, 3);
+    cc = capeCfg();
+    assert.deepStrictEqual(cc.activeProviderIds, ['kopi', 'optifine']);
+    assert.deepStrictEqual(cc.remoteCustomProviders.map(x => x.id), ['kopi', 'mio']);
+    assert.strictEqual(cc.animatedCapesHandling, 'FROZEN');
     // sin conexión con Modrinth: se usa lo que se sabía
     offline = true;
     assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps)).status, 'ok');
@@ -672,13 +706,27 @@ test('panel: errores legibles', () => {
     // versión nueva del mod: la vieja se quita
     fs.unlinkSync(path.join(tmp, 'cache', 'kopi-skins.json')); latest = '15.1.0';
     await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps);
+    assert.deepStrictEqual(mods(), ['kopi-skins-cape-provider-5.0.0.0-legacy+1.21.1.jar', 'kopi-skins-customskinloader-15.1.0-fabric.jar', 'kopi-skins-fabric-api-0.116.7+1.21.1.jar']);
+    // la sincronización del studio (modo reset) no los borra
+    const p = Sync.plan({ files: [], sync: { mode: 'reset' }, local: [...mods().map(f => 'mods/' + f), 'mods/otro.jar', 'CustomSkinLoader/CustomSkinLoader.json'], state: {} });
+    assert.deepStrictEqual(p.remove, ['mods/otro.jar']);
+    // si el studio trae Fabric API, se usa la suya (dos copias harían fallar el juego)
+    fs.writeFileSync(path.join(g, 'mods', 'fabric-api-0.110.0+1.21.1.jar'), 'jar');
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps)).capes, 'ok');
+    assert.deepStrictEqual(mods(), ['fabric-api-0.110.0+1.21.1.jar', 'kopi-skins-cape-provider-5.0.0.0-legacy+1.21.1.jar', 'kopi-skins-customskinloader-15.1.0-fabric.jar']);
+    // si trae otro mod de capas, no se pone Cape Provider (no pueden ir juntos)
+    fs.writeFileSync(path.join(g, 'mods', 'minecraftcapes-12.0.jar'), 'jar');
+    assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'fabric' }, panelBase }, deps)).capes, 'conflict');
+    assert.deepStrictEqual(mods(), ['fabric-api-0.110.0+1.21.1.jar', 'kopi-skins-customskinloader-15.1.0-fabric.jar', 'minecraftcapes-12.0.jar']);
+    fs.unlinkSync(path.join(g, 'mods', 'minecraftcapes-12.0.jar')); fs.unlinkSync(path.join(g, 'mods', 'fabric-api-0.110.0+1.21.1.jar'));
+    // otra versión sin Cape Provider: solo la capa quieta (CustomSkinLoader)
+    r = await skinmod.ensure(g, { mc: '1.20.1', loader: { type: 'fabric' }, panelBase }, deps);
+    assert.deepStrictEqual([r.status, r.capes], ['ok', 'unsupported']);
     assert.deepStrictEqual(mods(), ['kopi-skins-customskinloader-15.1.0-fabric.jar']);
-    // Quilt usa el de Fabric
+    // Quilt usa el de Fabric (sin capas animadas)
     r = await skinmod.ensure(g, { mc: '1.20.1', loader: { type: 'quilt' }, panelBase }, deps);
     assert.ok(r.file.endsWith('-fabric.jar'));
-    // la sincronización del studio (modo reset) no lo borra
-    const p = Sync.plan({ files: [], sync: { mode: 'reset' }, local: ['mods/' + r.file, 'mods/otro.jar', 'CustomSkinLoader/CustomSkinLoader.json'], state: {} });
-    assert.deepStrictEqual(p.remove, ['mods/otro.jar']);
+    assert.strictEqual(r.capes, 'off');
     // Vanilla, desactivado o sin versión del mod: se quita y se juega igual
     assert.strictEqual((await skinmod.ensure(g, { mc: '1.21.1', loader: { type: 'vanilla' }, panelBase }, deps)).status, 'off');
     assert.deepStrictEqual(mods(), []);

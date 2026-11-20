@@ -781,3 +781,17 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .kc-try:hover { background: rgba(255,255,255,.09); }
 .kc-try svg { width: 12px; height: 12px; }
 .kc-try.on { color: var(--rc); border-color: color-mix(in srgb, var(--rc) 50%, transparent); background: color-mix(in srgb, var(--rc) 12%, transparent); }
+
+/* Capas de Kopi que tiene la cuenta (regaladas desde el panel) */
+.kc-card.owned { border-color: color-mix(in srgb, var(--rc) 32%, var(--border-strong)); background: linear-gradient(135deg, color-mix(in srgb, var(--rc) 7%, var(--surface)), var(--surface) 60%); }
+.kc-card.worn { border-color: color-mix(in srgb, var(--rc) 70%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--rc) 35%, transparent), 0 14px 40px -18px color-mix(in srgb, var(--rc) 60%, transparent); }
+.kc-worn { position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #140b18; background: var(--rc); box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 70%, transparent); }
+.kc-worn svg { width: 13px; height: 13px; stroke-width: 3; }
+.kc-own { display: flex; align-items: center; gap: 7px; margin-top: 8px; color: var(--text); font-size: 13px; font-weight: 600; }
+.kc-own svg { width: 13px; height: 13px; flex: none; color: var(--rc); }
+.kc-wear:not(.on) { color: #1a0d1f; background: var(--rc); border-color: transparent; }
+.kc-wear:not(.on):hover { background: color-mix(in srgb, var(--rc) 85%, #fff); }
+.kc-wear.busy { opacity: .6; pointer-events: none; }
+.kc-rar.mine i { background: linear-gradient(135deg, #ffa6ea, #c13fd6); color: #e879f9; }
+.kc-ingame { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; color: var(--text-2); font-size: 12.5px; }
+.kc-ingame svg { width: 14px; height: 14px; flex: none; margin-top: 2px; color: #f5b3ff; }

@@ -12,6 +12,7 @@
     referral: q.get('noref') ? null : { code: 'KOPI', name: 'Kopi Studio', logo: null, linkedAt: Date.parse('2026-10-21') }, discord: null
   };
   const loggedOut = q.get('login') === '1' || q.get('onboard') === '1';
+  let kopiWorn = q.get('worn') || null;
   const accounts = loggedOut ? [] : [
     { id: 'msa-1', type: 'msa', name: 'Kewinsinho', uuid: 'x', skin: SK, skinVariant: 'classic', capes: [] },
     { id: 'off-2', type: 'offline', name: 'Invitado', uuid: 'y', skin: null }
@@ -43,6 +44,10 @@
       library: () => wait([{ id: 'a', name: 'Hoodie blanco', variant: 'classic', data: ALT }, { id: 'b', name: 'Kopi', variant: 'slim', data: SK }]),
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
+    },
+    capes: {
+      kopi: () => wait({ owned: (q.has('capes') ? q.get('capes') : 'kopi,fire').split(',').filter(Boolean), worn: kopiWorn }),
+      kopiWear: (id) => { kopiWorn = id || null; return wait({ ok: true, worn: kopiWorn }); }
     },
     data: {
       get: (n) => wait(n === 'creators.json' ? [

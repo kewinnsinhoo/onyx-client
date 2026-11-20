@@ -737,7 +737,7 @@ await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () =>
   assert.strictEqual((await call('POST', '/api/l/cape', { headers: thief, body: { id: null, key: 'z'.repeat(32) } })).status, 403);
   // un nombre premium solo desde una sesión premium (Steve ya entró como premium en otra prueba)
   const fakeSteve = await player('Steve', false);
-  assert.strictEqual((await call('POST', '/api/l/cape', { headers: fakeSteve, body: { id: 'kopi', key } })).data.error, 'premium');
+  assert.strictEqual((await call('POST', '/api/l/cape', { headers: fakeSteve, body: { id: 'kopi', key } })).data.error, 'premium_cape');
   const steve = await player('Steve', true);
   assert.strictEqual((await call('POST', '/api/l/cape', { headers: steve, body: { id: 'kopi' } })).data.worn, 'kopi');
 

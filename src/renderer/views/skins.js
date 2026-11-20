@@ -11,6 +11,13 @@
     let preview = { ...current };
     let tab = params.tab || 'library';
     let walk = false, outer = true, capeOn = true;
+    // Capas de Kopi de la cuenta (regaladas desde el panel)
+    const kopi = { owned: [], worn: null, loaded: false };
+    let kopiLoading = null;
+    const loadKopi = () => kopiLoading || (kopiLoading = onyx.capes.kopi()
+      .then(r => { kopi.owned = (r && r.owned) || []; kopi.worn = (r && r.worn) || null; })
+      .catch(() => { /* sin panel o sin conexión: se ven como bloqueadas */ })
+      .finally(() => { kopi.loaded = true; }));
 
     root.innerHTML = html`<div class="page">
       <div class="page-head"><h1 class="title">${t('Skins')}</h1>
@@ -39,7 +46,19 @@
 
     const $ = (s) => root.querySelector(s);
     const viewer = new Skin3D.SkinViewer($('#sk-viewer'), { scale: 8, rotY: -26, rotX: -6 });
-    viewer.setCape(activeCape ? activeCape.url.replace(/^http:/, 'https:') : null);
+    // La capa del muñeco: la de Kopi que lleva puesta (animada) o, si no, la oficial de Minecraft
+    let baseTimer = 0;
+    function baseCape() {
+      clearInterval(baseTimer); baseTimer = 0;
+      const kc = kopi.worn && KopiCapes.get(kopi.worn);
+      if (!kc) { viewer.setCape(activeCape ? activeCape.url.replace(/^http:/, 'https:') : null); return; }
+      let f = 0;
+      const show = () => viewer.setCape(KopiCapes.texture(kc, f++).toDataURL());
+      show();
+      if (kc.frames > 1) baseTimer = setInterval(show, 1000 / kc.fps);
+    }
+    baseCape();
+    loadKopi().then(() => { if (!trying && root.isConnected) baseCape(); });
 
     const dirty = () => preview.skin !== current.skin || preview.variant !== current.variant;
 
@@ -191,13 +210,14 @@
       if (!trying) return;
       clearInterval(trying.timer); trying = null;
       viewer.showBack(false);
-      viewer.setCape(activeCape ? activeCape.url.replace(/^http:/, 'https:') : null);
+      baseCape();
     }
     function tryCape(id) {
       const was = trying && trying.id;
       stopTry();
       if (was === id) return;
       const cape = KopiCapes.get(id);
+      clearInterval(baseTimer); baseTimer = 0;
       let f = 0;
       const show = () => viewer.setCape(KopiCapes.texture(cape, f++).toDataURL());
       show();
@@ -210,18 +230,24 @@
     function capes(body) {
       const list = isMsa ? (acc.capes || []) : [];
       const K = KopiCapes.list, R = KopiCapes.RARITY;
-      const card = (c) => html`<div class="kc-card" style="--rc:${R[c.rarity].color}">
-          <div class="kc-art"><canvas data-kc="${c.id}"></canvas></div>
+      const mine = K.filter(c => kopi.owned.includes(c.id));
+      const tryBtn = (c) => { const on = trying && trying.id === c.id; return `<button class="kc-try ${on ? 'on' : ''}" data-try="${c.id}">${icon(on ? 'x' : 'play')}<span>${esc(t(on ? 'Quitar' : 'Probar'))}</span></button>`; };
+      const card = (c) => {
+        const own = kopi.owned.includes(c.id), worn = kopi.worn === c.id;
+        return html`<div class="kc-card ${own ? 'owned' : ''} ${worn ? 'worn' : ''}" style="--rc:${R[c.rarity].color}">
+          <div class="kc-art"><canvas data-kc="${c.id}"></canvas>${worn ? `<span class="kc-worn" title="${esc(t('La llevas puesta'))}">${icon('check')}</span>` : ''}</div>
           <div class="kc-info">
             <div class="kc-top"><b>${t(c.name)}</b>${c.frames > 1 ? `<span class="kc-anim">${icon('sparkles')}${t('Animada')}</span>` : ''}</div>
             <div class="kc-r">${t(R[c.rarity].label)}</div>
-            <div class="kc-lock">${icon('lock')}<span>${t('Por ahora no se puede conseguir.')}</span></div>
-            <button class="kc-try ${trying && trying.id === c.id ? 'on' : ''}" data-try="${c.id}">${icon(trying && trying.id === c.id ? 'x' : 'play')}<span>${t(trying && trying.id === c.id ? 'Quitar' : 'Probar')}</span></button>
+            ${own ? `<div class="kc-own">${icon(worn ? 'check' : 'sparkles')}<span>${esc(t(worn ? 'La llevas puesta' : 'Es tuya'))}</span></div>`
+              : `<div class="kc-lock">${icon('lock')}<span>${esc(t('Por ahora no se puede conseguir.'))}</span></div>`}
+            ${own ? `<button class="kc-try kc-wear ${worn ? 'on' : ''}" data-wear="${worn ? '' : c.id}">${icon(worn ? 'x' : 'cape')}<span>${esc(t(worn ? 'Quitármela' : 'Ponérmela'))}</span></button>` : tryBtn(c)}
           </div>
         </div>`;
+      };
       body.innerHTML = html`<button class="kc-banner" id="kc-go">
-          <span class="kc-minis">${K.slice(0, 3).map(c => `<canvas data-kc="${c.id}"></canvas>`).join('')}</span>
-          <span class="kc-bt"><b>${t('Capas de Kopi')}</b><span>${t('{n} por conseguir', { n: K.length })}</span></span>
+          <span class="kc-minis">${(mine.length ? mine : K).slice(0, 3).map(c => `<canvas data-kc="${c.id}"></canvas>`).join('')}</span>
+          <span class="kc-bt"><b>${t('Capas de Kopi')}</b><span>${mine.length ? t('{n} de {total} conseguidas', { n: mine.length, total: K.length }) : t('{n} por conseguir', { n: K.length })}</span></span>
           <span class="kc-arrow">${icon('chevronRight')}</span>
         </button>
 
@@ -239,8 +265,11 @@
         <div class="kc-h" id="kc-sec"><div><b>${t('Capas de Kopi')}</b> <span class="muted">${K.length}</span></div>
           <span class="kc-chip pink">${icon('sparkles')}${t('Exclusivas de Kopi Client')}</span></div>
         <p class="kc-intro">${t('Capas animadas que solo tiene la gente de Kopi Client. Pronto podrás ganarlas jugando.')}</p>
+        ${mine.length ? html`<div class="kc-rar mine"><i></i>${t('Tus capas')} <span class="muted">${mine.length}</span></div>
+          <div class="kc-grid">${mine.map(card).join('')}</div>
+          <p class="kc-ingame">${icon('info')}<span>${t('Dentro del juego se ve animada en las instancias con Fabric 1.21.1 o más nuevo, y quieta en las demás.')}</span></p>` : ''}
         ${['legendary', 'epic', 'rare', 'common'].map(r => {
-          const cs = K.filter(c => c.rarity === r);
+          const cs = K.filter(c => c.rarity === r && !kopi.owned.includes(c.id));
           return cs.length ? html`<div class="kc-rar"><i style="background:${R[r].color}"></i>${t(R[r].label)} <span class="muted">${cs.length}</span></div>
             <div class="kc-grid">${cs.map(card).join('')}</div>` : '';
         }).join('')}`;
@@ -255,6 +284,19 @@
           x.innerHTML = `${icon(on ? 'x' : 'play')}<span>${esc(t(on ? 'Quitar' : 'Probar'))}</span>`;
         });
       });
+      // Ponerse / quitarse una capa de Kopi (se guarda en el panel y se ve en el juego)
+      body.querySelectorAll('[data-wear]').forEach(b => b.onclick = async () => {
+        const id = b.dataset.wear || null;
+        stopTry(); busy(b, true);
+        try {
+          const r = await onyx.capes.kopiWear(id);
+          kopi.worn = (r && r.worn) || null;
+          baseCape();
+          if (kopi.worn && !capeOn) { capeOn = true; viewer.setCapeVisible(true); root.querySelector('.viewer-tools [data-t=cape]').classList.add('on'); }
+          toast(id ? t('Capa de Kopi puesta') : t('Capa quitada'), 'success');
+          capes(body);
+        } catch (e) { toast(t(e.message, e.vars), 'error'); busy(b, false); }
+      });
       body.querySelectorAll('[data-cape]').forEach(el => el.onclick = async () => {
         stopTry();
         const id = el.dataset.cape || null;
@@ -264,6 +306,8 @@
         try { await onyx.skins.setCape(id); await App.loadAccounts(); toast(id ? t('Capa equipada') : t('Capa quitada'), 'success'); }
         catch (e) { toast(e.message, 'error'); }
       });
+      // La primera vez se pregunta al panel qué capas tiene la cuenta
+      if (!kopi.loaded) loadKopi().then(() => { if (body.isConnected && body.querySelector('#kc-sec')) capes(body); });
     }
 
     function explore(body) {
@@ -299,6 +343,6 @@
         if (!isMsa) { try { await onyx.skins.apply({ data: current.skin, variant: v }); await App.loadAccounts(); } catch { /* nada */ } }
       });
     }
-    return () => { stopTry(); viewer.destroy(); };
+    return () => { stopTry(); clearInterval(baseTimer); viewer.destroy(); };
   };
 })();
