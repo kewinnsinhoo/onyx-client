@@ -183,6 +183,9 @@
       const paragraphs = String(inst.about || inst.description || '').split(/\n\s*\n|\n/).filter(Boolean);
       const look = inst.look || {};
       const st = stateOf(inst);
+      // Bloqueada o aún sin abrir, pero el studio deja descargarla antes
+      const pre = !!(st && (st.k === 'locked' || st.k === 'soon') && inst.schedule && inst.schedule.predownload);
+      const pill = st ? (st.k === 'locked' ? t('Instancia bloqueada') : st.k === 'closed' ? t('Instancia cerrada') : st.label) : '';
       const bg = inst.bannerAnimated && !isVideo(inst.bannerAnimated) ? inst.bannerAnimated : inst.banner;
       const logo = inst.logoAnimated || inst.logo;
       const accent = okColor(look.accent), playColor = okColor(look.playColor);
@@ -195,6 +198,7 @@
             ${look.hideAuthor ? '' : `<div class="studio">${studio.logo ? `<img src="${esc(studio.logo)}" alt="">` : `<span class="ph">${initials(studio.name)}</span>`}
               <span>${t('por')} <b>${esc(studio.name || '')}</b></span></div>`}
             <div class="grow"></div>
+            ${st ? `<span class="state-pill ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(pill)}</span>` : ''}
             ${look.music && look.music.url ? `<button class="round" id="ins-music" title="${t('Música')}">${icon(musicMuted() ? 'volumeOff' : 'volume')}</button>` : ''}
             <button class="round" id="ins-folder" title="${t('Abrir carpeta')}">${icon('folder')}</button>
             <button class="round sq" id="ins-more" title="${t('Más opciones')}">${icon('more')}</button>
@@ -204,7 +208,6 @@
             <div class="grow" style="min-width:0">
               ${logo && !look.hideTitle ? `<img class="ihero-logo" src="${esc(logo)}" alt="${esc(inst.name)}">` : look.hideTitle ? '' : `<h1>${esc(inst.name)}</h1>`}
               <div class="tags">
-                ${st ? `<span class="badge ${st.cls}">${icon(st.k === 'soon' ? 'clock' : 'lock')}${esc(st.label)}</span>` : ''}
                 ${inst.category ? `<span class="badge">${esc(inst.category)}</span>` : ''}
                 ${inst.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Premium y offline')}</span>`}
                 ${inst.server && inst.server.address && !look.hideTech ? `<span class="badge">${icon('globe')}${esc(inst.server.address)}</span>` : ''}
@@ -212,12 +215,21 @@
             </div>
             ${running
               ? `<button class="play-big stop" id="ins-stop">${icon('stop')}${t('Detener')}</button>`
-              : `<button class="play-big" id="ins-play" ${p ? 'disabled' : ''}>${p ? icon('refresh', 'spin') : icon(st && st.k === 'soon' && inst.schedule.predownload ? 'download' : 'play')}${p ? t('Preparando...') : st && st.k === 'soon' && inst.schedule.predownload ? t('Descargar ya') : t('Jugar')}</button>`}
+              : pre ? '' : `<button class="play-big" id="ins-play" ${p ? 'disabled' : ''}>${p ? icon('refresh', 'spin') : icon('play')}${p ? t('Preparando...') : t('Jugar')}</button>`}
           </div>
           ${p && !running ? html`<div class="prog"><div class="progress"><i id="ins-bar" style="width:${pct == null ? 8 : pct}%"></i></div>
             <div class="progress-label"><span id="ins-stage">${esc(App.stageText(p))}</span><span id="ins-pct">${pct == null ? '' : pct + '%'}</span></div></div>` : ''}
         </div>
         ${st && st.k === 'locked' && inst.lockedMessage ? html`<div class="card inst-note">${icon('lock')}<span>${esc(inst.lockedMessage)}</span></div>` : ''}
+        ${pre && !running ? html`<div class="pre-wrap">
+          <div class="pre-card">
+            <span class="pre-ico">${icon('download')}</span>
+            <div><b>${t('Pre-descarga abierta')}</b>
+              <p>${st.k === 'soon' ? t('Descárgala ya para no esperar colas el día del evento. Abre el {date}.', { date: fmtWhen(inst.schedule.opensAt) }) : t('Descárgala ya para no esperar colas el día del evento. Podrás jugar cuando el studio la abra.')}</p></div>
+          </div>
+          <button class="btn btn-outline pre-btn" id="ins-play" ${p ? 'disabled' : ''}>${p ? icon('refresh', 'spin') : icon('download')}${p ? t('Descargando...') : t('Descargar ya')}</button>
+          <div class="pre-hint">${t('Descarga los archivos antes de la apertura.')}</div>
+        </div>` : ''}
 
         <div class="stats">
           ${look.hideTech ? '' : html`<div class="stat"><span class="si">${icon('cpu')}</span><div><div class="k">${t('Versión')}</div><div class="v">${esc(inst.minecraft || '?')}</div></div></div>

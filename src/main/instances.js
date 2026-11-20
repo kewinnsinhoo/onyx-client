@@ -233,13 +233,13 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
   if (fromPanel) {
     try { session = await panel.startPlay(account, id); }
     catch (e) {
-      if (e.code === 'not_open' && e.predownload) {
+      if ((e.code === 'not_open' || e.code === 'locked') && e.predownload) {
         // Descarga anticipada: se deja todo listo para entrar al instante cuando abra
         await syncFiles(inst, gameDir, concurrency, progress);
         store.replace(d);
         await skinMod(m, gameDir);
         await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
-        const ready = new Error('Todo descargado. La instancia abre el {date}');
+        const ready = new Error(e.code === 'locked' ? 'Todo descargado. Podrás jugar cuando el studio la abra.' : 'Todo descargado. La instancia abre el {date}');
         ready.code = 'predownloaded'; ready.vars = e.vars;
         throw ready;
       }

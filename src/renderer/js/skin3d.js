@@ -134,6 +134,10 @@
       if (!this.skinImg || !this.root.isConnected) return;
       const t = (now - this._t0) / 1000 + this.phase;
 
+      if (this.turnTo != null && !this.dragging) {
+        this.ry += (this.turnTo - this.ry) * 0.12;
+        if (Math.abs(this.turnTo - this.ry) < 0.2) { this.ry = this.turnTo; this.turnTo = null; }
+      }
       if (this.opts.spin === 'rotate' && !this.dragging) this.ry += 0.35;
       if (this.opts.spin === 'sway' && !this.dragging) this.ry = this.opts.rotY + Math.sin(t / 1.6) * 10;
       const s = this.opts.scale;
@@ -213,6 +217,8 @@
     setWalk(on) { this.walk = !!on; }
     setOuter(on) { this.root.classList.toggle('no-outer', !on); }
     setCapeVisible(on) { this.root.classList.toggle('no-cape', !on); }
+    // Girar el muñeco para ver la espalda (al probar capas) o volver de frente
+    showBack(on) { this.turnTo = this.opts.rotY + (on ? 180 : 0); }
 
     _build() {
       if (!this.skinImg) return;
@@ -357,6 +363,11 @@
       let lArmX = 0, lArmZ = (Math.PI * 0.02) + breathe * 0.03;
       let rLeg = 0, lLeg = 0;
       let capeX = Math.PI * 0.06 + Math.sin(t * 2) * 0.01;
+      if (this.turnTo != null) {
+        const w = this.viewer.playerWrapper;
+        w.rotation.y += (this.turnTo - w.rotation.y) * 0.12;
+        if (Math.abs(this.turnTo - w.rotation.y) < 0.002) { w.rotation.y = this.turnTo; this.turnTo = null; }
+      }
 
       // --- caminar ---
       if (this.walk) {
@@ -425,6 +436,7 @@
     setWalk(on) { this.walk = !!on; }
     setOuter(on) { this.viewer.playerObject.skin.setOuterLayerVisible(!!on); }
     setCapeVisible(on) { this.viewer.playerObject.cape.visible = !!on; this.viewer.playerObject.elytra.visible = !!on; }
+    showBack(on) { this.turnTo = (this.opts.rotY + (on ? 180 : 0)) * DEG; }
 
     destroy() {
       try { this._ro.disconnect(); } catch { /* nada */ }

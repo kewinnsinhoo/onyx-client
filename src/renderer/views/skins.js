@@ -94,6 +94,7 @@
 
     // ---------- pestañas ----------
     function setTab(name) {
+      stopTry();
       tab = name;
       root.querySelectorAll('#sk-tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
       const body = $('#sk-body');
@@ -183,22 +184,79 @@
       };
     }
 
+    // ---------- capas ----------
+    // Probar una capa de Kopi en el visor (animada). Se quita al cambiar de pestaña o salir.
+    let trying = null;
+    function stopTry() {
+      if (!trying) return;
+      clearInterval(trying.timer); trying = null;
+      viewer.showBack(false);
+      viewer.setCape(activeCape ? activeCape.url.replace(/^http:/, 'https:') : null);
+    }
+    function tryCape(id) {
+      const was = trying && trying.id;
+      stopTry();
+      if (was === id) return;
+      const cape = KopiCapes.get(id);
+      let f = 0;
+      const show = () => viewer.setCape(KopiCapes.texture(cape, f++).toDataURL());
+      show();
+      viewer.showBack(true);
+      if (!capeOn) { capeOn = true; viewer.setCapeVisible(true); root.querySelector('.viewer-tools [data-t=cape]').classList.add('on'); }
+      trying = { id, timer: cape.frames > 1 ? setInterval(show, 1000 / cape.fps) : 0 };
+      root.querySelector('#sk-viewer').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     function capes(body) {
-      if (!isMsa) {
-        body.innerHTML = html`<div class="center-empty" style="padding:50px 0"><div class="ico">${icon('cape')}</div>
-          <div class="t">${t('Las capas necesitan una cuenta de Microsoft')}</div><div class="s">${t('Añade una en Ajustes > Cuentas.')}</div></div>`;
-        return;
-      }
-      const list = acc.capes || [];
-      body.innerHTML = html`<div class="row" style="margin-bottom:14px"><div style="font-weight:700">${t('Tuyas')} <span class="muted" style="font-weight:500">${list.length}</span></div></div>
-        <div class="skin-grid">
+      const list = isMsa ? (acc.capes || []) : [];
+      const K = KopiCapes.list, R = KopiCapes.RARITY;
+      const card = (c) => html`<div class="kc-card" style="--rc:${R[c.rarity].color}">
+          <div class="kc-art"><canvas data-kc="${c.id}"></canvas></div>
+          <div class="kc-info">
+            <div class="kc-top"><b>${t(c.name)}</b>${c.frames > 1 ? `<span class="kc-anim">${icon('sparkles')}${t('Animada')}</span>` : ''}</div>
+            <div class="kc-r">${t(R[c.rarity].label)}</div>
+            <div class="kc-lock">${icon('lock')}<span>${t('Por ahora no se puede conseguir.')}</span></div>
+            <button class="kc-try ${trying && trying.id === c.id ? 'on' : ''}" data-try="${c.id}">${icon(trying && trying.id === c.id ? 'x' : 'play')}<span>${t(trying && trying.id === c.id ? 'Quitar' : 'Probar')}</span></button>
+          </div>
+        </div>`;
+      body.innerHTML = html`<button class="kc-banner" id="kc-go">
+          <span class="kc-minis">${K.slice(0, 3).map(c => `<canvas data-kc="${c.id}"></canvas>`).join('')}</span>
+          <span class="kc-bt"><b>${t('Capas de Kopi')}</b><span>${t('{n} por conseguir', { n: K.length })}</span></span>
+          <span class="kc-arrow">${icon('chevronRight')}</span>
+        </button>
+
+        <div class="kc-h"><div><b>${t('Capas de Minecraft')}</b> <span class="muted">${list.length}</span></div>
+          ${isMsa ? `<span class="kc-chip">${icon('globe')}${t('En todo Minecraft')}</span>` : ''}</div>
+        ${isMsa ? html`<div class="skin-grid">
           <div class="skin-tile ${activeCape ? '' : 'on'}" data-cape=""><div class="prev cape-tile">${icon('x')}</div><div class="n">${t('Sin capa')}</div><div class="s">&nbsp;</div></div>
           ${list.map(c => html`<div class="skin-tile ${c.active ? 'on' : ''}" data-cape="${esc(c.id)}">
             <div class="prev cape-tile">${Skin3D.capePreview(c.url.replace(/^http:/, 'https:'), 4.2)}</div>
             <div class="n">${esc(c.alias || 'Capa')}</div><div class="s">Minecraft</div></div>`).join('')}
         </div>
-        ${list.length ? '' : `<p class="muted" style="margin-top:14px;font-size:12.5px">${t('Tu cuenta aún no tiene capas oficiales de Minecraft.')}</p>`}`;
+        ${list.length ? '' : `<p class="muted" style="margin-top:14px;font-size:12.5px">${t('Tu cuenta aún no tiene capas oficiales de Minecraft.')}</p>`}`
+        : `<p class="kc-note">${icon('lock')}${t('Las capas oficiales necesitan una cuenta de Microsoft.')}</p>`}
+
+        <div class="kc-h" id="kc-sec"><div><b>${t('Capas de Kopi')}</b> <span class="muted">${K.length}</span></div>
+          <span class="kc-chip pink">${icon('sparkles')}${t('Exclusivas de Kopi Client')}</span></div>
+        <p class="kc-intro">${t('Capas animadas que solo tiene la gente de Kopi Client. Pronto podrás ganarlas jugando.')}</p>
+        ${['legendary', 'epic', 'rare', 'common'].map(r => {
+          const cs = K.filter(c => c.rarity === r);
+          return cs.length ? html`<div class="kc-rar"><i style="background:${R[r].color}"></i>${t(R[r].label)} <span class="muted">${cs.length}</span></div>
+            <div class="kc-grid">${cs.map(card).join('')}</div>` : '';
+        }).join('')}`;
+
+      body.querySelectorAll('canvas[data-kc]').forEach(cv => KopiCapes.mount(cv, KopiCapes.get(cv.dataset.kc)));
+      body.querySelector('#kc-go').onclick = () => body.querySelector('#kc-sec').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      body.querySelectorAll('[data-try]').forEach(b => b.onclick = () => {
+        tryCape(b.dataset.try);
+        body.querySelectorAll('[data-try]').forEach(x => {
+          const on = !!trying && trying.id === x.dataset.try;
+          x.classList.toggle('on', on);
+          x.innerHTML = `${icon(on ? 'x' : 'play')}<span>${esc(t(on ? 'Quitar' : 'Probar'))}</span>`;
+        });
+      });
       body.querySelectorAll('[data-cape]').forEach(el => el.onclick = async () => {
+        stopTry();
         const id = el.dataset.cape || null;
         body.querySelectorAll('[data-cape]').forEach(x => x.classList.toggle('on', x === el));
         const c = list.find(x => x.id === id);
@@ -241,6 +299,6 @@
         if (!isMsa) { try { await onyx.skins.apply({ data: current.skin, variant: v }); await App.loadAccounts(); } catch { /* nada */ } }
       });
     }
-    return () => viewer.destroy();
+    return () => { stopTry(); viewer.destroy(); };
   };
 })();
