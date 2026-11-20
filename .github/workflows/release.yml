@@ -126,10 +126,13 @@ jobs:
           shopt -s nullglob
           BIN=( *.dmg *.dmg.blockmap *.zip *.zip.blockmap )
           [ ${#BIN[@]} -gt 0 ] || { echo "::error::No salió ningún archivo de Mac"; exit 1; }
-          # Primero los instaladores y después latest-mac.yml: nadie ve una actualización sin su archivo
+          # Primero los instaladores y después el .yml de actualización: nadie ve una actualización sin su archivo.
+          # En las versiones normales se llama latest-mac.yml; en las beta, beta-mac.yml.
+          YML=( *-mac.yml )
+          [ ${#YML[@]} -gt 0 ] || { echo "::error::No salió el archivo de actualización de Mac"; exit 1; }
           gh release upload "$V" "${BIN[@]}" --clobber
-          gh release upload "$V" latest-mac.yml --clobber
-          printf '%s\n' "${BIN[@]}" latest-mac.yml
+          gh release upload "$V" "${YML[@]}" --clobber
+          printf '%s\n' "${BIN[@]}" "${YML[@]}"
 
   publicar:
     needs: [preparar, compilar]
