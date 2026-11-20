@@ -26,6 +26,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
+    "afterPack": "scripts/mac-adhoc-sign.js",
     "appId": "com.onyxstudios.client",
     "productName": "Kopi Client",
     "copyright": "© Kopi Studio",
@@ -89,7 +90,7 @@
       ],
       "icon": "build/icon.png",
       "category": "public.app-category.games",
-      "identity": "-",
+      "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "artifactName": "Kopi-Client-${version}-${arch}.${ext}"
