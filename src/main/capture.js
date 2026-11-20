@@ -2,10 +2,13 @@
 // nunca la pantalla entera ni el sonido. Se usa una ventana oculta del launcher que mira esa ventana
 // (desktopCapturer + getUserMedia) y la dibuja en un lienzo (fotos) o la graba (MediaRecorder, WebM).
 // Si algo falla (sin permiso en macOS, Wayland, el juego no tiene ventana…), devuelve null y ya está.
+const path = require('path');
+const { execFile } = require('child_process');
 const log = require('./logger');
 
 const electron = () => require('electron'); // solo dentro de Electron (las pruebas no lo cargan)
 let win = null, ready = null, source = null, sourceAt = 0, recording = null;
+let target = { pid: 0, hint: '' }, hwnd = null; // el proceso del juego (para encontrar su ventana)
 
 // El script de la ventana oculta
 const PAGE = `
@@ -62,13 +65,52 @@ function supported() {
   return true;
 }
 
-// La ventana de Minecraft (por su título: «Minecraft 1.21.1», «Minecraft* 1.21.1 - Multijugador…»)
+// Qué partida se vigila: { pid del proceso de Java, nombre de la instancia }
+function setTarget(t) { target = { pid: Number(t && t.pid) || 0, hint: String((t && t.hint) || '') }; source = null; hwnd = null; }
+
+// Windows: la ventana principal del proceso del juego (su número, igual que en los id «window:<número>:0»)
+function windowOfPid(pid) {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32' || !pid) return resolve(null);
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `(Get-Process -Id ${pid}).MainWindowHandle`], { windowsHide: true, timeout: 10000 },
+      (err, out) => { const n = Number(String(out || '').trim()); resolve(!err && n > 0 ? String(n) : null); });
+  });
+}
+
+// La ventana de Minecraft: por el proceso del juego (Windows) o por el título
+// («Minecraft* 1.21.1», «Minecraft* 1.21.1 - Multijugador…», o uno que lleve el nombre de la instancia)
+async function sources(size) {
+  return electron().desktopCapturer.getSources({ types: ['window'], thumbnailSize: size || { width: 0, height: 0 }, fetchWindowIcons: false });
+}
+function pick(list) {
+  if (hwnd) { const s = list.find(x => String(x.id).startsWith(`window:${hwnd}:`)); if (s) return s; }
+  const name = (s) => String(s.name || '').trim();
+  const other = /launcher|kopi client|chrome|edge|firefox|opera|brave|safari|discord|youtube|twitch|obs/i; // nunca el navegador, el chat o el launcher
+  const ok = list.filter(s => !other.test(name(s)));
+  return ok.find(s => /^minecraft\*?(\s+\d|$)/i.test(name(s)))  // «Minecraft* 1.21.1 - …»
+    || (target.hint.length > 2 ? ok.find(s => name(s).toLowerCase().includes(target.hint.toLowerCase())) : null)
+    || ok.find(s => /minecraft/i.test(name(s)))
+    || null;
+}
 async function findSource() {
   if (source && Date.now() - sourceAt < 30e3) return source;
-  const list = await electron().desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 }, fetchWindowIcons: false });
-  const mc = list.filter(s => /^minecraft\*?(\s|$)/i.test(String(s.name).trim()) && !/launcher/i.test(s.name));
-  source = mc.length ? mc[0].id : null; sourceAt = Date.now();
+  if (!hwnd) hwnd = await windowOfPid(target.pid);
+  const s = pick(await sources());
+  source = s ? s.id : null; sourceAt = Date.now();
+  if (!source) log.warn('[KopiGuard] No se encuentra la ventana del juego');
   return source;
+}
+
+// Plan B (si no se puede abrir el vídeo de la ventana): la miniatura que da el sistema. Solo fotos, sin vídeo.
+async function thumb(w, q) {
+  const s = pick(await sources({ width: w, height: Math.round(w * 9 / 16) }));
+  if (!s || !s.thumbnail || s.thumbnail.isEmpty()) return null;
+  const { width, height } = s.thumbnail.getSize();
+  if (!width || !height) return null;
+  const bmp = s.thumbnail.toBitmap(); let sum = 0, n = 0;
+  for (let i = 0; i < bmp.length; i += 4 * 97) { sum += bmp[i] + bmp[i + 1] + bmp[i + 2]; n++; }
+  if (n && sum / n < 6) return ''; // negro: minimizado
+  return s.thumbnail.toJPEG(Math.round(q * 100));
 }
 
 async function page() {
@@ -78,7 +120,8 @@ async function page() {
   ses.setPermissionRequestHandler((wc, perm, cb) => cb(perm === 'media'));
   ses.setPermissionCheckHandler((wc, perm) => perm === 'media');
   win = new BrowserWindow({ show: false, width: 320, height: 200, skipTaskbar: true, webPreferences: { partition: 'kopi-capture', backgroundThrottling: false, contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  ready = win.loadURL('data:text/html,<meta charset="utf-8"><title>Kopi</title>').then(() => win.webContents.executeJavaScript(PAGE));
+  // Una página del propio launcher (file://): la captura solo funciona en páginas seguras (una data: no lo es)
+  ready = win.loadFile(path.join(__dirname, '..', 'renderer', 'capture.html')).then(() => win.webContents.executeJavaScript(PAGE));
   win.on('closed', () => { win = null; ready = null; });
   return ready;
 }
@@ -97,14 +140,19 @@ function open() {
   return opening;
 }
 
-const quiet = (what) => (e) => { log.warn(`[KopiGuard] ${what}:`, e && e.message); return null; };
+let lastWarn = '';
+const quiet = (what) => (e) => { const msg = `[KopiGuard] ${what}: ${e && e.message}`; if (msg !== lastWarn) log.warn(msg); lastWarn = msg; return null; }; // sin repetir el mismo aviso
 
 // Foto de la detección (JPEG, hasta 1280 px). null si no se ve el juego.
 async function shot() {
   try {
-    if (!(await open())) return null;
-    const b64 = await win.webContents.executeJavaScript('K.frame(1280, 0.82)');
-    return b64 ? Buffer.from(b64, 'base64') : null;
+    if (await open().catch(quiet('abrir la ventana'))) {
+      const b64 = await win.webContents.executeJavaScript('K.frame(1280, 0.82)');
+      if (b64 !== null) return b64 ? Buffer.from(b64, 'base64') : null;
+    }
+    if (!supported()) return null;
+    const j = await thumb(1280, 0.82);
+    return j || null;
   } catch (e) { return quiet('captura')(e); }
 }
 
@@ -112,8 +160,13 @@ async function shot() {
 // '' = ventana minimizada; null = no se puede capturar.
 async function frame(hd) {
   try {
-    if (!(await open())) return null;
-    return await win.webContents.executeJavaScript(hd ? 'K.frame(1280, 0.68)' : 'K.frame(480, 0.55)');
+    if (await open().catch(quiet('abrir la ventana'))) {
+      const b64 = await win.webContents.executeJavaScript(hd ? 'K.frame(1280, 0.68)' : 'K.frame(480, 0.55)');
+      if (b64 !== null) return b64;
+    }
+    if (!supported()) return null;
+    const j = await thumb(hd ? 1280 : 480, hd ? 0.68 : 0.55);
+    return j === '' ? '' : j ? j.toString('base64') : null;
   } catch (e) { return quiet('cámara')(e); }
 }
 
@@ -142,4 +195,4 @@ function close() {
 // Al cerrar el launcher
 function destroy() { if (win && !win.isDestroyed()) win.destroy(); win = null; ready = null; }
 
-module.exports = { shot, frame, video, close, destroy };
+module.exports = { shot, frame, video, close, destroy, setTarget, pick: (list) => pick(list) };

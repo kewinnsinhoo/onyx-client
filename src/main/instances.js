@@ -348,6 +348,7 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
       };
       if (guardOn) {
         log.info(`[KopiGuard] Vigilando ${id}`);
+        capture.setTarget({ pid: child && child.pid, hint: inst.name });
         guardRun = guard.start({
           gameDir, manifest: m, managed: inst.managedFiles, initial: guardFirst, onKick: kick, capture,
           report: (events) => panel.guardReport(account, session.play, events),

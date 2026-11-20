@@ -1046,6 +1046,13 @@ test('panel: errores legibles', () => {
     assert.strictEqual(sent.find(e => e.type === 'program').process.name, 'OP AutoClicker.exe');
     assert.ok(kicked >= 1);
     assert.ok(!JSON.stringify(sent).includes('chrome'), 'nunca la lista de programas');
+    // la ventana del juego: por su título, aunque cambie al entrar a un servidor; nunca el navegador ni el launcher
+    const realCap = require('../src/main/capture');
+    realCap.setTarget({ pid: 0, hint: 'ColonizadoSMP S3' });
+    const W = (id, name) => ({ id, name });
+    assert.strictEqual(realCap.pick([W('window:1:0', 'Kopi Client'), W('window:2:0', 'Minecraft guía - YouTube — Chrome'), W('window:3:0', 'Minecraft* 1.21.1 - Multijugador (servidor externo)')]).id, 'window:3:0');
+    assert.strictEqual(realCap.pick([W('window:2:0', 'minecraft tips - YouTube - Google Chrome'), W('window:4:0', 'ColonizadoSMP S3 | 1.21.1')]).id, 'window:4:0');
+    assert.strictEqual(realCap.pick([W('window:1:0', 'Kopi Client'), W('window:2:0', 'Discord')]), null);
     // apagado: no hace nada
     assert.strictEqual(typeof guard.start({ gameDir: tmp, manifest: { guard: null } }).stop, 'function');
     fs.rmSync(tmp, { recursive: true, force: true });
