@@ -411,7 +411,8 @@
     // Acceso
     async function access(el) {
       el.innerHTML = `<div class="skel" style="height:300px"></div>`;
-      const [codes, acc, bans] = await Promise.all([sapi('GET', `${base}/codes`), sapi('GET', `${base}/access`), sapi('GET', `${base}/bans`)]);
+      const [codes, acc, bans, grs] = await Promise.all([sapi('GET', `${base}/codes`), sapi('GET', `${base}/access`), sapi('GET', `${base}/bans`), sapi('GET', '/groups').catch(() => ({ groups: [] }))]);
+      if (!Array.isArray(d.access.groups)) d.access.groups = [];
       const manual = acc.players.filter(p => p.via === 'manual');
       const saveStaff = async (list) => {
         const res = await sapi('PATCH', base, { data: { access: { staff: list } } });
@@ -424,6 +425,11 @@
           <div class="set"><div class="t"><b>${t('Aceptar códigos de invitación')}</b><small>${t('Si lo apagas, los códigos dejan de funcionar (quien ya entró, sigue).')}</small></div>${sw('a-codes', d.access.codes)}</div>
           <div class="set"><div class="t"><b>${t('Solo Premium')}</b><small>${t('Solo cuentas de Microsoft con Minecraft, verificadas por Mojang.')}</small></div>${sw('a-prem', d.access.premiumOnly)}</div>
           <div class="set"><div class="t"><b>${t('Límite de jugadores a la vez')}</b><small>${t('Vacío = sin límite. El staff entra aunque esté lleno.')}</small></div><input class="input" id="a-max" type="number" min="1" style="width:130px" placeholder="${t('Sin límite')}" value="${d.access.maxPlayers || ''}"></div></div>
+
+        <div class="card"><div class="card-head"><div><h3>${icon('layers')}${t('Grupos con acceso')}</h3><p class="sub">${t('Todos los jugadores de estos grupos pueden entrar sin código. Si sacas a alguien del grupo, pierde el acceso.')}</p></div>
+            <span class="grow"></span><a class="btn sm" href="#/groups">${icon('edit')}${t('Gestionar grupos')}</a></div>
+          ${grs.groups.length ? `<div class="gr-toggles">${grs.groups.map(g => { const on = d.access.groups.includes(g.id); return `<button class="gr-tog ${on ? 'on' : ''}" data-gtog="${esc(g.id)}" style="--gc:${esc(g.color)}" ${editable ? '' : 'disabled'}><i></i><b>${esc(g.name)}</b><small>${g.members === 1 ? t('1 jugador') : t('{n} jugadores', { n: g.members })}</small>${on ? icon('check') : ''}</button>`; }).join('')}</div>`
+            : `<p class="help" style="margin:0">${t('Todavía no hay grupos. Créalos en Jugadores → Grupos.')}</p>`}</div>
 
         <div class="card"><div class="card-head"><div><h3>${icon('users')}${t('Whitelist manual')}</h3><p class="sub">${t('Estos nombres pueden entrar sin código.')}</p></div></div>
           ${editable ? `<div style="display:flex;gap:8px"><input class="input" id="wl-in" placeholder="${t('Nombre de jugador (puedes pegar varios)')}"><button class="btn" id="wl-add">${icon('plus')}${t('Añadir')}</button></div>` : ''}
@@ -470,6 +476,16 @@
       const st = $('#st-add', el);
       if (st) { const go3 = () => { const v = $('#st-in', el).value.trim(); if (!/^[A-Za-z0-9_]{2,16}$/.test(v)) return toast(t('Nombre de jugador no válido'), 'err'); act(st, () => saveStaff([...d.access.staff, v]), t('Añadido al staff')); }; st.onclick = go3; $('#st-in', el).onkeydown = (e) => { if (e.key === 'Enter') go3(); }; }
       $$('[data-unst]', el).forEach(b => b.onclick = () => act(b, () => saveStaff(d.access.staff.filter(n => n !== b.dataset.unst))));
+      // grupos con acceso: se guarda al momento
+      $$('[data-gtog]', el).forEach(b => b.onclick = () => {
+        const gid = b.dataset.gtog, on = d.access.groups.includes(gid);
+        const list = on ? d.access.groups.filter(x => x !== gid) : [...d.access.groups, gid];
+        act(b, async () => {
+          const res = await sapi('PATCH', base, { data: { access: { groups: list } } });
+          d.access.groups = res.data.access.groups; inst.data.access.groups = res.data.access.groups;
+          const o = JSON.parse(orig); o.access.groups = res.data.access.groups; orig = JSON.stringify(o); changed();
+        }, on ? t('El grupo ya no tiene acceso') : t('El grupo ya tiene acceso'));
+      });
       $$('[data-cp]', el).forEach(b => b.onclick = () => copy(b.dataset.cp));
       $$('[data-cdel]', el).forEach(b => b.onclick = async () => { if (await confirmBox({ title: t('¿Eliminar el código?'), text: t('Dejará de funcionar. Quien ya lo canjeó sigue teniendo acceso.'), ok: t('Eliminar'), danger: true, ico: 'trash' })) act(b, () => sapi('DELETE', `${base}/codes/${encodeURIComponent(b.dataset.cdel)}`), t('Código eliminado')); });
       $$('[data-unacc]', el).forEach(b => b.onclick = () => act(b, () => sapi('DELETE', `${base}/access/${encodeURIComponent(b.dataset.unacc)}`), t('Acceso quitado')));

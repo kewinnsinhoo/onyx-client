@@ -366,7 +366,27 @@ CREATE TABLE player_showcase (
   player_name TEXT NOT NULL,
   public INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL
-)`
+)`,
+  // Grupos de jugadores del studio (VIP, Testers…): dan acceso a las instancias que los eligen
+  `CREATE TABLE player_groups (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT,
+  created_by TEXT,
+  created_at INTEGER NOT NULL,
+  deleted_at INTEGER
+);
+CREATE INDEX player_groups_studio ON player_groups(studio_id);
+CREATE TABLE group_members (
+  group_id TEXT NOT NULL,
+  player_key TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  added_by TEXT,
+  added_at INTEGER NOT NULL,
+  PRIMARY KEY (group_id, player_key)
+);
+CREATE INDEX group_members_player ON group_members(player_key)`
 ];
 
 export function statements(sql) {

@@ -80,6 +80,8 @@
               ${live ? `<a class="chip live" href="${esc(live.url)}" target="_blank" rel="noopener"><i></i>${esc(t('En directo en {p}', { p: PLAT[live.platform] }))}</a>` : ''}
               ${f.referral ? `<span class="chip ref">${icon('heart')}${t('Llegó a Kopi por vuestro studio')}</span>` : ''}
             </div>
+            <div class="pl-groups">${f.groups.map(g => `<span class="gr-chip" style="--gc:${esc(g.color)}"><i></i>${esc(g.name)}${can('editor') ? `<button data-ungr="${esc(g.id)}" title="${t('Sacar del grupo')}">${icon('x')}</button>` : ''}</span>`).join('')}
+              ${can('editor') ? `<button class="gr-chip add" id="pl-addgr">${icon('plus')}${t('Añadir a un grupo')}</button>` : ''}</div>
           </div>
           <span class="grow"></span>
           <div class="pl-acts">
@@ -143,6 +145,16 @@
         b.onmouseenter = () => { tip.textContent = b.dataset.tip; tip.hidden = false; const r = b.getBoundingClientRect(), c = chart.getBoundingClientRect(); tip.style.left = (r.left - c.left + r.width / 2) + 'px'; };
         b.onmouseleave = () => { tip.hidden = true; };
       });
+      $$('[data-ungr]', view).forEach(b => b.onclick = async () => {
+        try { await sapi('DELETE', `/groups/${b.dataset.ungr}/members/${encodeURIComponent(f.name)}`); toast(t('Sacado del grupo')); return ficha(view, f.name); } catch (e) { fail(e); }
+      });
+      const ag = $('#pl-addgr', view);
+      if (ag) ag.onclick = async () => {
+        const all = (await sapi('GET', '/groups').catch(() => ({ groups: [] }))).groups.filter(g => !f.groups.some(x => x.id === g.id));
+        if (!all.length) return go('/groups');
+        dropdown(ag, all.map(g => ({ icon: 'layers', label: g.name, hint: g.members === 1 ? t('1 jugador') : t('{n} jugadores', { n: g.members }),
+          run: async () => { try { await sapi('POST', `/groups/${g.id}/members`, { names: [f.name] }); toast(t('Añadido a {g}', { g: g.name })); ficha(view, f.name); } catch (e) { fail(e); } } })));
+      };
       const ban = $('#pl-ban', view);
       if (ban) ban.onclick = async () => {
         if (studioBan) {

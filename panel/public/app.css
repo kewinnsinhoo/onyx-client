@@ -995,3 +995,47 @@ a.g-shot:hover { border-color: var(--accent); }
 .pl-chan span:not(.plat-dot):not(.badge):not(.dot) { color: var(--muted); font-size: 13px; }
 .pl-chan .badge { margin-left: auto; }
 @media (max-width: 1100px) { .pl-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pl-grid { grid-template-columns: 1fr; } .pl-row { grid-template-columns: auto minmax(0, 1fr) 90px 20px; } .pl-row .pl-c:nth-of-type(n+2) { display: none; } }
+
+/* Grupos de jugadores */
+.gr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.gr-grid > .card { margin: 0; }
+.gr-help { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.gr-help svg { width: 15px; height: 15px; flex: none; }
+.gr-card { position: relative; display: grid; gap: 6px; text-align: left; padding: 20px 20px 18px 22px; margin: 0; cursor: pointer; font: inherit; color: var(--text); overflow: hidden; transition: transform .15s, border-color .15s; }
+.gr-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--gc); }
+.gr-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--gc) 50%, transparent); }
+.gr-card b { font-size: 17px; }
+.gr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--gc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gc) 20%, transparent); margin-right: 8px; }
+.gr-card .gr-dot { margin-bottom: 4px; }
+.gr-n { font-size: 13px; color: var(--text-2, var(--muted)); font-weight: 600; }
+.gr-in { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.gr-in svg { width: 13px; height: 13px; flex: none; color: var(--gc); }
+.gr-empty .gr-demo { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.gr-demo span { padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--gc); background: color-mix(in srgb, var(--gc) 14%, transparent); border: 1px solid color-mix(in srgb, var(--gc) 35%, transparent); }
+.gr-colors { display: flex; gap: 10px; }
+.gr-colors button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.gr-colors button.on { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .15); }
+.gr-det { display: grid; gap: 14px; }
+.gr-add { display: flex; gap: 8px; }
+.gr-add .input { flex: 1; }
+.gr-find { position: relative; } .gr-find svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); } .gr-find .input { padding-left: 36px; }
+.gr-list { display: grid; gap: 6px; max-height: 380px; overflow: auto; }
+.gr-li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; background: var(--card-2); }
+.gr-li a { color: var(--text); text-decoration: none; } .gr-li a:hover b { text-decoration: underline; }
+.gr-li small { margin-left: auto; font-size: 12px; color: var(--muted); }
+.gr-chip { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; font-family: inherit; font-weight: 600; font-size: 12.5px; color: var(--gc, var(--text-2)); background: color-mix(in srgb, var(--gc, #888) 13%, transparent); border: 1px solid color-mix(in srgb, var(--gc, #888) 32%, transparent); }
+.gr-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--gc); }
+.gr-chip button { border: 0; background: none; color: inherit; opacity: .7; cursor: pointer; display: grid; padding: 0; }
+.gr-chip button:hover { opacity: 1; }
+.gr-chip svg { width: 12px; height: 12px; }
+.gr-chip.add { --gc: #9aa3b5; cursor: pointer; border-style: dashed; color: var(--muted); }
+.gr-chip.add:hover { color: var(--text); }
+.pl-groups { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.gr-toggles { display: flex; flex-wrap: wrap; gap: 10px; }
+.gr-tog { display: inline-flex; align-items: center; gap: 9px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--card-2); color: var(--text); font: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
+.gr-tog i { width: 9px; height: 9px; border-radius: 50%; background: var(--gc); }
+.gr-tog b { font-size: 13.5px; }
+.gr-tog small { font-size: 12px; color: var(--muted); }
+.gr-tog svg { width: 15px; height: 15px; color: var(--gc); }
+.gr-tog.on { border-color: var(--gc); background: color-mix(in srgb, var(--gc) 12%, var(--card-2)); }
+.gr-tog:disabled { cursor: default; opacity: .7; }

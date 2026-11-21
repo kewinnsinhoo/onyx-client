@@ -1366,4 +1366,47 @@ await test('Ficha del jugador: búsqueda, horas, instancias, KopiGuard y baneos 
   assert.strictEqual((await call('GET', '/api/s/onyx-studios/players/Fichado', { cookie: other })).status, 403);
 });
 
+await test('Grupos de jugadores: dar acceso a una instancia por grupo', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Solo VIP' } });
+  const iid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open' } });
+  const vip = await player('ElVip', false), nope = await player('ElNoVip', false);
+  const sees = async (h) => (await call('GET', '/api/l/instances', { headers: h })).data.instances.some(i => i.id === iid);
+  assert.ok(!(await sees(vip)), 'sin grupo no la ve');
+  // crear el grupo con un jugador
+  assert.strictEqual((await call('POST', '/api/s/onyx-studios/groups', { cookie: creator, body: { name: '' } })).status, 400);
+  let r = await call('POST', '/api/s/onyx-studios/groups', { cookie: creator, body: { name: 'VIP', color: '#fbbf24', names: 'ElVip, mal nombre!' } });
+  assert.strictEqual(r.status, 201);
+  const gid = r.data.id;
+  assert.ok(/^[a-z0-9]{12}$/.test(gid));
+  assert.strictEqual(r.data.members, 2, '«mal» y «ElVip»'); // «nombre!» no vale
+  await call('DELETE', `/api/s/onyx-studios/groups/${gid}/members/mal`, { cookie: creator });
+  // la instancia da acceso al grupo (y a un grupo que no existe: se ignora)
+  r = await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { data: { access: { groups: [gid, 'NO VALE', 'zzzzzzzzzzzz'] } } } });
+  assert.deepStrictEqual(r.data.data.access.groups, [gid, 'zzzzzzzzzzzz']);
+  assert.ok(await sees(vip), 'en el grupo: la ve');
+  assert.ok(!(await sees(nope)), 'fuera del grupo: no');
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: vip, body: { instance: iid } })).status, 200);
+  assert.strictEqual((await call('POST', '/api/l/play', { headers: nope, body: { instance: iid } })).status, 403);
+  assert.strictEqual((await call('GET', `/api/l/instance/${iid}`, { headers: vip })).status, 200);
+  // la lista de grupos dice qué instancias lo usan; el detalle, quién está
+  r = await call('GET', '/api/s/onyx-studios/groups', { cookie: creator });
+  const g = r.data.groups.find(x => x.id === gid);
+  assert.deepStrictEqual([g.members, g.instances.map(i => i.id)], [1, [iid]]);
+  r = await call('GET', `/api/s/onyx-studios/groups/${gid}`, { cookie: creator });
+  assert.deepStrictEqual(r.data.list.map(x => x.name), ['ElVip']);
+  // en su ficha sale el grupo
+  r = await call('GET', '/api/s/onyx-studios/players/ElVip', { cookie: creator });
+  assert.deepStrictEqual(r.data.groups.map(x => x.name), ['VIP']);
+  // otro studio no puede tocarlo
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/groups/${gid}`, { cookie: other })).status, 403);
+  // fuera del grupo: deja de verla; y si se borra el grupo, igual
+  await call('DELETE', `/api/s/onyx-studios/groups/${gid}/members/ElVip`, { cookie: creator });
+  assert.ok(!(await sees(vip)));
+  await call('POST', `/api/s/onyx-studios/groups/${gid}/members`, { cookie: creator, body: { names: ['ElVip'] } });
+  assert.ok(await sees(vip));
+  assert.strictEqual((await call('DELETE', `/api/s/onyx-studios/groups/${gid}`, { cookie: creator })).status, 200);
+  assert.ok(!(await sees(vip)), 'grupo borrado: sin acceso');
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

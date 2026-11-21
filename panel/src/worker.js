@@ -19,6 +19,7 @@ import { launcherStreams, studioStreams, refreshDue } from './streams.js';
 import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
 import { launcherPublic } from './profile.js';
 import { studioPlayers } from './players.js';
+import { groupsApi, inGroups } from './groups.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -301,6 +302,7 @@ async function studioApi(c, parts, m) {
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
   if (a === 'streams' && b) return studioStreams(c, b, m);
   if (a === 'badges') return studioBadges(c, b, m, sub);
+  if (a === 'groups') return groupsApi(c, b, m, sub, d ? decodeURIComponent(d) : '');
   if (a === 'players') return studioPlayers(c, b ? decodeURIComponent(b) : '', m);
   if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
   if (a === 'brand') return studioBrandApi(c, b, m);
@@ -827,8 +829,10 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'instances' && m === 'GET') {
     // Con acceso (código o lista manual), públicas, o donde es staff (el staff ve también las ocultas)
     const rows = (await env.DB.prepare(`SELECT i.* FROM instances i WHERE i.deleted_at IS NULL AND (
-      (i.hidden = 0 AND (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1))
-      OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.staff') s WHERE lower(s.value) = ?))`).bind(P.key, P.key).all()).results;
+      (i.hidden = 0 AND (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1
+        OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.groups') g JOIN group_members gm ON gm.group_id = g.value JOIN player_groups pg ON pg.id = gm.group_id
+          WHERE gm.player_key = ? AND pg.deleted_at IS NULL AND pg.studio_id = i.studio_id)))
+      OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.staff') s WHERE lower(s.value) = ?))`).bind(P.key, P.key, P.key).all()).results;
     const out = [];
     for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin, P.key, await nextEventOf(r.id)));
     return json({ instances: out });
@@ -839,7 +843,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
     const data = JSON.parse(row.data);
     const has = await env.DB.prepare('SELECT 1 FROM access WHERE instance_id = ? AND player_key = ?').bind(row.id, P.key).first();
     const staff = data.access.staff.some(n => n.toLowerCase() === P.key);
-    if (!has && !data.access.public && !staff) fail(403, 'no_access', 'Ya no tienes acceso a esta instancia');
+    if (!has && !data.access.public && !staff && !(await inGroups(env, data, P.key))) fail(403, 'no_access', 'Ya no tienes acceso a esta instancia');
     if (await isBanned(row)) fail(403, 'banned', 'No puedes entrar a esta instancia');
     return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key, await nextEventOf(row.id)) });
   }
@@ -851,7 +855,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
     const t = now();
     const has = await env.DB.prepare('SELECT 1 FROM access WHERE instance_id = ? AND player_key = ?').bind(row.id, P.key).first();
     const active = await env.DB.prepare('SELECT COUNT(*) AS n FROM plays WHERE instance_id = ? AND ended_at IS NULL AND last_seen > ? AND player_key != ?').bind(row.id, t - ACTIVE_MS, P.key).first();
-    const g = gate({ row, data, player: P, banned: await isBanned(row), hasAccess: !!has, activeOthers: active.n || 0, at: t });
+    const g = gate({ row, data, player: P, banned: await isBanned(row), hasAccess: !!has || await inGroups(env, data, P.key), activeOthers: active.n || 0, at: t });
     if (!g.ok) return json(g, 403);
     if ((await studioOf(row.studio_id)).suspended_at) return json(SUSPENDED, 403);
     const mt = await maintenance(env);

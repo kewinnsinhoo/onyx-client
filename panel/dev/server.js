@@ -211,6 +211,11 @@ async function seed() {
   await ch('inst:ignite-extremo-3', 'twitch', 'kopistudio', 'FINAL de IGNITE EXTREMO 3 · día 30', 4812, '/m/0123456789abcdef0123/fondo.webp');
   await ch('streamerana', 'kick', 'streamerana', 'Sobreviviendo al día 30 sin vidas', 318, '/m/0123456789abcdef0124/skin.webp');
   await ch('leokick', 'tiktok', 'leo.mc', '', 95, null);
+  // Grupos de ejemplo
+  for (const [id, name, color] of [['vip000000001', 'VIP', '#fbbf24'], ['testers00001', 'Testers', '#60a5fa'], ['rojo00000001', 'Equipo rojo', '#f87171'], ['azul00000001', 'Equipo azul', '#a78bfa']]) await run('INSERT INTO player_groups (id, studio_id, name, color, created_at) VALUES (?, ?, ?, ?, ?)', id, 'onyx-studios', name, color, t - 5 * DAY);
+  for (const [g, names] of [['vip000000001', ['ElRayo', 'Luna_MC', 'Steve_Pro', 'StreamerAna']], ['testers00001', ['ElRayo', 'Dante']], ['rojo00000001', ['Mia_2010', 'Pixel', 'Jugador0']], ['azul00000001', ['Jugador1', 'LeoKick']]])
+    for (const n of names) await run('INSERT INTO group_members (group_id, player_key, player_name, added_at) VALUES (?, ?, ?, ?)', g, n.toLowerCase(), n, t - 2 * DAY);
+  { const r = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first(); const d = JSON.parse(r.data); d.access.groups = ['vip000000001', 'testers00001']; await run("UPDATE instances SET data = ? WHERE id = 'ignite-extremo-3'", JSON.stringify(d)); }
   // Insignias de ejemplo del studio
   const sbg = (id, name, desc, rarity, d) => run('INSERT INTO studio_badges (id, studio_id, name, description, rarity, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, 'onyx-studios', name, desc, rarity, JSON.stringify(d), t);
   await sbg('campeon', 'Campeón de IGNITE 3', 'Ganó la final del evento', 'legendary', { icon: 'trophy', rule: { type: 'manual' } });

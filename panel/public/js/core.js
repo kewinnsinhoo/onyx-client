@@ -271,6 +271,7 @@
     { id: 'cameras', i: 'video', t: 'Cámaras' },
     { id: 'badges', i: 'badge', t: 'Insignias' },
     { id: 'players', i: 'users', t: 'Fichas' },
+    { id: 'groups', i: 'layers', t: 'Grupos' },
     { h: 'Studio' },
     { id: 'team', i: 'users', t: 'Equipo' },
     { id: 'notices', i: 'megaphone', t: 'Avisos' },

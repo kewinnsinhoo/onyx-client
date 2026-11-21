@@ -5,6 +5,7 @@
 import { json, fail, now, str, playerKey, NAME_RE } from './util.js';
 import { badgesOf } from './badges.js';
 import { urlOf } from './streams.js';
+import { groupsOf } from './groups.js';
 
 const ACTIVE_MS = 90e3, DAY = 864e5, H = 36e5;
 // Una partida «colgada» (sin final) no cuenta más de 24 horas
@@ -39,11 +40,12 @@ export async function studioPlayers(c, name, m) {
   const iname = Object.fromEntries(insts.map(r => [r.id, instName(r.data, r.id)]));
   const staffOf = insts.filter(r => { try { return !r.deleted_at && (JSON.parse(r.data).access?.staff || []).map(s => String(s).toLowerCase()).includes(key); } catch { return false; } }).map(r => iname[r.id]);
 
-  const [guard, bans, chans, ref] = await Promise.all([
+  const [guard, bans, chans, ref, groups] = await Promise.all([
     env.DB.prepare(`SELECT id, instance_id, type, severity, detail, status, kicked, created_at, media FROM guard_events WHERE studio_id = ? AND player_key = ? ORDER BY created_at DESC LIMIT 200`).bind(studio.id, key).all(),
     env.DB.prepare(`SELECT scope, created_at FROM bans WHERE kind = 'name' AND value = ? AND (scope = ? OR scope IN (SELECT 'instance:' || id FROM instances WHERE studio_id = ?))`).bind(key, 'studio:' + studio.id, studio.id).all(),
     env.DB.prepare('SELECT platform, handle, live, manual_until, viewers FROM channels WHERE owner = ?').bind(key).all(),
-    env.DB.prepare('SELECT 1 FROM referrals WHERE player_key = ? AND studio_id = ?').bind(key, studio.id).first()
+    env.DB.prepare('SELECT 1 FROM referrals WHERE player_key = ? AND studio_id = ?').bind(key, studio.id).first(),
+    groupsOf(env, studio.id, key)
   ]);
   if (!plays.length && !guard.results.length && !bans.results.length) fail(404, 'player', 'Este jugador no ha jugado nunca a vuestras instancias');
 
@@ -91,6 +93,7 @@ export async function studioPlayers(c, name, m) {
     },
     bans: bans.results.map(b => ({ scope: b.scope.startsWith('studio:') ? 'studio' : 'instance', instance: b.scope.startsWith('instance:') ? iname[b.scope.slice(9)] || b.scope.slice(9) : null, at: b.created_at })),
     staff: staffOf,
+    groups,
     referral: !!ref,
     badges,
     channels: chans.results.map(ch => ({ platform: ch.platform, handle: ch.handle, url: urlOf(ch.platform, ch.handle), live: !!online && !!(ch.live || (ch.manual_until && ch.manual_until > t)), viewers: ch.viewers ?? null }))

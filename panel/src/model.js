@@ -24,7 +24,7 @@ export function defaults() {
       music: { url: null, volume: 40, loop: true },
       sponsor: { name: '', logo: null, url: null }
     },
-    access: { codes: true, list: false, public: false, premiumOnly: false, maxPlayers: null, staff: [] },
+    access: { codes: true, list: false, public: false, premiumOnly: false, maxPlayers: null, staff: [], groups: [] }, // groups: grupos de jugadores con acceso
     files: [],
     dirs: [],
     sync: { mode: 'keep', playerPaths: [{ path: 'options.txt', mode: 'once' }] },
@@ -147,6 +147,7 @@ export function sanitize(patch, current = defaults()) {
     for (const k of ['codes', 'list', 'public', 'premiumOnly']) if (k in a) o[k] = bool(a[k]);
     if ('maxPlayers' in a) o.maxPlayers = int(a.maxPlayers, 1, 100000, null);
     if ('staff' in a) o.staff = names(a.staff);
+    if ('groups' in a) o.groups = [...new Set((Array.isArray(a.groups) ? a.groups : []).map(String).filter(g => /^[a-z0-9]{6,20}$/.test(g)))].slice(0, 50);
   }
   // Novedades antes que los archivos: el editor manda todo junto y el apunte automático va después
   if (Array.isArray(p.news)) d.news = cleanNews(p.news);

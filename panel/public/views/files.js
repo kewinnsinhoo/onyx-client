@@ -125,6 +125,8 @@
     m.querySelectorAll('button').forEach(b => b.onclick = () => { close(); items[b.dataset.i].run(); });
   }
 
+  window.dropdown = dropdown; // también lo usan otras páginas (ficha del jugador)
+
   // ---------------------------------------------------------------- la pestaña
   window.FilesTab = function (el, { getData, editable, persist }) {
     const st = { cwd: '', q: '', sel: new Set(), sort: { k: 'name', dir: 1 }, busy: null, mr: null, upd: null };
