@@ -359,6 +359,13 @@ CREATE TABLE player_showcase (
   player_key TEXT PRIMARY KEY,
   showcase TEXT NOT NULL,
   updated_at INTEGER NOT NULL
+)`,
+  // Perfil público en la web (onyxclient.site/u/<nombre>): solo si el jugador lo activa
+  `CREATE TABLE player_public (
+  player_key TEXT PRIMARY KEY,
+  player_name TEXT NOT NULL,
+  public INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL
 )`
 ];
 

@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.7.8', date: '2026-11-20', items: [
+      ['globe', 'Tu perfil en la web: una página con tu skin en 3D, tu capa, tus insignias y tus directos. Actívala en Mi perfil y pon el enlace en tu bio de Twitch, TikTok o Discord.',
+        'Your profile on the web: a page with your 3D skin, your cape, your badges and your streams. Turn it on in My profile and put the link in your Twitch, TikTok or Discord bio.',
+        'El teu perfil a la web: una pàgina amb la teva skin en 3D, la teva capa, les teves insígnies i els teus directes. Activa-la a El meu perfil i posa l’enllaç a la teva bio de Twitch, TikTok o Discord.',
+        'Ton profil sur le web : une page avec ton skin en 3D, ta cape, tes badges et tes lives. Active-la dans Mon profil et mets le lien dans ta bio Twitch, TikTok ou Discord.']
+    ]
+  },
+  {
     v: '1.7.7', date: '2026-11-20', items: [
       ['award', 'Insignias: gánalas jugando (horas, rachas, eventos, juego limpio y alguna secreta). Pon tus 3 favoritas en la vitrina y salen en tu tarjeta de perfil.',
         'Badges: earn them by playing (hours, streaks, events, fair play and a few secret ones). Put your 3 favourites in your showcase and they show on your profile card.',

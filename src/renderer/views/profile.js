@@ -24,6 +24,7 @@
     const kopi = { owned: [], worn: null };
     let ch = { twitch: '', tiktok: '', kick: '' }, chLoaded = false, draft = {};
     let bd = S.badges; // insignias (del panel)
+    let pub = null;     // perfil público en la web: { public, url }
     const CATS = [['time', 'Tiempo jugado'], ['streak', 'Rachas'], ['explore', 'Explorador'], ['fair', 'Juego limpio'], ['seniority', 'Antigüedad'], ['community', 'Comunidad'],
       ['special', 'Especiales'], ['event', 'Eventos'], ['studio', 'De los studios'], ['secret', 'Secretas']];
     const unitTxt = (p) => p.unit === 'h' ? t('{a} / {b} h', { a: p.cur, b: p.max }) : p.unit === 'd' ? t('{a} / {b} días', { a: Math.floor(p.cur), b: p.max }) : t('{a} / {b} instancias', { a: p.cur, b: p.max });
@@ -94,6 +95,16 @@
             </button>`).join('')}</div></div>` : ''; }).join('')}</div>
         </section>` : ''}
 
+        ${pub ? html`<section class="card pf-sec pf-web ${pub.public ? 'on' : ''}">
+          <div class="pf-wtop"><span class="pf-wico">${icon('globe')}</span>
+            <div class="pf-wtx"><b>${t('Tu perfil en la web')}</b><span>${t('Una página con tu skin, tus insignias y tus directos. Ponla en tu bio de Twitch, TikTok o Discord.')}</span></div>
+            <button class="toggle ${pub.public ? 'on' : ''}" id="pf-pub" title="${pub.public ? t('Desactivar') : t('Activar')}"></button></div>
+          ${pub.public ? html`<div class="pf-wlink"><span class="pf-url">${esc(pub.url.replace(/^https:\/\//, ''))}</span>
+            <button class="btn btn-ghost btn-sm" id="pf-pub-copy">${icon('copy')}${t('Copiar')}</button>
+            <button class="btn btn-primary btn-sm" id="pf-pub-open">${icon('external')}${t('Abrir')}</button></div>`
+            : `<p class="pf-hint pf-woff">${t('Está apagado: nadie puede ver tu perfil. Actívalo para tener tu enlace.')}</p>`}
+        </section>` : ''}
+
         <section class="card pf-sec pf-streams">
           <div class="pf-h"><b>${icon('video')}${t('Tus directos')}</b><span class="pf-hint">${t('Cuando emitas mientras juegas, sales en «En directo ahora» de la instancia y el studio te ve.')}</span></div>
           <div class="pf-plat">${Object.entries(PLAT).map(([k, [n, , ph]]) => html`<label class="pf-prow"><i class="plat-dot ${k}"></i><b>${n}</b>
@@ -103,6 +114,19 @@
         </section>
       </div>`;
 
+      const pt = root.querySelector('#pf-pub');
+      if (pt) pt.onclick = async () => {
+        pt.disabled = true;
+        try {
+          pub = await onyx.profile.setPublic(!pub.public);
+          render();
+          toast(pub.public ? t('Tu perfil ya está en la web') : t('Tu perfil ya no se ve en la web'), 'success');
+        } catch (e) { pt.disabled = false; toast(t(e.message, e.vars), 'error'); }
+      };
+      const pc = root.querySelector('#pf-pub-copy');
+      if (pc) pc.onclick = () => navigator.clipboard.writeText(pub.url).then(() => toast(t('Enlace copiado'), 'success')).catch(() => {});
+      const po = root.querySelector('#pf-pub-open');
+      if (po) po.onclick = () => onyx.app.openExternal(pub.url);
       root.querySelectorAll('[data-bd]').forEach(el => { el.onclick = () => badgeModal(bd.badges.find(b => b.id === el.dataset.bd)); });
       const save = root.querySelector('#pf-ch-save');
       save.onclick = async () => {
@@ -171,6 +195,8 @@
         };
       });
     }
+    // Perfil público en la web
+    onyx.profile.getPublic().then(r => { if (r && root.isConnected) { pub = r; render(); } }).catch(() => {});
     // Insignias: se piden al panel (y se avisa de las nuevas)
     App.checkBadges().then(r => { if (r && root.isConnected) { bd = r; render(); } }).catch(() => {});
 

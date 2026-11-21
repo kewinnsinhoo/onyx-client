@@ -387,6 +387,9 @@ handle('streams:channels', async () => { const a = panelAccount(); return a && p
 handle('streams:save', async (ch) => panel.saveChannels(streamAcc(), ch || {}));
 handle('streams:markLive', async (platform, on) => panel.markLive(streamAcc(), platform, on));
 handle('streams:live', async (id) => { const a = panelAccount(); return a && panel.enabled() ? panel.liveOf(a, id).catch(() => []) : []; });
+// Perfil público en la web
+handle('profile:public', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.publicProfile(a) : null; });
+handle('profile:setPublic', async (on) => panel.setPublicProfile(streamAcc(), on));
 // Insignias
 handle('badges:list', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.badges(a) : null; });
 handle('badges:showcase', async (ids) => panel.setShowcase(streamAcc(), Array.isArray(ids) ? ids.slice(0, 3) : []));

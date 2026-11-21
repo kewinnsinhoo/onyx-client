@@ -52,7 +52,7 @@
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
     },
-    profile: { card: () => wait(null, 300) },
+    profile: (() => { let pub = { public: false, url: 'https://onyxclient.site/u/Kewinsinho' }; return { card: () => wait(null, 300), getPublic: () => wait(pub), setPublic: (on) => { pub = { ...pub, public: !!on }; return wait(pub); } }; })(),
     badges: (() => {
       const now = Date.now(), D = 864e5;
       const b = (id, cat, icon, rarity, name, desc, earned, extra = {}) => ({ id, cat, icon, rarity, name, desc, earned, at: earned ? now - (extra.ago || 3) * D : undefined, ...extra });

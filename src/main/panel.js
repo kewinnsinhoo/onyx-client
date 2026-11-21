@@ -198,6 +198,10 @@ const saveChannels = (account, ch) => call(account, 'POST', 'channels', ch);
 const markLive = (account, platform, on) => call(account, 'POST', 'channels/live', { platform, on: !!on });
 const liveOf = (account, id) => call(account, 'GET', `live/${encodeURIComponent(id)}`).then(r => r.live || []);
 
+// Perfil público en la web: { public, url }
+const publicProfile = (account) => call(account, 'GET', 'public');
+const setPublicProfile = (account, on) => call(account, 'POST', 'public', { on: !!on });
+
 // Insignias: las del jugador (calculadas en el panel) y su vitrina (3 favoritas)
 const badges = (account) => call(account, 'GET', `badges?tz=${-new Date().getTimezoneOffset()}`);
 const setShowcase = (account, ids) => call(account, 'POST', `badges/showcase?tz=${-new Date().getTimezoneOffset()}`, { ids });
@@ -237,4 +241,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

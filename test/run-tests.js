@@ -1253,3 +1253,25 @@ try {
   for (const m of src.matchAll(/(?:name|desc): '((?:[^'\\]|\\.)*)'/g)) assert.ok(i18n.includes(`['${m[1]}',`), 'sin traducir: ' + m[1]);
   console.log('  ✓ insignias: medallas iguales, bloqueadas, secretas y traducidas');
 } catch (e) { console.error('  ✗ insignias\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+
+// Perfil público en la web: los archivos que comparte con el launcher son iguales, y /u/<nombre> mete los datos bien
+(async () => {
+  try {
+    const same = [['src/renderer/js/badges-ui.js', 'web/assets/badges-ui.js'], ['src/renderer/js/skin3d.js', 'web/assets/skin3d.js'],
+      ['src/renderer/js/capes.js', 'web/assets/kopi-capes.js'], ['src/renderer/vendor/skinview3d.bundle.js', 'web/assets/skinview3d.bundle.js']];
+    for (const [a, b] of same) assert.ok(fs.readFileSync(path.join(__dirname, '..', a)).equals(fs.readFileSync(path.join(__dirname, '..', b))), `${b} debe ser una copia de ${a}`);
+    const src = fs.readFileSync(path.join(__dirname, '../web/worker.js'), 'utf8');
+    const mod = await import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'));
+    const page = fs.readFileSync(path.join(__dirname, '../web/u.html'), 'utf8');
+    assert.ok(page.includes('<!--META-->') && page.includes('<!--DATA-->'), 'u.html necesita sus marcas');
+    const out = mod.inject(page, 'Kew', { name: 'Kew', stats: { hours: 12.4 }, badges: [{}], showcase: [{ name: 'Pionero' }], x: '</script><b>' }, 'https://onyxclient.site');
+    assert.ok(out.includes('<title>Kew · Kopi Client</title>') && out.includes('12 h jugadas · 1 insignias · Pionero'));
+    assert.ok(!out.includes('</script><b>'), 'los datos no pueden cerrar la etiqueta');
+    const data = JSON.parse(out.match(/<script id="pdata" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+    assert.strictEqual(data.x, '</script><b>');
+    assert.ok(mod.inject(page, 'X', null, 'https://onyxclient.site').includes('noindex'));
+    const wr = fs.readFileSync(path.join(__dirname, '../web/wrangler.jsonc'), 'utf8');
+    assert.ok(wr.includes('"main": "worker.js"') && wr.includes('"/u/*"') && wr.includes('"ASSETS"'));
+    console.log('  ✓ perfil público en la web: copias iguales y datos dentro de la página');
+  } catch (e) { console.error('  ✗ perfil público en la web\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+})();

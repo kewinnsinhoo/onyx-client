@@ -1098,3 +1098,16 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .modal.nb-modal .bdg-r, .modal.nb-modal .sub { animation: nbUp .5s .65s both; }
 @keyframes nbUp { from { opacity: 0; transform: translateY(8px); } }
 .nb-more { display: flex; gap: 8px; justify-content: center; margin-top: 10px; animation: nbUp .5s .8s both; }
+
+/* Perfil público en la web */
+.pf-web { margin-top: 16px; }
+.pf-web.on { background: linear-gradient(90deg, rgba(245, 142, 224, .08), transparent 60%), var(--surface, rgba(255, 255, 255, .03)); border-color: rgba(245, 142, 224, .25); }
+.pf-wtop { display: flex; align-items: center; gap: 14px; }
+.pf-wico { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(245, 142, 224, .14); color: #f58ee0; }
+.pf-wico svg { width: 20px; height: 20px; }
+.pf-wtx { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.pf-wtx b { font-size: 15px; }
+.pf-wtx span { font-size: 12.5px; color: var(--muted); }
+.pf-wlink { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 8px 8px 14px; border-radius: 12px; background: rgba(0, 0, 0, .25); border: 1px solid var(--border); }
+.pf-url { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; color: #ffd2f4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-woff { margin: 12px 0 0; }

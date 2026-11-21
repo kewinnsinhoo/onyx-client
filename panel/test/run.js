@@ -37,6 +37,7 @@ globalThis.fetch = async (u, opts = {}) => {
   }
   if (s.startsWith('https://api.mojang.com/users/profiles/minecraft/')) {
     const n = decodeURIComponent(s.split('/').pop());
+    if (n.toLowerCase() === 'pixelpro') return new Response(JSON.stringify({ id: '11111111111111111111111111111111', name: 'PixelPro' }), { status: 200 });
     return n.toLowerCase() === 'technoblade' ? new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade' }), { status: 200 }) : new Response(null, { status: 404 });
   }
   // Mojang bloquea esta búsqueda desde Cloudflare (403): el panel tiene que probar otros caminos
@@ -49,6 +50,7 @@ globalThis.fetch = async (u, opts = {}) => {
   if (s.startsWith('https://sessionserver.mojang.com/session/minecraft/profile/')) {
     const id = s.split('/').pop().split('?')[0];
     if (id === 'dddddddddddddddddddddddddddddddd') return new Response('', { status: 403 });
+    if (id === '11111111111111111111111111111111') return new Response(JSON.stringify({ id, name: 'PixelPro', properties: [{ name: 'textures', signature: 'firma-pixel', value: btoa(JSON.stringify({ textures: { SKIN: { url: 'http://textures.minecraft.net/texture/pixelpro', metadata: { model: 'slim' } } } })) }] }), { status: 200 });
     if (id === 'abcdef0123456789abcdef0123456789') return new Response(JSON.stringify({ id, name: 'Steve', properties: [{ name: 'textures', value: 'c3RldmU=', signature: 'firma-steve' }] }), { status: 200 });
     return new Response(JSON.stringify({ id: 'b876ec32e396476ba1158438d83c67d4', name: 'Technoblade', properties: [{ name: 'textures', value: 'cHJlbWl1bQ==', signature: 'firma-mojang' }] }), { status: 200 });
   }
@@ -70,6 +72,7 @@ globalThis.fetch = async (u, opts = {}) => {
     const h = s.split('/').pop();
     return new Response(JSON.stringify({ slug: h, livestream: h === 'leo' ? { session_title: 'Kick en directo', viewer_count: 77, thumbnail: { url: 'https://img/kick.jpg' }, created_at: '2026-11-20T10:00:00Z' } : null }), { status: 200 });
   }
+  if (s === 'https://textures.minecraft.net/texture/pixelpro') return new Response(new Uint8Array([137, 80, 78, 71]), { status: 200, headers: { 'Content-Type': 'image/png' } });
   if (s.startsWith('https://www.tiktok.com/api-live/')) { streamCalls++; return new Response('<html>bloqueado</html>', { status: 403 }); }
   throw new Error('fetch inesperado: ' + s);
 };
@@ -1249,6 +1252,48 @@ await test('Insignias: launcher, vitrina, studio (a mano y solas) y especiales d
   assert.strictEqual((await call('DELETE', `/api/s/onyx-studios/badges/${auto.id}`, { cookie: creator })).status, 200);
   r = await call('GET', '/api/l/badges', { headers: h });
   assert.ok(!r.data.badges.some(b => b.id === 'sb:' + auto.id));
+});
+
+await test('Perfil público en la web: solo si el jugador lo activa', async () => {
+  const h = await player('PixelPro', false);
+  // por defecto, privado
+  let r = await call('GET', '/api/l/public', { headers: h });
+  assert.deepStrictEqual(r.data, { public: false, url: 'https://onyxclient.site/u/PixelPro' });
+  assert.strictEqual((await call('GET', '/api/public/player/PixelPro')).status, 404);
+  assert.strictEqual((await call('GET', '/api/public/player/nadie_aqui')).status, 404);
+  assert.strictEqual((await call('GET', '/api/public/player/mal nombre')).status, 404);
+  // juega un rato, pone su canal y lo activa
+  const t = Date.now();
+  await env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind('pp-1', 'ignite-extremo-3', 'onyx-studios', 'pixelpro', 'PixelPro', t - 4 * 3600e3, t - 3600e3, t - 3600e3).run();
+  await call('POST', '/api/l/channels', { headers: h, body: { twitch: 'pixelpro' } });
+  await call('POST', '/api/l/badges/showcase', { headers: h, body: { ids: ['hours-1'] } });
+  r = await call('POST', '/api/l/public', { headers: h, body: { on: true } });
+  assert.strictEqual(r.data.public, true);
+  r = await call('GET', '/api/public/player/pixelpro');
+  assert.strictEqual(r.status, 200);
+  const p = r.data;
+  assert.strictEqual(p.name, 'PixelPro');
+  assert.strictEqual(p.url, 'https://onyxclient.site/u/PixelPro');
+  assert.ok(p.premium);
+  assert.deepStrictEqual([p.skin.slim, p.skin.url.endsWith('/api/public/player/PixelPro/skin.png')], [true, true]);
+  assert.strictEqual(p.stats.hours, 3);
+  assert.ok(p.stats.since && !p.stats.online);
+  assert.ok(p.badges.some(b => b.id === 'hours-1'));
+  assert.ok(p.badges.every(b => b.at), 'con fecha');
+  assert.ok(p.total > p.badges.length);
+  assert.deepStrictEqual(p.showcase.map(b => b.id), ['hours-1']);
+  assert.deepStrictEqual(p.channels, [{ platform: 'twitch', handle: 'pixelpro', url: 'https://www.twitch.tv/pixelpro', live: false, title: '', viewers: null }]);
+  assert.strictEqual(p.cape, null);
+  assert.ok(!('key' in p) && !JSON.stringify(p).includes('owner'), 'nada interno');
+  // la skin pasa por el panel (con permiso para pintarla en la web)
+  const sk = await worker.fetch(new Request('http://localhost/api/public/player/PixelPro/skin.png'), env, { waitUntil() {} });
+  assert.strictEqual(sk.status, 200);
+  assert.strictEqual(sk.headers.get('Access-Control-Allow-Origin'), '*');
+  // lo desactiva: vuelve a ser privado
+  await call('POST', '/api/l/public', { headers: h, body: { on: false } });
+  assert.strictEqual((await call('GET', '/api/public/player/PixelPro')).status, 404);
+  assert.strictEqual((await worker.fetch(new Request('http://localhost/api/public/player/PixelPro/skin.png'), env, { waitUntil() {} })).status, 404);
 });
 
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

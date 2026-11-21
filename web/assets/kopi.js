@@ -71,6 +71,9 @@
     if (ico) { if (so === 'movil') ico.style.display = 'none'; else ico.innerHTML = `<use href="${ICONO[so]}"/>`; }
     document.querySelectorAll('[data-anio]').forEach(el => { el.textContent = new Date().getFullYear(); });
     pintarVersion();
+    // otras páginas (perfil público) se pintan en el mismo idioma
+    window.KopiLang = lang;
+    document.dispatchEvent(new CustomEvent('kopi:lang', { detail: lang }));
   }
 
   function pintarVersion() {

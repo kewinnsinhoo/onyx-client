@@ -253,6 +253,24 @@ Para que se cuenten solos:
 - Tus amigos la ponen en **Conexión directa**, o en el launcher: **Jugar con amigos → Únete a tu amigo** y entran directos.
 - Si tus amigos no son premium, al abrir en LAN pon **Online Mode en OFF** (lo da e4all).
 
+## Perfil público en la web (desde la 1.7.8)
+
+- En el launcher: **Mi perfil → Tu perfil en la web → activar**. Sale el enlace `onyxclient.site/u/TuNombre`, con botones **Copiar** y **Abrir**.
+- La página enseña:
+  - la skin en 3D con la capa de Kopi animada;
+  - Premium, «Jugando ahora» y «En directo» (si está emitiendo mientras juega);
+  - las 3 insignias de la vitrina y todas las que tiene;
+  - horas jugadas, racha más larga y desde cuándo juega;
+  - sus canales.
+- Está en español e inglés y se ve bien en el móvil.
+- Si el jugador no lo activa (o lo apaga), la página dice «Este perfil no existe o es privado».
+- Cómo funciona: la web tiene un pequeño programa (`web/worker.js`) que sirve `/u/<nombre>` con los datos del panel ya dentro. Así el enlace se ve bonito al pegarlo en Discord o Twitter.
+- Algunos archivos de la web son copias de los del launcher. Si cambias uno, copia también el otro (una prueba lo comprueba):
+  - `badges-ui.js`
+  - `skin3d.js`
+  - `kopi-capes.js`
+  - `skinview3d.bundle.js`
+
 ## Insignias (desde la 1.7.7)
 
 - **Jugadores**: en el launcher, **Mi perfil → Insignias**. Las ganan jugando y eligen 3 para su **vitrina**, que sale en su tarjeta. Cuando ganan una nueva, aparece una animación.

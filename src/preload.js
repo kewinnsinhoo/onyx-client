@@ -66,7 +66,9 @@ contextBridge.exposeInMainWorld('onyx', {
     screenshot: (rect) => call('skins:screenshot', rect)
   },
   profile: {
-    card: (rect, copy) => call('profile:card', rect, copy)
+    card: (rect, copy) => call('profile:card', rect, copy),
+    getPublic: () => call('profile:public'),
+    setPublic: (on) => call('profile:setPublic', on)
   },
   badges: {
     list: () => call('badges:list'),

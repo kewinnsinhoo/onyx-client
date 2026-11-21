@@ -60,7 +60,7 @@
     const [a, d, g] = locked ? ['#3a3a4a', '#1c1c26', '#5a5a6e'] : colors(b);
     const ico = P[locked && b.secret ? 'question' : b.icon] || P.star;
     const leg = !locked && b.rarity === 'legendary';
-    return `<svg class="bdg-medal ${locked ? 'locked' : 'on'} r-${b.rarity || 'common'}" width="${size}" height="${Math.round(size * 1.125)}" viewBox="0 0 64 72" aria-hidden="true">
+    return `<svg class="bdg-medal ${locked ? 'locked' : 'on'} r-${b.rarity || 'common'}" width="${size}" height="${Math.round(size * 1.125)}" style="width:${size}px;height:${Math.round(size * 1.125)}px" viewBox="0 0 64 72" aria-hidden="true">
       <defs><linearGradient id="${id}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${d}"/></linearGradient>
         <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${d}"/><stop offset="1" stop-color="${shade(d, -0.45)}"/></linearGradient>
         <clipPath id="${id}c"><path d="M32 3 59 18.5v35L32 69 5 53.5v-35z"/></clipPath></defs>
@@ -68,9 +68,9 @@
       <path d="M32 9.5 53.5 22v28L32 62.5 10.5 50V22z" fill="url(#${id}b)" stroke="${g}" stroke-opacity="${locked ? '.25' : '.55'}" stroke-width="1.2"/>
       <path d="M5 18.5 32 3l27 15.5v6L32 9 5 24.5z" fill="#fff" opacity="${locked ? '.04' : '.16'}"/>
       ${leg ? `<g clip-path="url(#${id}c)"><rect class="bdg-shine" x="-40" y="-10" width="16" height="100" fill="#fff" opacity=".35" transform="rotate(20)"/></g>` : ''}
-      <g transform="translate(20 24)" fill="none" stroke="${locked ? '#8a8aa0' : '#fff'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <svg width="24" height="24" viewBox="0 0 24 24">${ico}</svg></g>
-      ${locked && !b.secret ? `<g transform="translate(40 50)"><circle cx="7" cy="7" r="8" fill="#15151d" stroke="#3a3a4a"/><g transform="translate(2 2) scale(.42)" fill="none" stroke="#9a9ab0" stroke-width="2.4" stroke-linecap="round"><svg width="24" height="24" viewBox="0 0 24 24">${P.lock}</svg></g></g>` : ''}
+      <g transform="translate(18 22)" fill="none" stroke="${locked ? '#8a8aa0' : '#fff'}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="28" height="28" style="width:28px;height:28px" viewBox="0 0 24 24">${ico}</svg></g>
+      ${locked && !b.secret ? `<g transform="translate(40 50)"><circle cx="7" cy="7" r="8" fill="#15151d" stroke="#3a3a4a"/><g transform="translate(2 2) scale(.42)" fill="none" stroke="#9a9ab0" stroke-width="2.4" stroke-linecap="round"><svg width="24" height="24" style="width:24px;height:24px" viewBox="0 0 24 24">${P.lock}</svg></g></g>` : ''}
     </svg>`;
   }
 

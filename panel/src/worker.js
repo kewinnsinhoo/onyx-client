@@ -17,6 +17,7 @@ import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport 
 import { sendReport } from './reports.js';
 import { launcherStreams, studioStreams, refreshDue } from './streams.js';
 import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
+import { launcherPublic } from './profile.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -786,9 +787,11 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'skin' && m === 'DELETE') return deleteSkin(env, P, await readJson(req));
   // Capas de Kopi: las que tiene el jugador y cuál lleva puesta
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
-  // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
+  // Perfil público en la web, insignias y directos
+  if (parts[0] === 'public' && !parts[1]) return launcherPublic(env, P, m, req);
   if (parts[0] === 'badges') { const r = await launcherBadges(env, P, parts, m, req, u.searchParams); if (r) return r; }
   if (parts[0] === 'channels' || parts[0] === 'live') { const r = await launcherStreams(env, P, parts, m, req); if (r) return r; }
+  // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)
   if (parts[0] === 'report' && m === 'POST') return sendReport(env, P, await readJson(req, 12 * 1024 * 1024));
   // KopiGuard: el launcher avisa de lo que ha visto mientras se juega
   if (parts[0] === 'guard' && parts[1] === 'media' && m === 'POST') return guardMedia(env, P, req, u.searchParams);
