@@ -13,8 +13,25 @@ function getUpdater() {
 // Busca y descarga la actualización. Resuelve con { status } cuando termina.
 function check({ channel, send, log }) {
   if (checking) return checking;
+  if (!app.isPackaged) return Promise.resolve({ status: 'dev' });
+  // Mac: sin certificado de Apple el sistema normal no instala nunca (ver mac-update.js)
+  if (process.platform === 'darwin') {
+    let finished = false;
+    checking = new Promise((resolve) => {
+      const done = (r) => { if (!finished) { finished = true; checking = null; resolve(r); } };
+      let downloading = false;
+      send('updater:event', { type: 'checking' });
+      const sendWrap = (ch, e) => { if (e.type === 'available') downloading = true; send(ch, e); };
+      // si GitHub no contesta en 20 s se sigue; si ya está descargando, se espera a que acabe
+      setTimeout(() => { if (!downloading) done({ status: 'timeout' }); }, 20000);
+      require('./mac-update').check({ send: sendWrap, log })
+        .then(done)
+        .catch((e) => { log.warn('[updater mac] ' + e.message); done({ status: 'error', error: e.message }); });
+    });
+    return checking;
+  }
   const up = getUpdater();
-  if (!app.isPackaged || !up) return Promise.resolve({ status: 'dev' });
+  if (!up) return Promise.resolve({ status: 'dev' });
 
   checking = new Promise((resolve) => {
     let settled = false;
@@ -41,7 +58,8 @@ function check({ channel, send, log }) {
   return checking;
 }
 
-function install() {
+function install({ log } = {}) {
+  if (process.platform === 'darwin') return require('./mac-update').install({ log: log || console });
   const up = getUpdater();
   if (up) setImmediate(() => up.quitAndInstall(true, true));
   return true;

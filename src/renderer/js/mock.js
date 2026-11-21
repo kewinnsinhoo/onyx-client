@@ -40,7 +40,7 @@
       quit: wait, openExternal: wait, openPath: wait, showItem: wait, relaunch: wait, clearCache: wait
     },
     settings: { get: () => wait({ ...settings }), set: (p) => { settings = { ...settings, ...p }; return wait({ ...settings }); } },
-    updater: { check: () => wait({ status: 'latest' }, Number(q.get('splash') || 400)), install: wait, onEvent: () => () => {} },
+    updater: { check: () => wait(q.get('upd') ? { status: 'downloaded', version: '1.8.2' } : { status: 'latest' }, Number(q.get('splash') || 400)), install: () => wait(q.get('upd') ? { ok: false, reason: q.get('upd') } : { ok: true }), page: () => wait('https://onyxclient.site/download.html'), onEvent: () => () => {} },
     accounts: {
       list: () => wait({ accounts: [...accounts], active: accounts[0] ? accounts[0].id : null }),
       loginMicrosoft: () => wait(null, q.get('mswait') ? 600000 : 300), cancelLogin: wait, reopenLogin: wait, addOffline: (n) => { accounts.push({ id: 'off-' + n, type: 'offline', name: n, uuid: 'z' }); return wait({ name: n }); }, setActive: wait, remove: wait, refresh: wait
@@ -115,7 +115,7 @@
     },
     instances: {
       list: () => wait(instances), get: (id) => wait(instances.find(i => i.id === id)), redeem: () => wait(null, 300).then(() => { throw new Error('Código no válido o caducado'); }),
-      remove: wait, setMemory: wait, seenNews: (id) => { const i = instances.find(x => x.id === id); if (i) i.newsSeen = Date.now(); return wait(i); }, setPerfMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.perfMode = !!on; return wait(i); }, setFriendsMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.friendsMode = !!on; return wait(i); }, onFriends: (cb) => { window.__friends = cb; return () => {}; }, play: wait, stop: wait, onProgress: (cb) => { window.__progress = cb; return () => {}; }, onChanged: () => () => {}, sync: wait,
+      remove: wait, setMemory: wait, seenNews: (id) => { const i = instances.find(x => x.id === id); if (i) i.newsSeen = Date.now(); return wait(i); }, setPerfMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.perfMode = !!on; return wait(i); }, setFriendsMode: (id, on) => { const i = instances.find(x => x.id === id); if (i) i.friendsMode = !!on; return wait(i); }, onFriends: (cb) => { window.__friends = cb; return () => {}; }, play: q.get('net') ? () => new Promise((_, ko) => setTimeout(() => ko(Object.assign(new Error('No se pudo conectar con {host}: la conexión se cortó. Puede ser el antivirus, una VPN o el firewall. Prueba a desactivarlos un momento.'), { code: 'net', vars: { host: 'sessionserver.mojang.com' } })), 600)) : wait, stop: wait, onProgress: (cb) => { window.__progress = cb; return () => {}; }, onChanged: () => () => {}, sync: wait,
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },

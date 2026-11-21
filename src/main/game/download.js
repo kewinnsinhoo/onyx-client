@@ -87,6 +87,8 @@ async function downloadAll(tasks, { concurrency = 8, onProgress } = {}) {
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, tasks.length)) }, worker));
   if (errors.length) {
+    const net = errors.find(x => x.code === 'net'); // sin conexión: se dice qué web y qué hacer
+    if (net) throw net;
     const e = new Error(`${errors.length} archivo(s) no se pudieron descargar. ${errors[0].message}`);
     e.errors = errors;
     throw e;

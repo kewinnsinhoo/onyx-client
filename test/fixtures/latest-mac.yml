@@ -1,0 +1,26 @@
+version: 1.8.1
+files:
+  - url: Kopi-Client-1.8.1-arm64.zip
+    sha512: LKOMfs4ltBzDFcI/V9WS6zSArlqYWj40YbHWxqBFiDng3INZT8ehdaEMU+ZUwjdCzqSTJO6oFpUPwD1TBNF07Q==
+    size: 96080488
+  - url: Kopi-Client-1.8.1-x64.zip
+    sha512: HcJ7oJRE0htDLlPm0Tsq+Ak4sM9/7toDa7PU8y2rcDPLlEhl5OMbYCmyjT434UyYgfEcqeOCckNgJYvGFCYdhA==
+    size: 102961745
+  - url: Kopi-Client-1.8.1-x64.zip
+    sha512: HcJ7oJRE0htDLlPm0Tsq+Ak4sM9/7toDa7PU8y2rcDPLlEhl5OMbYCmyjT434UyYgfEcqeOCckNgJYvGFCYdhA==
+    size: 102961745
+  - url: Kopi-Client-1.8.1-x64.dmg
+    sha512: ecrMb0OYgO5tN7/2petWXEwkPez7zJdUoembAbO7b2tsYlqAO+4KWg2MufsBCq6FYOg+Q44PCx31s0btNwzPDQ==
+    size: 107349786
+  - url: Kopi-Client-1.8.1-x64.dmg
+    sha512: ecrMb0OYgO5tN7/2petWXEwkPez7zJdUoembAbO7b2tsYlqAO+4KWg2MufsBCq6FYOg+Q44PCx31s0btNwzPDQ==
+    size: 107349786
+  - url: Kopi-Client-1.8.1-arm64.dmg
+    sha512: pwQaKqQYFcuhl0xorLFPebY7gEFbJeCWFZW9dw1XrdfiwxnBmDdBod6iHzJBkcEQ2hBZ/y/2ILTssaH0dSKXbA==
+    size: 100488963
+  - url: Kopi-Client-1.8.1-arm64.dmg
+    sha512: pwQaKqQYFcuhl0xorLFPebY7gEFbJeCWFZW9dw1XrdfiwxnBmDdBod6iHzJBkcEQ2hBZ/y/2ILTssaH0dSKXbA==
+    size: 100488963
+path: Kopi-Client-1.8.1-arm64.zip
+sha512: LKOMfs4ltBzDFcI/V9WS6zSArlqYWj40YbHWxqBFiDng3INZT8ehdaEMU+ZUwjdCzqSTJO6oFpUPwD1TBNF07Q==
+releaseDate: '2026-11-21T14:14:09.769Z'

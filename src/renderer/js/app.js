@@ -85,6 +85,22 @@
     return acc.skinVariant || 'classic';
   }
 
+  // La actualización no se pudo instalar sola: se explica en la pantalla de carga y se puede seguir
+  function updateFailed(reason, version) {
+    const box = $('#splash');
+    $('#splash .bar').classList.add('hidden');
+    const msg = reason === 'dmg'
+      ? t('Kopi Client está abierto desde el instalador. Arrástralo a Aplicaciones y ábrelo desde ahí: así se actualizará solo.')
+      : t('La versión {v} no se pudo instalar sola. Descárgala e instálala encima: no pierdes nada.', { v: version || '' });
+    $('#splash .label').innerHTML = html`<div class="upd-fail"><p>${msg}</p><div class="row">
+      <button class="btn btn-primary" data-a="get">${icon('download')}${t('Descargar a mano')}</button>
+      <button class="btn btn-outline" data-a="go">${t('Seguir sin actualizar')}</button></div></div>`;
+    return new Promise((resolve) => {
+      box.querySelector('[data-a="get"]').onclick = async () => onyx.app.openExternal(await onyx.updater.page());
+      box.querySelector('[data-a="go"]').onclick = () => { $('#splash .bar').classList.remove('hidden', 'indeterminate'); resolve(true); };
+    });
+  }
+
   // ---------- splash + actualizaciones ----------
   async function splash() {
     const label = $('#splash .label');
@@ -104,7 +120,13 @@
     if (r.status === 'downloaded') {
       label.textContent = t('Instalando actualización...');
       bar.classList.add('indeterminate');
-      await onyx.updater.install();
+      // Si en 40 s no se ha cerrado para instalar, no se queda aquí para siempre: se explica y se sigue
+      const res = await Promise.race([
+        Promise.resolve(onyx.updater.install()).catch(() => ({ ok: false })),
+        new Promise(ok => setTimeout(() => ok({ ok: false, reason: 'timeout' }), 40000))
+      ]);
+      if (res && res.ok === false && res.reason !== 'none') return updateFailed(res.reason, r.version);
+      if (res && res.ok) await new Promise(ok => setTimeout(ok, 40000)).then(() => updateFailed('timeout', r.version));
       return false;
     }
     fill.style.width = '100%';

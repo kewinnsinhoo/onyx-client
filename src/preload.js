@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('onyx', {
   updater: {
     check: () => call('updater:check'),
     install: () => call('updater:install'),
+    page: () => call('updater:page'),
     onEvent: (cb) => on('updater:event', cb)
   },
   accounts: {

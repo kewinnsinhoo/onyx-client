@@ -1182,3 +1182,8 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .rp-tip { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .rp-tip svg { width: 13px; height: 13px; }
 .modal.rp-modal { width: min(640px, 92vw); max-width: none; max-height: 92vh; overflow-y: auto; }
+/* La actualización no se pudo instalar sola (pantalla de carga) */
+#splash .upd-fail { max-width: 420px; margin-top: 10px; text-align: center; }
+#splash .upd-fail p { margin: 0 0 16px; color: var(--text); font-size: 14px; line-height: 1.55; letter-spacing: 0; }
+#splash .upd-fail .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#splash .upd-fail .btn svg { width: 16px; height: 16px; }

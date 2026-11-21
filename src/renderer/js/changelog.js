@@ -4,6 +4,18 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.2', date: '2026-11-21', items: [
+      ['download', 'Mac: las actualizaciones ya se instalan solas (antes se quedaban en «Instalando actualización…»). Si algo falla, sale un botón para descargarla a mano o seguir jugando.',
+        'Mac: updates now install themselves (before, they got stuck on “Installing update…”). If something fails, there’s a button to download it manually or keep playing.',
+        'Mac: les actualitzacions ja s’instal·len soles (abans es quedaven a «Instal·lant actualització…»). Si alguna cosa falla, surt un botó per descarregar-la a mà o continuar jugant.',
+        'Mac : les mises à jour s’installent enfin toutes seules (avant, elles restaient bloquées sur « Installation de la mise à jour… »). Si ça échoue, un bouton permet de la télécharger ou de continuer à jouer.'],
+      ['globe', 'Adiós al «fetch failed»: si falla la conexión, el launcher lo reintenta solo y, si no puede, te dice qué web falló y qué hacer.',
+        'Goodbye “fetch failed”: if the connection fails, the launcher retries by itself and, if it still can’t, tells you which site failed and what to do.',
+        'Adéu al «fetch failed»: si falla la connexió, el launcher ho reintenta sol i, si no pot, et diu quina web ha fallat i què fer.',
+        'Adieu « fetch failed » : si la connexion échoue, le launcher réessaie tout seul et, sinon, te dit quel site a échoué et quoi faire.']
+    ]
+  },
+  {
     v: '1.8.1', date: '2026-11-21', items: [
       ['flag', 'Denunciar a un jugador: en la instancia, botón ⋯ → Denunciar a un jugador. Elige a quién, qué ha hecho y, si quieres, una captura (pulsa F2 en el juego). Lo ve el staff del studio.',
         'Report a player: on the instance, ⋯ button → Report a player. Choose who, what they did and, if you want, a screenshot (press F2 in game). The studio staff will see it.',

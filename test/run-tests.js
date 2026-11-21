@@ -1316,3 +1316,40 @@ try {
   assert.ok(s.ramMb > 0 && s.cores > 0);
   console.log('  ✓ rendimiento: carga, memoria y gráfica de una partida');
 } catch (e) { console.error('  ✗ rendimiento\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();
+
+test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () => {
+  const mu = require('../src/main/mac-update');
+  const info = mu.parseYml(fs.readFileSync(path.join(__dirname, 'fixtures', 'latest-mac.yml'), 'utf8'));
+  assert.strictEqual(info.version, '1.8.1');
+  assert.ok(info.files.length >= 4);
+  assert.strictEqual(mu.pickZip(info.files, 'arm64').url, 'Kopi-Client-1.8.1-arm64.zip');
+  assert.strictEqual(mu.pickZip(info.files, 'x64').url, 'Kopi-Client-1.8.1-x64.zip');
+  assert.ok(/^[A-Za-z0-9+/]+=*$/.test(mu.pickZip(info.files, 'arm64').sha512));
+  assert.ok(mu.newer('1.8.2', '1.8.1') && mu.newer('1.10.0', '1.9.9') && mu.newer('1.9.0', '1.9.0-beta.2') && mu.newer('1.9.0-beta.3', '1.9.0-beta.2'));
+  assert.ok(!mu.newer('1.8.1', '1.8.1') && !mu.newer('1.8.0', '1.8.1') && !mu.newer('1.9.0-beta.1', '1.9.0'));
+});
+
+(async () => { try {
+  const net = require('../src/main/net');
+  const mk = (code) => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('x'), { code }) });
+  let calls = 0;
+  const saved = globalThis.fetch;
+  net.install({ fetchImpl: async () => { calls++; throw mk('ENOTFOUND'); }, sleep: async () => {} });
+  try { await fetch('https://sessionserver.mojang.com/session'); assert.fail('debía fallar'); } catch (e) {
+    assert.strictEqual(e.code, 'net'); assert.strictEqual(e.kind, 'dns'); assert.deepStrictEqual(e.vars, { host: 'sessionserver.mojang.com' });
+    assert.ok(e.message.includes('{host}'));
+  }
+  assert.strictEqual(calls, 2, 'una descarga GET se reintenta una vez');
+  calls = 0;
+  try { await fetch('https://panel.onyxclient.site/api/l/play', { method: 'POST' }); } catch (e) { assert.strictEqual(e.code, 'net'); }
+  assert.strictEqual(calls, 1, 'un POST no se repite');
+  assert.strictEqual(net.kindOf(mk('ECONNRESET')), 'blocked');
+  assert.strictEqual(net.kindOf(mk('UND_ERR_CONNECT_TIMEOUT')), 'timeout');
+  assert.strictEqual(net.kindOf(mk('UNABLE_TO_GET_ISSUER_CERT_LOCALLY')), 'cert');
+  assert.strictEqual(net.kindOf(mk('LOQUESEA')), 'other');
+  // todos los mensajes tienen traducción
+  const i18n = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'i18n.js'), 'utf8');
+  for (const m of Object.values(net.MESSAGES)) assert.ok(i18n.includes(m.replace(/'/g, "\\'")), 'falta traducir: ' + m);
+  globalThis.fetch = saved;
+  console.log('  ✓ conexión: dice qué web falló, reintenta las descargas y no repite los envíos');
+} catch (e) { console.error('  ✗ conexión\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();

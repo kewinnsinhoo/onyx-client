@@ -10,6 +10,7 @@ const os = require('os');
 const { config, gameRoot, isPlaceholder } = require('./config');
 const { JsonStore, DEFAULT_SETTINGS } = require('./store');
 const log = require('./logger');
+require('./net').install({ log }); // «fetch failed» → qué web falló y qué hacer (y un reintento)
 const accounts = require('./accounts');
 const skins = require('./skins');
 const discord = require('./discord');
@@ -298,7 +299,8 @@ handle('settings:set', (patch) => {
 // ---------- actualizaciones ----------
 const updater = require('./updater');
 handle('updater:check', () => updater.check({ channel: settingsStore.get().updateChannel, send, log }));
-handle('updater:install', () => updater.install());
+handle('updater:install', () => updater.install({ log }));
+handle('updater:page', () => (config.brand ? `${config.panelUrl || 'https://panel.onyxclient.site'}/l/${config.brand.id}` : 'https://onyxclient.site/download.html'));
 
 // ---------- cuentas ----------
 handle('accounts:list', () => accounts.list());

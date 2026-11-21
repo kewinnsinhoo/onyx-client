@@ -357,6 +357,17 @@ Para que se cuenten solos:
 - Arriba salen **consejos**, por ejemplo «El mod iris ha cerrado el juego 6 veces» o «11 partidas se cerraron por falta de memoria».
 - Solo cuenta a jugadores con Kopi Client 1.8.1 o más nuevo, en instancias del panel.
 
+## Actualizaciones en Mac (desde la 1.8.2)
+
+- En Mac el launcher no tiene certificado de Apple, y sin él el sistema normal de Mac no instala las actualizaciones: se quedaban en «Instalando actualización…».
+- Desde la 1.8.2 el launcher descarga la versión nueva, comprueba que está bien, cambia la app por la nueva y se vuelve a abrir solo.
+- Si no puede (por ejemplo, si se abrió desde el instalador .dmg en vez de desde Aplicaciones), lo explica y deja **Descargar a mano** o **Seguir sin actualizar**.
+- Quien tenga una versión anterior a la 1.8.2 en Mac tiene que instalar la nueva a mano **una vez**. Desde ahí, se actualiza sola.
+
+## Errores de conexión (desde la 1.8.2)
+
+- Antes salía «fetch failed». Ahora el launcher reintenta solo una vez y, si sigue fallando, dice qué web falló (Mojang, Microsoft, Modrinth, el panel…) y qué hacer: revisar el WiFi, el antivirus o la VPN, o la hora del PC.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.
