@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.7.9', date: '2026-11-20', items: [
+      ['clock', 'Cuenta atrás: antes de que abra una instancia o empiece su evento, ves en grande los días, horas, minutos y segundos que faltan. Al llegar a cero… ¡fiesta!',
+        'Countdown: before an instance opens or its event starts, you see the days, hours, minutes and seconds left in big numbers. When it hits zero… party!',
+        'Compte enrere: abans que obri una instància o comenci el seu esdeveniment, veus en gran els dies, hores, minuts i segons que falten. En arribar a zero… festa!',
+        'Compte à rebours : avant qu’une instance ouvre ou que son événement commence, tu vois en grand les jours, heures, minutes et secondes restants. À zéro… c’est la fête !']
+    ]
+  },
+  {
     v: '1.7.8', date: '2026-11-20', items: [
       ['globe', 'Tu perfil en la web: una página con tu skin en 3D, tu capa, tus insignias y tus directos. Actívala en Mi perfil y pon el enlace en tu bio de Twitch, TikTok o Discord.',
         'Your profile on the web: a page with your 3D skin, your cape, your badges and your streams. Turn it on in My profile and put the link in your Twitch, TikTok or Discord bio.',

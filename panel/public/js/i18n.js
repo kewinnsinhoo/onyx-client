@@ -60,6 +60,12 @@
     "{user} borró la insignia {target}": ["{user} deleted the badge {target}", "{user} ha esborrat la insígnia {target}", "{user} a supprimé le badge {target}"],
     "{user} dio la insignia {target} a {names}": ["{user} gave the badge {target} to {names}", "{user} ha donat la insígnia {target} a {names}", "{user} a donné le badge {target} à {names}"],
     "{user} quitó la insignia {target} a {names}": ["{user} removed the badge {target} from {names}", "{user} ha tret la insígnia {target} a {names}", "{user} a retiré le badge {target} à {names}"],
+    // Cuenta atrás
+    "Cuenta atrás grande en el launcher": ["Big countdown in the launcher", "Compte enrere gran al launcher", "Grand compte à rebours dans le launcher"],
+    "Hasta que abra, la instancia enseña los días, horas, minutos y segundos que faltan. Al llegar a cero, lo celebra y se puede jugar.": ["Until it opens, the instance shows the days, hours, minutes and seconds left. When it hits zero, it celebrates and players can play.", "Fins que obri, la instància mostra els dies, hores, minuts i segons que falten. En arribar a zero, ho celebra i ja es pot jugar.", "Jusqu’à l’ouverture, l’instance affiche les jours, heures, minutes et secondes restants. À zéro, elle fête ça et on peut jouer."],
+    "Texto encima de la cuenta atrás": ["Text above the countdown", "Text a sobre del compte enrere", "Texte au-dessus du compte à rebours"],
+    "Ej.: {name} empieza en": ["E.g.: {name} starts in", "Ex.: {name} comença en", "Ex. : {name} commence dans"],
+    "Si lo dejas vacío pone «{name} abre en». Los eventos del calendario de esta instancia también tienen cuenta atrás.": ["If you leave it empty it says “{name} opens in”. This instance’s calendar events get a countdown too.", "Si ho deixes buit posa «{name} obre en». Els esdeveniments del calendari d’aquesta instància també tenen compte enrere.", "Si tu le laisses vide, il affiche « {name} ouvre dans ». Les événements du calendrier de cette instance ont aussi un compte à rebours."],
     // Uso del launcher
     "Desconocido": ["Unknown", "Desconegut", "Inconnu"],
     "Uso del launcher": ["Launcher usage", "Ús del launcher", "Utilisation du launcher"],

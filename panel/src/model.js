@@ -28,7 +28,7 @@ export function defaults() {
     files: [],
     dirs: [],
     sync: { mode: 'keep', playerPaths: [{ path: 'options.txt', mode: 'once' }] },
-    schedule: { predownload: false, opensAt: null, closesAt: null, kickOnClose: false },
+    schedule: { predownload: false, opensAt: null, closesAt: null, kickOnClose: false, countdown: true, countdownText: '' }, // cuenta atrás grande en el launcher hasta que abra
     server: { address: '', port: 25565, autoJoin: false },
     kopiSkins: true,          // el launcher pone CustomSkinLoader: se ven las skins (premium y de Kopi) en cualquier servidor
     guard: guardDefaults(),   // KopiGuard (anticheat): apagado hasta que el studio lo active
@@ -179,6 +179,8 @@ export function sanitize(patch, current = defaults()) {
     if ('kickOnClose' in s) o.kickOnClose = bool(s.kickOnClose);
     if ('opensAt' in s) o.opensAt = time(s.opensAt);
     if ('closesAt' in s) o.closesAt = time(s.closesAt);
+    if ('countdown' in s) o.countdown = bool(s.countdown);
+    if ('countdownText' in s) o.countdownText = str(s.countdownText, 60).trim();
   }
   if (p.server) {
     if ('address' in p.server) d.server.address = /^[A-Za-z0-9.-]{0,120}$/.test(String(p.server.address || '')) ? String(p.server.address || '') : d.server.address;
@@ -192,7 +194,8 @@ export function sanitize(patch, current = defaults()) {
 // Manifiesto que descarga el launcher (mismo formato que onyx-data + extras del panel).
 // playerKey (opcional): el jugador que lo pide; «staff: true» si está en la whitelist de staff
 // (así el launcher le deja jugar aunque la instancia esté bloqueada, sin abrir o cerrada).
-export function toManifest(row, studio, origin, playerKey = null) {
+// nextEvent (opcional): el próximo evento del calendario de esta instancia → cuenta atrás en el launcher
+export function toManifest(row, studio, origin, playerKey = null, nextEvent = null) {
   const d = JSON.parse(row.data);
   const abs = (u) => (u && u.startsWith('/m/') ? origin + u : u);
   const l = d.look;
@@ -227,6 +230,7 @@ export function toManifest(row, studio, origin, playerKey = null) {
     sync: d.sync,
     state: row.state,
     schedule: d.schedule,
+    nextEvent: nextEvent ? { id: nextEvent.id, title: nextEvent.title, color: nextEvent.color || null, startsAt: nextEvent.starts_at, endsAt: nextEvent.ends_at || null } : null,
     maintenance: row.state === 'locked' ? (d.lockedMessage || true) : null,
     staff: !!(playerKey && ((d.access && d.access.staff) || []).some(n => String(n).toLowerCase() === playerKey))
   };

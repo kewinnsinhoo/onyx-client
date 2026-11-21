@@ -68,6 +68,7 @@
     return b.logo ? `<img class="kp-logo" src="${esc(b.logo)}" alt="${esc(b.name)}">` : `<div class="kp-logo kp-logo-text">${esc(b.name)}</div>`;
   }
   V.home = function (root) {
+    let cdStop = null;
     const render = () => {
       const cur = homePick();
       const p = cur && S.progress[cur.id];
@@ -77,6 +78,7 @@
         <div class="kp-center">${homeLogo()}</div>
         <div class="kp-bottom">
           ${cur ? html`
+            <div class="kp-cd" id="kp-cd" hidden></div>
             <button class="kp-pick" id="kp-pick" title="${t('Cambiar instancia')}">
               <span class="ic" style="${cur.icon || cur.banner ? `background-image:url('${esc(cur.icon || cur.banner)}')` : ''}">${cur.icon || cur.banner ? '' : initials(cur.name)}</span>
               <span class="tx"><b>${esc(cur.name)}</b><small>${p ? esc(App.stageText(p)) : st ? esc(st.short || st.label) : `${esc(cur.minecraft || '')} · ${loaderLabel(cur.loader)}`}</small></span>
@@ -89,6 +91,8 @@
       </div>`;
       const play = root.querySelector('#kp-play');
       if (play) play.onclick = () => { if (!S.progress[cur.id]) App.play(cur.id); };
+      if (cdStop) cdStop();
+      cdStop = cur ? Countdown.mount(root.querySelector('#kp-cd'), cur, { size: 'mini', onZero: (info) => { Countdown.celebrate(document.body, info, cur); setTimeout(() => { if (root.isConnected) render(); }, 300); } }) : null;
       const add = root.querySelector('#kp-add');
       if (add) add.onclick = App.addInstanceModal;
       const pick = root.querySelector('#kp-pick');
@@ -102,7 +106,8 @@
       };
     };
     render();
-    return smoothProgress(render, () => render());
+    const offP = smoothProgress(render, () => render());
+    return () => { if (cdStop) cdStop(); offP(); };
   };
 
   // ---------------- Todas las instancias ----------------
@@ -176,6 +181,7 @@
 
     // Directos: quién está emitiendo esta instancia ahora (y «estoy en directo en TikTok» si juegas)
     let live = [], myCh = null;
+    let cdStop = null; // la cuenta atrás de la instancia
     const PLATN = { twitch: 'Twitch', tiktok: 'TikTok', kick: 'Kick' };
     const fmtViewers = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '') + 'K' : String(n);
     function paintLive() {
@@ -246,6 +252,7 @@
             ${look.music && look.music.url ? `<button class="round" id="ins-music" title="${t('Música')}">${icon(musicMuted() ? 'volumeOff' : 'volume')}</button>` : ''}
             <button class="round sq" id="ins-more" title="${t('Más opciones')}">${icon('more')}</button>
           </div>
+          <div class="ihero-cd" id="ins-cd" hidden></div>
           <div class="bottom">
             <div class="big-icon" style="${inst.iconAnimated || inst.icon ? `background-image:${esc(cssUrl(inst.iconAnimated || inst.icon))}` : ''}">${inst.iconAnimated || inst.icon ? '' : icon('box')}</div>
             <div class="grow" style="min-width:0">
@@ -317,6 +324,9 @@
       if (b('#ins-sponsor') && look.sponsor && look.sponsor.url) b('#ins-sponsor').onclick = () => onyx.app.openExternal(look.sponsor.url);
       syncMusic();
       paintLive();
+      // cuenta atrás hasta que abra (o hasta el próximo evento); al llegar a cero, fiesta y ya se puede jugar
+      if (cdStop) cdStop();
+      cdStop = Countdown.mount(root.querySelector('#ins-cd'), inst, { onZero: (info) => { Countdown.celebrate(document.body, info, inst); setTimeout(() => { if (alive) render(); }, 300); } });
       b('#ins-more').onclick = (e) => menu(e.currentTarget);
     };
 
@@ -472,6 +482,6 @@
     document.addEventListener('onyx:bg', onBg);
     const onFr = (e) => { if (e.detail && e.detail.id === id && alive) render(); };
     document.addEventListener('onyx:friends', onFr);
-    return () => { alive = false; clearInterval(timer); clearInterval(liveTimer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); document.removeEventListener('onyx:friends', onFr); if (audio) { audio.pause(); audio = null; } };
+    return () => { alive = false; if (cdStop) cdStop(); clearInterval(timer); clearInterval(liveTimer); off(); document.removeEventListener('onyx:news', onNews); document.removeEventListener('onyx:bg', onBg); document.removeEventListener('onyx:friends', onFr); if (audio) { audio.pause(); audio = null; } };
   };
 })();

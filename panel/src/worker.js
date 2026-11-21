@@ -779,6 +779,8 @@ async function launcherApi(req, env, u, path, m, ctx) {
     return row;
   };
   const studioOf = (sid) => env.DB.prepare('SELECT id, name, logo, suspended_at FROM studios WHERE id = ?').bind(sid).first();
+  // El próximo evento público de la instancia (en los próximos 60 días): el launcher hace la cuenta atrás
+  const nextEventOf = (iid) => env.DB.prepare('SELECT id, title, color, starts_at, ends_at FROM events WHERE instance_id = ? AND deleted_at IS NULL AND public = 1 AND starts_at > ? AND starts_at < ? ORDER BY starts_at LIMIT 1').bind(iid, Date.now(), Date.now() + 60 * 864e5).first();
   const SUSPENDED = { ok: false, reason: 'suspended', message: 'El studio de esta instancia está suspendido' };
 
   if (parts[0] === 'referral' && m === 'POST') return addReferral(env, P, (await readJson(req)).studio);
@@ -817,7 +819,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
       await env.DB.prepare("INSERT INTO access (instance_id, player_key, player_name, uuid, via, code, last_ip, created_at) VALUES (?, ?, ?, ?, 'code', ?, ?, ?)")
         .bind(row.id, P.key, P.name, P.uuid, code, ip, now()).run();
     }
-    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key), already: !!already });
+    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key, await nextEventOf(row.id)), already: !!already });
   }
 
   if (parts[0] === 'instances' && m === 'GET') {
@@ -826,7 +828,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
       (i.hidden = 0 AND (i.id IN (SELECT instance_id FROM access WHERE player_key = ?) OR json_extract(i.data, '$.access.public') = 1))
       OR EXISTS (SELECT 1 FROM json_each(i.data, '$.access.staff') s WHERE lower(s.value) = ?))`).bind(P.key, P.key).all()).results;
     const out = [];
-    for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin, P.key));
+    for (const r of rows) if (!(await isBanned(r))) out.push(toManifest(r, await studioOf(r.studio_id), origin, P.key, await nextEventOf(r.id)));
     return json({ instances: out });
   }
 
@@ -837,7 +839,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
     const staff = data.access.staff.some(n => n.toLowerCase() === P.key);
     if (!has && !data.access.public && !staff) fail(403, 'no_access', 'Ya no tienes acceso a esta instancia');
     if (await isBanned(row)) fail(403, 'banned', 'No puedes entrar a esta instancia');
-    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key) });
+    return json({ instance: toManifest(row, await studioOf(row.studio_id), origin, P.key, await nextEventOf(row.id)) });
   }
 
   if (parts[0] === 'play' && m === 'POST') {

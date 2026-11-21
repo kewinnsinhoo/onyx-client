@@ -1275,3 +1275,24 @@ try {
     console.log('  ✓ perfil público en la web: copias iguales y datos dentro de la página');
   } catch (e) { console.error('  ✗ perfil público en la web\n    ' + (e.stack || e.message)); process.exitCode = 1; }
 })();
+
+// Cuenta atrás: hasta que abre o hasta el próximo evento, y se puede apagar
+try {
+  const vm = require('vm');
+  const ctx = { window: {}, t: (s) => s, I18N: { locale: () => 'es' }, Date };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../src/renderer/js/countdown.js'), 'utf8'), ctx);
+  const C = ctx.window.Countdown;
+  const now = Date.UTC(2026, 10, 20, 12);
+  assert.strictEqual(C.target(null, now), null);
+  assert.strictEqual(C.target({ schedule: { opensAt: now - 1000 } }, now), null, 'ya abierta');
+  let r = C.target({ schedule: { opensAt: now + 5000, countdownText: 'IGNITE empieza en' } }, now);
+  assert.strictEqual(JSON.stringify(r), JSON.stringify({ at: now + 5000, kind: 'open', title: 'IGNITE empieza en', color: null }));
+  assert.strictEqual(C.target({ schedule: { opensAt: now + 5000, countdown: false } }, now), null, 'el studio la apagó');
+  r = C.target({ schedule: {}, nextEvent: { title: 'Final', color: '#ff5ec4', startsAt: now + 864e5 } }, now);
+  assert.strictEqual(r.kind, 'event'); assert.strictEqual(r.title, 'Final');
+  assert.strictEqual(C.target({ schedule: {}, nextEvent: { title: 'Lejos', startsAt: now + 90 * 864e5 } }, now), null, 'más de 60 días: no');
+  assert.strictEqual(C.target({ schedule: { opensAt: now + 10 }, nextEvent: { startsAt: now + 5 } }, now).kind, 'open', 'primero, cuándo abre');
+  assert.strictEqual(JSON.stringify(C.parts(2 * 864e5 + 4 * 36e5 + 17 * 6e4 + 42e3 + 900)), JSON.stringify({ d: 2, h: 4, m: 17, s: 42 }));
+  assert.strictEqual(JSON.stringify(C.parts(-5)), JSON.stringify({ d: 0, h: 0, m: 0, s: 0 }));
+  console.log('  ✓ cuenta atrás: cuándo abre, próximo evento y apagada');
+} catch (e) { console.error('  ✗ cuenta atrás\n    ' + (e.stack || e.message)); process.exitCode = 1; }

@@ -1296,4 +1296,31 @@ await test('Perfil público en la web: solo si el jugador lo activa', async () =
   assert.strictEqual((await worker.fetch(new Request('http://localhost/api/public/player/PixelPro/skin.png'), env, { waitUntil() {} })).status, 404);
 });
 
+await test('Cuenta atrás: opciones del studio y próximo evento en el launcher', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Cuenta atrás' } });
+  const iid = made.data.id;
+  const opens = Date.now() + 3 * 864e5;
+  let r = await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, schedule: { opensAt: opens, predownload: true, countdownText: '  IGNITE 4 empieza en  ' + 'x'.repeat(80) } } } });
+  assert.strictEqual(r.status, 200);
+  const h = await player('Cuentista', false);
+  // un evento pasado, uno privado y dos futuros: sale el más cercano que sea público
+  for (const [title, at, pub] of [['Pasado', Date.now() - 864e5, true], ['Privado', Date.now() + 864e5, false], ['Final', Date.now() + 2 * 864e5, true], ['Luego', Date.now() + 5 * 864e5, true]]) {
+    const e = await call('POST', '/api/s/onyx-studios/events', { cookie: creator, body: { title, category: 'event', color: '#ff5ec4', starts_at: at, instance_id: iid, public: pub } });
+    assert.strictEqual(e.status, 201, JSON.stringify(e.data));
+  }
+  r = await call('GET', '/api/l/instances', { headers: h });
+  const inst = r.data.instances.find(i => i.id === iid);
+  assert.ok(inst, 'la instancia pública sale');
+  assert.strictEqual(inst.schedule.opensAt, opens);
+  assert.strictEqual(inst.schedule.countdown, true, 'encendida por defecto');
+  assert.ok(inst.schedule.countdownText.length <= 60, 'texto recortado');
+  assert.ok(inst.schedule.countdownText.startsWith('IGNITE 4 empieza en'));
+  assert.strictEqual(inst.nextEvent.title, 'Final');
+  assert.strictEqual(inst.nextEvent.color, '#ff5ec4');
+  // el studio la apaga
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { data: { schedule: { countdown: false } } } });
+  r = await call('GET', '/api/l/instances', { headers: h });
+  assert.strictEqual(r.data.instances.find(i => i.id === iid).schedule.countdown, false);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

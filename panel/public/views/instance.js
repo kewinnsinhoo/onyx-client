@@ -288,6 +288,8 @@
             <div class="set"><div class="t"><b>${t('Sacar a quien siga dentro al cerrar')}</b><small>${t('Al llegar la hora de cierre o al bloquearla, el juego se cierra para los que no son staff.')}</small></div>${sw('s-kick', d.schedule.kickOnClose)}</div>
             <div class="row" style="margin-top:12px"><div class="field"><span class="label">${t('Abre el')}</span><input class="input" type="datetime-local" id="s-open" value="${toLocal(d.schedule.opensAt)}"></div>
               <div class="field"><span class="label">${t('Cierra el')}</span><input class="input" type="datetime-local" id="s-close" value="${toLocal(d.schedule.closesAt)}"></div></div>
+            <div class="set" style="margin-top:12px"><div class="t"><b>${t('Cuenta atrás grande en el launcher')}</b><small>${t('Hasta que abra, la instancia enseña los días, horas, minutos y segundos que faltan. Al llegar a cero, lo celebra y se puede jugar.')}</small></div>${sw('s-cd', d.schedule.countdown !== false)}</div>
+            ${d.schedule.countdown !== false ? `<div class="field"><span class="label">${t('Texto encima de la cuenta atrás')}</span><input class="input" id="s-cdt" maxlength="60" placeholder="${esc(t('Ej.: {name} empieza en', { name: d.name || 'IGNITE 3' }))}" value="${esc(d.schedule.countdownText || '')}"><span class="help">${t('Si lo dejas vacío pone «{name} abre en». Los eventos del calendario de esta instancia también tienen cuenta atrás.', { name: esc(d.name || '') })}</span></div>` : ''}
             <div class="field"><span class="label">${t('Mensaje cuando está bloqueada')}</span><input class="input" id="s-msg" maxlength="140" placeholder="${t('Ej.: Volvemos a las 18:00')}" value="${esc(d.lockedMessage)}"></div></div>`;
         $$('[data-m]', el).forEach(b => b.onclick = () => { if (!editable) return; d.sync.mode = b.dataset.m; changed(); draw(); });
         $$('[data-pp]', el).forEach(i => i.oninput = () => { d.sync.playerPaths[i.dataset.pp].path = i.value.trim(); changed(); });
@@ -299,6 +301,8 @@
         $('#s-kick', el).onchange = (e) => { d.schedule.kickOnClose = e.target.checked; changed(); };
         $('#s-open', el).onchange = (e) => { d.schedule.opensAt = fromLocal(e.target.value); changed(); };
         $('#s-close', el).onchange = (e) => { d.schedule.closesAt = fromLocal(e.target.value); changed(); };
+        $('#s-cd', el).onchange = (e) => { d.schedule.countdown = e.target.checked; changed(); draw(); };
+        if ($('#s-cdt', el)) $('#s-cdt', el).oninput = (e) => { d.schedule.countdownText = e.target.value; changed(); };
         $('#s-msg', el).oninput = (e) => { d.lockedMessage = e.target.value; changed(); };
       };
       draw();

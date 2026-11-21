@@ -253,6 +253,16 @@ Para que se cuenten solos:
 - Tus amigos la ponen en **Conexión directa**, o en el launcher: **Jugar con amigos → Únete a tu amigo** y entran directos.
 - Si tus amigos no son premium, al abrir en LAN pon **Online Mode en OFF** (lo da e4all).
 
+## Cuenta atrás (desde la 1.7.9)
+
+- En el panel: **Instancia → Juego → Horario y bloqueo**. Pon la fecha en **Abre el** y deja encendida **Cuenta atrás grande en el launcher**. Opcional: el texto de encima, por ejemplo «IGNITE 4 empieza en».
+- En el launcher:
+  - La página de la instancia enseña días, horas, minutos y segundos en grande, con animación.
+  - Los últimos 10 segundos laten.
+  - Al llegar a cero sale confeti y «¡Ya está abierta!», y se puede jugar. Si el launcher está en segundo plano, llega un aviso de Windows o Mac.
+  - En **Inicio** sale una cuenta atrás pequeña encima del botón Jugar.
+- Si la instancia ya está abierta, cuenta hasta el **próximo evento** del calendario de esa instancia (público y en los próximos 60 días). Ejemplo: «Gran final IGNITE empieza en».
+
 ## Perfil público en la web (desde la 1.7.8)
 
 - En el launcher: **Mi perfil → Tu perfil en la web → activar**. Sale el enlace `onyxclient.site/u/TuNombre`, con botones **Copiar** y **Abrir**.

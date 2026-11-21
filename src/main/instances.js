@@ -61,7 +61,9 @@ function view(i) {
     maxPlayers: m.maxPlayers || null,
     server: m.server || null,
     state: m.state || 'open',
-    schedule: m.schedule ? { opensAt: m.schedule.opensAt || null, closesAt: m.schedule.closesAt || null, predownload: !!m.schedule.predownload } : null,
+    schedule: m.schedule ? { opensAt: m.schedule.opensAt || null, closesAt: m.schedule.closesAt || null, predownload: !!m.schedule.predownload,
+      countdown: m.schedule.countdown !== false, countdownText: typeof m.schedule.countdownText === 'string' ? m.schedule.countdownText.slice(0, 60) : '' } : null,
+    nextEvent: m.nextEvent && m.nextEvent.startsAt ? { title: String(m.nextEvent.title || '').slice(0, 80), color: m.nextEvent.color || null, startsAt: m.nextEvent.startsAt } : null,
     lockedMessage: typeof m.maintenance === 'string' ? m.maintenance : null,
     staff: !!m.staff, // en la whitelist de staff del studio: puede jugar aunque esté bloqueada
     addedAt: i.addedAt,
