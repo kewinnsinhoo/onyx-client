@@ -364,9 +364,12 @@ Para que se cuenten solos:
 - Si no puede (por ejemplo, si se abrió desde el instalador .dmg en vez de desde Aplicaciones), lo explica y deja **Descargar a mano** o **Seguir sin actualizar**.
 - Quien tenga una versión anterior a la 1.8.2 en Mac tiene que instalar la nueva a mano **una vez**. Desde ahí, se actualiza sola.
 
-## Errores de conexión (desde la 1.8.2)
+## Errores de conexión (desde la 1.8.2, mejor en la 1.8.3)
 
-- Antes salía «fetch failed». Ahora el launcher reintenta solo una vez y, si sigue fallando, dice qué web falló (Mojang, Microsoft, Modrinth, el panel…) y qué hacer: revisar el WiFi, el antivirus o la VPN, o la hora del PC.
+- Antes salía «fetch failed», sobre todo en PCs con antivirus que revisan las webs (Avast, Kaspersky, ESET…), VPN o proxies.
+- Desde la 1.8.3 el launcher se conecta igual que Google Chrome (usa los certificados y el proxy de Windows y Mac). Si así no puede, prueba con la otra forma y, en las descargas, lo intenta otra vez tras una pausa.
+- Solo si falla todo dice qué web falló (Mojang, Microsoft, Modrinth, el panel…) y qué hacer.
+- La prueba **Prueba de red** (en GitHub → Actions) comprueba todo esto en Windows, Mac y Linux con conexiones reales.
 
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.

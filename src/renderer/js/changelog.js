@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.3', date: '2026-11-21', items: [
+      ['globe', 'Conexión más fuerte: el launcher se conecta a internet igual que Google Chrome, así funciona con antivirus, VPN y proxies que antes daban «fetch failed». Si una forma falla, prueba otra sola.',
+        'Stronger connection: the launcher connects to the internet just like Google Chrome, so it works with antivirus, VPNs and proxies that used to cause “fetch failed”. If one way fails, it tries another by itself.',
+        'Connexió més forta: el launcher es connecta a internet igual que Google Chrome, així funciona amb antivirus, VPN i proxies que abans donaven «fetch failed». Si una manera falla, en prova una altra sol.',
+        'Connexion plus solide : le launcher se connecte à internet comme Google Chrome, donc ça marche avec les antivirus, VPN et proxys qui donnaient « fetch failed ». Si une méthode échoue, il en essaie une autre tout seul.']
+    ]
+  },
+  {
     v: '1.8.2', date: '2026-11-21', items: [
       ['download', 'Mac: las actualizaciones ya se instalan solas (antes se quedaban en «Instalando actualización…»). Si algo falla, sale un botón para descargarla a mano o seguir jugando.',
         'Mac: updates now install themselves (before, they got stuck on “Installing update…”). If something fails, there’s a button to download it manually or keep playing.',
