@@ -1,6 +1,7 @@
-// Errores de conexión claros. Node solo dice «fetch failed», que no ayuda a nadie.
+// Conexiones a internet del launcher sin «fetch failed».
 // install() envuelve el fetch de todo el launcher para:
-//   - reintentar una vez las descargas (GET) que fallan por la red;
+//   - conectar primero como Chrome (certificados y proxy del sistema), y si no, con el de Node;
+//   - reintentar las descargas (GET) tras una pausa;
 //   - si aun así falla, decir con qué web no se pudo conectar y qué hacer (en el idioma del jugador).
 const KINDS = {
   dns: ['ENOTFOUND', 'EAI_AGAIN', 'EAI_FAIL', 'EAI_NODATA'],
@@ -27,15 +28,23 @@ function causeCode(e) {
   return '';
 }
 
+const CHROME = [
+  ['dns', /ERR_NAME_NOT_RESOLVED|ERR_NAME_RESOLUTION_FAILED|ERR_INTERNET_DISCONNECTED|ERR_ADDRESS_UNREACHABLE|ERR_NETWORK_CHANGED/],
+  ['timeout', /ERR_TIMED_OUT|ERR_CONNECTION_TIMED_OUT/],
+  ['cert', /ERR_CERT_|ERR_SSL_|ERR_BAD_SSL/],
+  ['blocked', /ERR_CONNECTION_(RESET|REFUSED|CLOSED|ABORTED|FAILED)|ERR_EMPTY_RESPONSE|ERR_PROXY_|ERR_TUNNEL_CONNECTION_FAILED|ERR_BLOCKED/]
+];
 function kindOf(e) {
   if (e && (e.name === 'TimeoutError')) return 'timeout';
+  const msg = String(e && e.message);
+  if (/net::ERR_/.test(msg)) { for (const [k, re] of CHROME) if (re.test(msg)) return k; return 'other'; }
   const code = causeCode(e);
   for (const [k, list] of Object.entries(KINDS)) if (list.includes(code)) return k;
   if (/certificate|self.signed|CERT/i.test(String(e && e.cause && e.cause.message))) return 'cert';
   return 'other';
 }
 
-const isNetError = (e) => !!e && ((e instanceof TypeError && /fetch failed|terminated/i.test(e.message)) || e.name === 'TimeoutError');
+const isNetError = (e) => !!e && ((e instanceof TypeError && /fetch failed|terminated|net::ERR_/i.test(e.message)) || e.name === 'TimeoutError' || /^net::ERR_/.test(String(e.message)));
 
 function hostOf(url) {
   try { return new URL(typeof url === 'string' ? url : url.url || String(url)).hostname; } catch { return 'internet'; }
@@ -53,25 +62,50 @@ function netError(e, url) {
   return err;
 }
 
+// Chromium (el motor de Chrome) usa los certificados y el proxy de Windows y Mac: con antivirus que revisan
+// las webs (Avast, Kaspersky, ESET…), VPN o proxies conecta donde el fetch de Node da «fetch failed».
+// Solo existe dentro de la app y cuando ya está lista.
+function chromiumFetch() {
+  try {
+    const { app, net } = require('electron');
+    if (app && typeof app.isReady === 'function' && app.isReady() && net && typeof net.fetch === 'function') return (u, o) => net.fetch(u, o);
+  } catch { /* fuera de Electron (pruebas) */ }
+  return null;
+}
+
+const aborted = (e, opts) => !!((opts && opts.signal && opts.signal.aborted) || (e && e.name === 'AbortError'));
+
 let installed = false;
-function install({ log, fetchImpl = globalThis.fetch, sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
+function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
   if (installed || typeof fetchImpl !== 'function') return;
   installed = true;
-  const orig = fetchImpl;
+  const node = fetchImpl;
   globalThis.fetch = async function kopiFetch(url, opts = {}) {
     const method = String((opts && opts.method) || 'GET').toUpperCase();
-    const tries = method === 'GET' || method === 'HEAD' ? 2 : 1;
-    for (let i = 0; ; i++) {
-      try { return await orig(url, opts); } catch (e) {
-        if (!isNetError(e)) throw e;
-        const aborted = opts && opts.signal && opts.signal.aborted;
-        if (i + 1 < tries && !aborted) { await sleep(900); continue; }
-        const err = netError(e, url);
-        if (log) log.warn('[red] ' + err.detail);
-        throw err;
+    // Orden: Chrome → Node → (descargas) otra vez Chrome tras una pausa
+    const cf = chromium();
+    const plan = cf ? [cf, node] : [node];
+    if (method === 'GET' || method === 'HEAD') plan.push(cf || node);
+    let first = null, last = null, nodeErr = null;
+    for (let i = 0; i < plan.length; i++) {
+      try { return await plan[i](url, opts); } catch (e) {
+        const sig = opts && opts.signal;
+        if ((e && e.name === 'TimeoutError') || (sig && sig.aborted && sig.reason && sig.reason.name === 'TimeoutError')) { // el tiempo se acabó: no se repite
+          last = Object.assign(new Error('timeout'), { name: 'TimeoutError' }); break;
+        }
+        if (aborted(e, opts)) throw e; // lo cancelamos nosotros
+        first = first || e; last = e;
+        if (plan[i] === node) nodeErr = e;
+        if (i === plan.length - 2 && plan.length > 2) await sleep(1200);
       }
     }
+    // El error más útil: el de Node si sabe qué pasó, si no el de Chrome
+    const pick = last && last.name === 'TimeoutError' ? last : nodeErr && kindOf(nodeErr) !== 'other' ? nodeErr : last || first;
+    if (!isNetError(pick) && !/^net::ERR_/.test(String(pick && pick.message))) throw pick;
+    const err = netError(pick, url);
+    if (log) log.warn('[red] ' + err.detail + (first && first !== last ? ` | también: ${first.message}` : ''));
+    throw err;
   };
 }
 
-module.exports = { install, netError, kindOf, isNetError, hostOf, MESSAGES };
+module.exports = { install, netError, kindOf, isNetError, hostOf, chromiumFetch, MESSAGES };

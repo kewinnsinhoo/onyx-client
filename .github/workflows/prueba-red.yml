@@ -1,0 +1,23 @@
+# Prueba real de las conexiones del launcher (Chrome primero, Node de reserva) en Windows, Mac y Linux.
+name: Prueba de red
+on:
+  workflow_dispatch:
+jobs:
+  red:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Probar (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npx electron --no-sandbox scripts/net-smoke.js
+      - name: Probar (Windows y Mac)
+        if: runner.os != 'Linux'
+        run: npx electron scripts/net-smoke.js

@@ -1332,24 +1332,40 @@ test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () 
 (async () => { try {
   const net = require('../src/main/net');
   const mk = (code) => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('x'), { code }) });
-  let calls = 0;
   const saved = globalThis.fetch;
-  net.install({ fetchImpl: async () => { calls++; throw mk('ENOTFOUND'); }, sleep: async () => {} });
+  const ok = { ok: true, status: 200 };
+  let mode = 'chromeOk', nodeCalls = 0, chromeCalls = 0;
+  const chrome = async () => { chromeCalls++; if (mode === 'chromeOk') return ok; throw new TypeError('net::ERR_CONNECTION_RESET'); };
+  const node = async () => { nodeCalls++; if (mode === 'nodeOk') return ok; throw mk(mode === 'cert' ? 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' : 'ENOTFOUND'); };
+  net.install({ fetchImpl: node, chromium: () => chrome, sleep: async () => {} });
+  // 1) Chrome conecta: Node ni se usa (antivirus / proxy de Windows)
+  assert.strictEqual(await fetch('https://api.modrinth.com/v2/x'), ok); assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 0]);
+  // 2) Chrome falla y Node conecta: funciona igual, sin error
+  mode = 'nodeOk'; chromeCalls = nodeCalls = 0;
+  assert.strictEqual(await fetch('https://api.modrinth.com/v2/x'), ok); assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 1]);
+  // 3) Falla todo: descarga = Chrome, Node y Chrome otra vez; el error dice qué web y por qué
+  mode = 'cert'; chromeCalls = nodeCalls = 0;
   try { await fetch('https://sessionserver.mojang.com/session'); assert.fail('debía fallar'); } catch (e) {
-    assert.strictEqual(e.code, 'net'); assert.strictEqual(e.kind, 'dns'); assert.deepStrictEqual(e.vars, { host: 'sessionserver.mojang.com' });
-    assert.ok(e.message.includes('{host}'));
+    assert.strictEqual(e.code, 'net'); assert.strictEqual(e.kind, 'cert'); assert.deepStrictEqual(e.vars, { host: 'sessionserver.mojang.com' });
+    assert.ok(e.message.includes('{host}') && !/fetch failed/.test(e.message));
   }
-  assert.strictEqual(calls, 2, 'una descarga GET se reintenta una vez');
-  calls = 0;
+  assert.deepStrictEqual([chromeCalls, nodeCalls], [2, 1]);
+  // 4) Un POST no se repite con el mismo sistema (Chrome y luego Node, nada más)
+  chromeCalls = nodeCalls = 0;
   try { await fetch('https://panel.onyxclient.site/api/l/play', { method: 'POST' }); } catch (e) { assert.strictEqual(e.code, 'net'); }
-  assert.strictEqual(calls, 1, 'un POST no se repite');
+  assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 1]);
+  // 5) Se acabó el tiempo: no se insiste
+  chromeCalls = nodeCalls = 0;
+  const sig = AbortSignal.abort(Object.assign(new Error('t'), { name: 'TimeoutError' }));
+  try { await fetch('https://x.org/a', { signal: sig }); } catch (e) { assert.strictEqual(e.kind, 'timeout'); }
+  assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 0]);
   assert.strictEqual(net.kindOf(mk('ECONNRESET')), 'blocked');
+  assert.strictEqual(net.kindOf(new TypeError('net::ERR_NAME_NOT_RESOLVED')), 'dns');
+  assert.strictEqual(net.kindOf(new TypeError('net::ERR_CERT_AUTHORITY_INVALID')), 'cert');
   assert.strictEqual(net.kindOf(mk('UND_ERR_CONNECT_TIMEOUT')), 'timeout');
-  assert.strictEqual(net.kindOf(mk('UNABLE_TO_GET_ISSUER_CERT_LOCALLY')), 'cert');
   assert.strictEqual(net.kindOf(mk('LOQUESEA')), 'other');
-  // todos los mensajes tienen traducción
   const i18n = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'i18n.js'), 'utf8');
   for (const m of Object.values(net.MESSAGES)) assert.ok(i18n.includes(m.replace(/'/g, "\\'")), 'falta traducir: ' + m);
   globalThis.fetch = saved;
-  console.log('  ✓ conexión: dice qué web falló, reintenta las descargas y no repite los envíos');
+  console.log('  ✓ conexión: primero como Chrome, luego Node; nunca «fetch failed»');
 } catch (e) { console.error('  ✗ conexión\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();
