@@ -4,6 +4,18 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.1', date: '2026-11-21', items: [
+      ['flag', 'Denunciar a un jugador: en la instancia, botón ⋯ → Denunciar a un jugador. Elige a quién, qué ha hecho y, si quieres, una captura (pulsa F2 en el juego). Lo ve el staff del studio.',
+        'Report a player: on the instance, ⋯ button → Report a player. Choose who, what they did and, if you want, a screenshot (press F2 in game). The studio staff will see it.',
+        'Denunciar un jugador: a la instància, botó ⋯ → Denunciar un jugador. Tria a qui, què ha fet i, si vols, una captura (prem F2 al joc). Ho veu l’staff de l’studio.',
+        'Signaler un joueur : sur l’instance, bouton ⋯ → Signaler un joueur. Choisis qui, ce qu’il a fait et, si tu veux, une capture (appuie sur F2 en jeu). Le staff du studio le verra.'],
+      ['zap', 'El launcher le cuenta al studio cuánto tarda en cargar su instancia y si se cierra, para que la hagan más ligera. No se envía nada tuyo: solo la RAM, el procesador y la gráfica.',
+        'The launcher tells the studio how long its instance takes to load and whether it crashes, so they can make it lighter. Nothing personal is sent: only RAM, processor and graphics card.',
+        'El launcher li explica a l’studio quant triga a carregar la seva instància i si es tanca, perquè la facin més lleugera. No s’envia res teu: només la RAM, el processador i la gràfica.',
+        'Le launcher indique au studio le temps de chargement de son instance et si elle plante, pour qu’il l’allège. Rien de personnel n’est envoyé : seulement la RAM, le processeur et la carte graphique.']
+    ]
+  },
+  {
     v: '1.8.0', date: '2026-11-20', items: [
       ['sparkles', 'Nueva capa legendaria TACHAMANIKA: borde RGB que recorre todos los colores del arcoíris.',
         'New legendary cape TACHAMANIKA: an RGB border that cycles through every colour of the rainbow.',

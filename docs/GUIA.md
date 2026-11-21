@@ -319,6 +319,44 @@ Para que se cuenten solos:
 
 - **Skins → Editar** (la skin que llevas) o **Crear una skin**. Lápiz, goma, cuentagotas, cubo, espejo, capas, deshacer y vista 3D. Se guarda en tu biblioteca.
 
+## Fichas de jugadores (panel)
+
+- En el panel: **Jugadores → Fichas**. Busca un nombre y entra en su ficha.
+- La ficha enseña horas jugadas, días que vino en el último mes, instancias, avisos de KopiGuard, bans, grupos, reportes, insignias y directos.
+- Desde la ficha puedes meterle en un grupo o sacarle.
+
+## Grupos de jugadores (panel)
+
+- En el panel: **Jugadores → Grupos**. Crea un grupo (por ejemplo «VIP» o «Testers») y añade nombres de Minecraft.
+- En **Instancia → Acceso** enciende los grupos que pueden entrar. Solo ellos (y el staff) verán la instancia en el launcher.
+- Si sacas a alguien del grupo o borras el grupo, deja de verla.
+
+## Actualizar mods (panel)
+
+- En **Instancia → Archivos → mods**, el botón **Buscar actualizaciones** mira en Modrinth si hay versiones nuevas para tu versión de Minecraft y tu loader.
+- Marca las que quieras y pulsa **Actualizar**.
+
+## Reportes de jugadores (desde la 1.8.1)
+
+- En el launcher: en la instancia, botón **⋯ → Denunciar a un jugador**. Solo sale si has jugado a esa instancia.
+  - Se elige a quién (salen los que están jugando ahora), el motivo (trampas, insultos, romper construcciones, aprovechar fallos u otro), un texto y una captura.
+  - Captura: «Captura del juego ahora» o una de las hechas con **F2**.
+  - Para evitar abusos: hay que haber jugado hoy, máximo 10 reportes por hora y no se puede repetir el mismo jugador en 10 minutos.
+- En el panel: **Jugadores → Reportes**. Ves la captura en grande, el texto y cuántas veces han denunciado a ese jugador.
+  - Botones: **Revisado**, **Descartar** o **Tomar medidas** (con una nota para el resto del staff). Queda en **Actividad**.
+  - Las capturas se guardan 60 días.
+
+## Rendimiento por instancia (desde la 1.8.1)
+
+- En el panel: **Instancia → Rendimiento**. Se ven los últimos 30 días.
+- Qué mide el launcher en cada partida (Minecraft no le da los FPS, así que no salen):
+  - Cuánto tarda en cargar.
+  - Cuánta memoria usa, comparada con la asignada y con la del PC.
+  - Si se cierra con un error y por qué mod.
+  - El PC del jugador: RAM, procesador y gráfica.
+- Arriba salen **consejos**, por ejemplo «El mod iris ha cerrado el juego 6 veces» o «11 partidas se cerraron por falta de memoria».
+- Solo cuenta a jugadores con Kopi Client 1.8.1 o más nuevo, en instancias del panel.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.
