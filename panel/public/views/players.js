@@ -127,6 +127,15 @@
             : `<div class="pl-clean">${icon('check')}<span>${t('Ninguna detección: juega limpio.')}</span></div>`}
         </div>
 
+        ${f.reports.total ? html`<div class="card">
+          <div class="card-head"><div><h3>${icon('flag')}${t('Reportes')}</h3><p class="sub">${esc(f.reports.total === 1 ? t('Le han denunciado 1 vez') : t('Le han denunciado {n} veces ({m} jugadores distintos)', { n: f.reports.total, m: f.reports.reporters }))}</p></div>
+            <span class="grow"></span><a class="btn sm" href="#/reports?status=all">${t('Ver todos')}${icon('chevRight')}</a></div>
+          <div class="pl-glist">${f.reports.recent.map(r => html`<div class="pl-g"><i class="sev" style="background:${r.status === 'new' ? '#f58ee0' : '#8b93a7'}"></i>
+            <div class="grow"><b>${esc(t({ cheats: 'Trampas', abuse: 'Insultos o acoso', grief: 'Romper construcciones', exploit: 'Aprovechar fallos', other: 'Otro motivo' }[r.reason] || r.reason))}${r.text ? ` · <span class="muted">${esc(r.text)}</span>` : ''}</b>
+              <small>${esc(t('Denunciado por {n}', { n: r.by }))} · ${esc(fmtDateTime(r.at))}</small></div>
+            <span class="badge ${{ new: 'accent', reviewed: 'ok', dismissed: 'mute', actioned: 'danger' }[r.status] || 'mute'}">${esc(t({ new: 'Nuevo', reviewed: 'Revisado', dismissed: 'Descartado', actioned: 'Con medidas' }[r.status] || r.status))}</span></div>`).join('')}</div>
+        </div>` : ''}
+
         <div class="pl-grid">
           <div class="card">
             <div class="card-head"><div><h3>${icon('badge')}${t('Insignias')}</h3><p class="sub">${t('{n} conseguidas', { n: f.badges.length })}</p></div></div>

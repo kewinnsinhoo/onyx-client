@@ -386,7 +386,29 @@ CREATE TABLE group_members (
   added_at INTEGER NOT NULL,
   PRIMARY KEY (group_id, player_key)
 );
-CREATE INDEX group_members_player ON group_members(player_key)`
+CREATE INDEX group_members_player ON group_members(player_key)`,
+  // Reportes de jugadores (un jugador denuncia a otro desde el launcher; el staff lo ve en el panel)
+  `CREATE TABLE player_reports (
+  id TEXT PRIMARY KEY,
+  studio_id TEXT NOT NULL,
+  instance_id TEXT NOT NULL,
+  play_id TEXT,
+  reporter_key TEXT NOT NULL,
+  reporter_name TEXT NOT NULL,
+  target_key TEXT NOT NULL,
+  target_name TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  text TEXT,
+  shot INTEGER,
+  status TEXT NOT NULL DEFAULT 'new',
+  note TEXT,
+  handled_by TEXT,
+  handled_at INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX player_reports_studio ON player_reports(studio_id, status, created_at);
+CREATE INDEX player_reports_target ON player_reports(studio_id, target_key);
+CREATE INDEX player_reports_reporter ON player_reports(reporter_key, created_at)`
 ];
 
 export function statements(sql) {

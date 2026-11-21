@@ -1409,4 +1409,48 @@ await test('Grupos de jugadores: dar acceso a una instancia por grupo', async ()
   assert.ok(!(await sees(vip)), 'grupo borrado: sin acceso');
 });
 
+await test('Reportes de jugadores: denunciar desde el launcher con captura y resolver en el panel', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Reportes' } });
+  const iid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true } } } });
+  const ana = await player('Denunciante', false), malo = await player('ElTramposo', false), fuera = await player('NoJugo', false);
+  // sin haber jugado no se puede
+  assert.strictEqual((await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'ElTramposo', reason: 'cheats' } })).status, 403);
+  for (const h of [ana, malo]) assert.strictEqual((await call('POST', '/api/l/play', { headers: h, body: { instance: iid } })).status, 200);
+  // quién está jugando (sin uno mismo); quien no ha jugado no ve a nadie
+  assert.deepStrictEqual((await call('GET', `/api/l/online/${iid}`, { headers: ana })).data.players, ['ElTramposo']);
+  assert.deepStrictEqual((await call('GET', `/api/l/online/${iid}`, { headers: fuera })).data.players, []);
+  // datos que no valen
+  assert.strictEqual((await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'Denunciante', reason: 'cheats' } })).status, 400, 'a sí mismo no');
+  assert.strictEqual((await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'ElTramposo', reason: 'nada' } })).status, 400);
+  assert.strictEqual((await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'mal nombre', reason: 'cheats' } })).status, 400);
+  // el reporte, con captura
+  let r = await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'ElTramposo', reason: 'cheats', text: 'Vuela por encima de la base' } });
+  assert.strictEqual(r.status, 200);
+  const rid = r.data.id;
+  assert.strictEqual((await call('POST', '/api/l/preport', { headers: ana, body: { instance: iid, target: 'ElTramposo', reason: 'abuse' } })).status, 409, 'repetido enseguida');
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+  const up = async (body) => worker.fetch(new Request(`http://localhost/api/l/preport/${rid}/shot`, { method: 'POST', headers: { ...ana, 'Content-Type': 'application/octet-stream' }, body }), env, { waitUntil() {} });
+  assert.strictEqual((await up(new Uint8Array([1, 2, 3]))).status, 400, 'no es JPEG');
+  assert.strictEqual((await up(jpeg)).status, 200);
+  assert.strictEqual((await up(jpeg)).status, 409, 'solo una');
+  // el panel: lo ve, con la captura, y lo resuelve
+  r = await call('GET', '/api/s/onyx-studios/reports', { cookie: creator });
+  const rep = r.data.reports.find(x => x.id === rid);
+  assert.deepStrictEqual([rep.reporter, rep.target, rep.reason, rep.text, rep.shot, rep.status, rep.times], ['Denunciante', 'ElTramposo', 'cheats', 'Vuela por encima de la base', true, 'new', 1]);
+  assert.strictEqual(r.data.counts.new >= 1, true);
+  const img = await worker.fetch(new Request(`http://localhost/api/s/onyx-studios/reports/${rid}/shot`, { headers: { Cookie: creator } }), env, { waitUntil() {} });
+  assert.strictEqual(img.status, 200);
+  assert.strictEqual(img.headers.get('Content-Type'), 'image/jpeg');
+  r = await call('PATCH', `/api/s/onyx-studios/reports/${rid}`, { cookie: creator, body: { status: 'actioned', note: 'Baneado 7 días' } });
+  assert.deepStrictEqual([r.data.status, r.data.note], ['actioned', 'Baneado 7 días']);
+  r = await call('GET', '/api/s/onyx-studios/reports?status=actioned', { cookie: creator });
+  assert.ok(r.data.reports.some(x => x.id === rid && x.note === 'Baneado 7 días'));
+  // en la ficha del denunciado sale
+  r = await call('GET', '/api/s/onyx-studios/players/ElTramposo', { cookie: creator });
+  assert.deepStrictEqual([r.data.reports.total, r.data.reports.recent[0].by], [1, 'Denunciante']);
+  // otro studio no lo ve
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/reports', { cookie: other })).status, 403);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

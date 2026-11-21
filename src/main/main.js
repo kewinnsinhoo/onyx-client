@@ -548,6 +548,33 @@ const isShot = (p) => instances.screenshots().some(s => s.path === p);
 handle('gallery:open', (p) => { if (!isShot(p)) throw new Error('Archivo no permitido'); return shell.openPath(p); });
 handle('gallery:copy', (p) => { if (!isShot(p)) throw new Error('Archivo no permitido'); clipboard.writeImage(nativeImage.createFromPath(p)); return true; });
 
+// ---------- reportes de jugadores ----------
+// Las capturas F2 recientes de esa instancia (para elegir una como prueba)
+handle('preport:shots', (id) => {
+  const dir = path.join('instances', String(id || ''), 'screenshots');
+  return instances.screenshots().filter(s => s.path.includes(path.sep + dir + path.sep) && s.time > Date.now() - 3 * 864e5).slice(0, 8)
+    .map(s => ({ path: s.path, name: s.name, time: s.time, url: 'file://' + s.path.replace(/\\/g, '/') }));
+});
+handle('preport:online', async (id) => { const a = panelAccount(); return a && panel.enabled() ? panel.onlineIn(a, id).catch(() => []) : []; });
+handle('preport:send', async (r) => {
+  const acc = streamAcc();
+  const body = { instance: String(r && r.instance || ''), target: String(r && r.target || '').trim(), reason: r && r.reason, text: String(r && r.text || '').slice(0, 500) };
+  // la imagen: una captura F2 de esa instancia o una del juego ahora mismo
+  let jpeg = null;
+  if (r && r.shot === 'now') jpeg = await instances.captureNow(body.instance).catch(() => null);
+  else if (r && r.shot && isShot(r.shot) && r.shot.includes(path.sep + path.join('instances', body.instance, 'screenshots') + path.sep)) {
+    let img = nativeImage.createFromPath(r.shot);
+    if (!img.isEmpty()) {
+      if (img.getSize().width > 1600) img = img.resize({ width: 1600, quality: 'good' });
+      for (const q of [85, 72, 60, 45]) { jpeg = img.toJPEG(q); if (jpeg.length <= 1.4 * 1024 * 1024) break; }
+    }
+  }
+  const res = await panel.preport(acc, body);
+  let shot = false;
+  if (jpeg && jpeg.length <= 1.5 * 1024 * 1024) { try { await panel.preportShot(acc, res.id, jpeg); shot = true; } catch (e) { log.warn('[reportes] La captura no se subió:', e.message); } }
+  return { ok: true, id: res.id, shot };
+});
+
 // ---------- referidos ----------
 handle('referrals:ranking', (period) => referrals.ranking(period));
 handle('referrals:link', async (code) => {

@@ -198,6 +198,11 @@ const saveChannels = (account, ch) => call(account, 'POST', 'channels', ch);
 const markLive = (account, platform, on) => call(account, 'POST', 'channels/live', { platform, on: !!on });
 const liveOf = (account, id) => call(account, 'GET', `live/${encodeURIComponent(id)}`).then(r => r.live || []);
 
+// Reportes de jugadores: quién juega ahora, enviar el reporte y su captura (JPEG)
+const onlineIn = (account, id) => call(account, 'GET', `online/${encodeURIComponent(id)}`).then(r => r.players || []);
+const preport = (account, body) => call(account, 'POST', 'preport', body);
+const preportShot = (account, id, buf) => call(account, 'POST', `preport/${encodeURIComponent(id)}/shot`, undefined, { raw: buf, timeout: 60000 });
+
 // Perfil público en la web: { public, url }
 const publicProfile = (account) => call(account, 'GET', 'public');
 const setPublicProfile = (account, on) => call(account, 'POST', 'public', { on: !!on });
@@ -241,4 +246,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

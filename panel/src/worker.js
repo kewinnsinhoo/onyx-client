@@ -20,6 +20,7 @@ import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
 import { launcherPublic } from './profile.js';
 import { studioPlayers } from './players.js';
 import { groupsApi, inGroups } from './groups.js';
+import { launcherReports, studioReports } from './preports.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -302,6 +303,7 @@ async function studioApi(c, parts, m) {
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
   if (a === 'streams' && b) return studioStreams(c, b, m);
   if (a === 'badges') return studioBadges(c, b, m, sub);
+  if (a === 'reports') return studioReports(c, b, m, sub);
   if (a === 'groups') return groupsApi(c, b, m, sub, d ? decodeURIComponent(d) : '');
   if (a === 'players') return studioPlayers(c, b ? decodeURIComponent(b) : '', m);
   if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
@@ -795,6 +797,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // Perfil público en la web, insignias y directos
   if (parts[0] === 'public' && !parts[1]) return launcherPublic(env, P, m, req);
+  if (parts[0] === 'preport' || parts[0] === 'online') { const r = await launcherReports(env, P, parts, m, req); if (r) return r; }
   if (parts[0] === 'badges') { const r = await launcherBadges(env, P, parts, m, req, u.searchParams); if (r) return r; }
   if (parts[0] === 'channels' || parts[0] === 'live') { const r = await launcherStreams(env, P, parts, m, req); if (r) return r; }
   // «Enviar informe» → canal de Discord del equipo (webhook guardado como secreto en Cloudflare)

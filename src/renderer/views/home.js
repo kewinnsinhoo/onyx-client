@@ -331,6 +331,60 @@
     };
 
     // Modo rendimiento: mods que hacen que el juego vaya más fluido (solo en este ordenador)
+    // Denunciar a un jugador de esta instancia: lo ve el staff del studio en el panel (con la captura que elijas)
+    function reportModal() {
+      const REASONS = [['cheats', 'zap', t('Trampas')], ['abuse', 'alert', t('Insultos o acoso')], ['grief', 'trash', t('Romper construcciones')], ['exploit', 'puzzle', t('Aprovechar fallos')], ['other', 'more', t('Otro motivo')]];
+      const f = { target: '', reason: '', text: '', shot: null };
+      let online = [], shots = [];
+      const isRunning = () => { const p = S.progress[id]; return !!(p && p.stage === 'running'); };
+      UI.modal((m, close) => {
+        m.classList.add('rp-modal');
+        const paint = () => {
+          const ok = /^[A-Za-z0-9_]{2,16}$/.test(f.target.trim()) && f.reason;
+          m.innerHTML = html`<div class="m-ico">${icon('flag')}</div>
+            <h2>${t('Denunciar a un jugador')}</h2>
+            <p class="sub">${t('Lo verá el staff de {studio}. Solo para lo que pasa en esta instancia.', { studio: esc((inst.studio && inst.studio.name) || inst.name) })}</p>
+            <div class="rp-f"><label>${t('¿A quién?')}</label>
+              <input class="input" id="rp-who" placeholder="${t('Nombre de Minecraft')}" value="${esc(f.target)}" maxlength="16" spellcheck="false" autocomplete="off">
+              ${online.length ? `<div class="rp-on">${online.slice(0, 12).map(n => `<button class="${n === f.target ? 'on' : ''}" data-who="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}</div>
+            <div class="rp-f"><label>${t('¿Qué ha hecho?')}</label>
+              <div class="rp-rs">${REASONS.map(([k, ic, l]) => `<button class="${f.reason === k ? 'on' : ''}" data-r="${k}">${icon(ic)}${esc(l)}</button>`).join('')}</div></div>
+            <div class="rp-f"><label>${t('Cuéntalo (opcional)')}<span class="muted" id="rp-n">${f.text.length}/500</span></label>
+              <textarea class="input" id="rp-txt" rows="3" maxlength="500" placeholder="${t('Qué pasó, dónde y cuándo…')}">${esc(f.text)}</textarea></div>
+            <div class="rp-f"><label>${t('Prueba (opcional)')}</label>
+              <div class="rp-shots">
+                <button class="rp-sh none ${!f.shot ? 'on' : ''}" data-shot="">${icon('x')}<span>${t('Sin imagen')}</span></button>
+                ${isRunning() ? `<button class="rp-sh now ${f.shot === 'now' ? 'on' : ''}" data-shot="now">${icon('camera')}<span>${t('Captura del juego ahora')}</span></button>` : ''}
+                ${shots.map(s => `<button class="rp-sh ${f.shot === s.path ? 'on' : ''}" data-shot="${esc(s.path)}" title="${esc(s.name)}"><img src="${esc(s.url)}" alt="" loading="lazy"><small>${esc(UI.timeAgo(s.time))}</small></button>`).join('')}
+              </div>
+              <span class="rp-tip">${icon('info')}${t('Pulsa F2 en el juego para hacer capturas: salen aquí.')}</span></div>
+            <div class="actions"><button class="btn btn-ghost" data-a="no">${t('Cancelar')}</button><button class="btn btn-primary" data-a="yes" ${ok ? '' : 'disabled'}>${icon('flag')}${t('Enviar reporte')}</button></div>`;
+          m.querySelector('[data-a=no]').onclick = close;
+          const who = m.querySelector('#rp-who');
+          who.oninput = () => { f.target = who.value; m.querySelector('[data-a=yes]').disabled = !(/^[A-Za-z0-9_]{2,16}$/.test(f.target.trim()) && f.reason); m.querySelectorAll('[data-who]').forEach(b => b.classList.toggle('on', b.dataset.who === f.target)); };
+          m.querySelectorAll('[data-who]').forEach(b => { b.onclick = () => { f.target = b.dataset.who; paint(); }; });
+          m.querySelectorAll('[data-r]').forEach(b => { b.onclick = () => { f.reason = b.dataset.r; f.target = who.value; f.text = m.querySelector('#rp-txt').value; paint(); }; });
+          const tx = m.querySelector('#rp-txt');
+          tx.oninput = () => { f.text = tx.value; m.querySelector('#rp-n').textContent = `${tx.value.length}/500`; };
+          m.querySelectorAll('[data-shot]').forEach(b => { b.onclick = () => { f.shot = b.dataset.shot || null; f.target = who.value; f.text = tx.value; paint(); }; });
+          const yes = m.querySelector('[data-a=yes]');
+          yes.onclick = async () => {
+            UI.busy(yes, true);
+            try {
+              const r = await onyx.preport.send({ instance: id, target: f.target.trim(), reason: f.reason, text: f.text.trim(), shot: f.shot });
+              close();
+              toast(f.shot && !r.shot ? t('Reporte enviado (sin la imagen: no se pudo subir). Gracias.') : t('Reporte enviado. Gracias: el staff lo revisará.'), 'success', 6000);
+            } catch (e) { UI.busy(yes, false); toast(t(e.message, e.vars), 'error'); }
+          };
+        };
+        paint();
+        Promise.all([onyx.preport.online(id).catch(() => []), onyx.preport.shots(id).catch(() => [])]).then(([o, s]) => {
+          online = o || []; shots = s || [];
+          if (m.isConnected) { const who = m.querySelector('#rp-who'); if (who) f.target = who.value; const tx = m.querySelector('#rp-txt'); if (tx) f.text = tx.value; paint(); }
+        });
+      }, { wide: true });
+    }
+
     // Jugar con amigos: abre tu mundo por internet (sin tocar el router) o entra al de un amigo
     function friendsModal() {
       const can = ['fabric', 'forge', 'neoforge', 'quilt'].includes((inst.loader && inst.loader.type) || 'vanilla');
@@ -406,6 +460,7 @@
           <button class="dd-item" data-a="report">${icon('alert')}${t('Reportar un fallo')}</button>
           <button class="dd-item" data-a="pack">${icon('package')}${t('Instalar desde .onyxpack')}</button>
           <button class="dd-item" data-a="shots">${icon('image')}${t('Capturas')}</button>
+          ${inst.lastPlayed || running ? `<button class="dd-item" data-a="report">${icon('flag')}${t('Denunciar a un jugador')}</button>` : ''}
           <button class="dd-item" data-a="friends">${icon('users')}${t('Jugar con amigos')}<span class="dd-state ${inst.friendsMode ? 'on' : ''}">${inst.friendsMode ? t('Activado') : t('Desactivado')}</span></button>
           <button class="dd-item" data-a="perf">${icon('zap')}${t('Modo rendimiento')}<span class="dd-state ${inst.perfMode ? 'on' : ''}">${inst.perfMode ? t('Activado') : t('Desactivado')}</span></button>
           <div class="dd-sep"></div>
@@ -423,6 +478,7 @@
         on('report', App.reportModal);
         on('perf', perfModal);
         on('friends', friendsModal);
+        on('report', reportModal);
         on('shots', () => App.go('gallery')); // en el launcher: la carpeta de la instancia no se abre (protege los mods)
         on('pack', async () => {
           try { const n = await onyx.instances.importPack(id); if (n != null) toast(t('{n} archivos instalados desde el pack', { n }), 'success'); }

@@ -114,6 +114,11 @@ contextBridge.exposeInMainWorld('onyx', {
     log: () => call('game:log'),
     onLog: (cb) => on('game:log', cb)
   },
+  preport: {
+    shots: (id) => call('preport:shots', id),
+    online: (id) => call('preport:online', id),
+    send: (r) => call('preport:send', r)
+  },
   gallery: {
     list: () => call('gallery:list'),
     remove: (p) => call('gallery:delete', p),

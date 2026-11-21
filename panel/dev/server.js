@@ -216,6 +216,17 @@ async function seed() {
   for (const [g, names] of [['vip000000001', ['ElRayo', 'Luna_MC', 'Steve_Pro', 'StreamerAna']], ['testers00001', ['ElRayo', 'Dante']], ['rojo00000001', ['Mia_2010', 'Pixel', 'Jugador0']], ['azul00000001', ['Jugador1', 'LeoKick']]])
     for (const n of names) await run('INSERT INTO group_members (group_id, player_key, player_name, added_at) VALUES (?, ?, ?, ?)', g, n.toLowerCase(), n, t - 2 * DAY);
   { const r = await env.DB.prepare("SELECT data FROM instances WHERE id = 'ignite-extremo-3'").first(); const d = JSON.parse(r.data); d.access.groups = ['vip000000001', 'testers00001']; await run("UPDATE instances SET data = ? WHERE id = 'ignite-extremo-3'", JSON.stringify(d)); }
+  // Reportes de jugadores de ejemplo (con captura si existe /tmp/rp0.jpg)
+  for (const [id, by, target, reason, text, status, ago, shot] of [
+    ['rp1', 'Luna_MC', 'ElRayo', 'cheats', 'Vuela por encima de nuestra base y nos mata desde el aire. Pasó dos veces seguidas.', 'new', 20 * 60e3, '/tmp/rp0.jpg'],
+    ['rp2', 'Pixel', 'ElRayo', 'cheats', 'Mismo tío, va rapidísimo', 'new', 2 * 3600e3, null],
+    ['rp3', 'Mia_2010', 'Jugador7', 'abuse', 'Insulta a todo el mundo por el chat', 'new', 5 * 3600e3, '/tmp/rp1.jpg'],
+    ['rp4', 'Dante', 'Jugador3', 'grief', 'Rompió la granja comunitaria', 'actioned', 2 * DAY, null]]) {
+    let size = null;
+    if (shot && fs.existsSync(shot)) { const b = fs.readFileSync(shot); await env.MEDIA.put('preport:' + id, b, { metadata: { type: 'image/jpeg' } }); size = b.length; }
+    await run('INSERT INTO player_reports (id, studio_id, instance_id, reporter_key, reporter_name, target_key, target_name, reason, text, shot, status, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      id, 'onyx-studios', 'ignite-extremo-3', by.toLowerCase(), by, target.toLowerCase(), target, reason, text, size, status, status === 'actioned' ? 'Expulsado 1 día' : null, t - ago);
+  }
   // Insignias de ejemplo del studio
   const sbg = (id, name, desc, rarity, d) => run('INSERT INTO studio_badges (id, studio_id, name, description, rarity, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, 'onyx-studios', name, desc, rarity, JSON.stringify(d), t);
   await sbg('campeon', 'Campeón de IGNITE 3', 'Ganó la final del evento', 'legendary', { icon: 'trophy', rule: { type: 'manual' } });

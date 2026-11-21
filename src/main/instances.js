@@ -488,6 +488,14 @@ function setMemory(id, mb) {
 function dir(id) { return path.join(root, 'instances', id); }
 
 // Galería: capturas (F2) de todas las instancias.
+// Captura del juego ahora mismo (para un reporte): JPEG o null si el juego no está abierto o no se ve
+async function captureNow(id) {
+  const c = running.get(id);
+  if (!c) return null;
+  capture.setTarget({ pid: c.pid, hint: (store.get().instances.find(i => i.id === id) || {}).manifest?.name || '' });
+  return capture.shot();
+}
+
 function screenshots() {
   const out = [];
   for (const i of store.get().instances) {
@@ -563,4 +571,4 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE };
+module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE, captureNow };

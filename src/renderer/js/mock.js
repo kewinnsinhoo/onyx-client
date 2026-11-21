@@ -119,6 +119,11 @@
       status: () => wait({ online: 0, max: 100 }, 600), wipe: wait, update: () => wait(null, 800), importPack: () => wait(12)
     },
     game: { log: () => wait('[12:00:01] [Render thread/INFO]: Setting user: Kewinsinho\n[12:00:02] [Render thread/WARN]: Ejemplo de aviso\n'), onLog: () => () => {} },
+    preport: {
+      online: () => wait(['ElRayo', 'Luna_MC', 'Pixel', 'Steve_Pro', 'Mia_2010']),
+      shots: () => wait([{ path: '/s/1.png', name: '2026-11-21_08.31.12.png', time: Date.now() - 6e5, url: '../../web/img/arte-3.webp' }, { path: '/s/2.png', name: '2026-11-21_08.12.40.png', time: Date.now() - 25e5, url: '../../web/img/arte-1.webp' }]),
+      send: () => wait({ ok: true, id: 'x', shot: true }, 600)
+    },
     gallery: { list: () => wait([]), remove: wait, open: wait, copy: wait },
     referrals: {
       ranking: () => wait([{ code: 'NEXO', name: 'NexoStudio', players: 56 }, { code: 'KOPI', name: 'Kopi Studio', players: 36 }, { code: 'CRUX', name: 'Crux Network', players: 29 }]),
