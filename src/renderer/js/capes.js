@@ -48,6 +48,40 @@
       }
     },
     {
+      // TACHAMANIKA: capa RGB. El borde y la franja de arriba recorren el arcoíris; la carita parpadea
+      id: 'tachamanika', name: 'TACHAMANIKA', rarity: 'legendary', frames: 24, fps: 12,
+      draw(px, f) {
+        const hue = (h) => {
+          h = ((h % 1) + 1) % 1;
+          const v = (n) => { const k = (n + h * 6) % 6; return Math.round(255 * (1 - Math.max(0, Math.min(k, 4 - k, 1)))); };
+          return mix('#' + [v(5), v(3), v(1)].map(c => c.toString(16).padStart(2, '0')).join(''), '#ffffff', 0.08);
+        };
+        const t = f / 24;
+        // posición de cada píxel del borde (dando la vuelta) → su color
+        const ring = (x, y) => {
+          if (y === 0) return x;
+          if (x === W - 1) return W - 1 + y;
+          if (y === H - 1) return W - 1 + H - 1 + (W - 1 - x);
+          return 2 * (W - 1) + H - 1 + (H - 1 - y);
+        };
+        const LEN = 2 * (W + H) - 4;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+          if (border) { px(x, y, hue(ring(x, y) / LEN + t)); continue; }
+          if (y === 2) { px(x, y, hue(x / W + t + 0.5)); continue; } // franja de arriba
+          // el negro de dentro, con un brillo suave del color del borde que tiene al lado
+          const near = x === 1 || x === W - 2 || y === 1 || y === 3 || y === H - 2;
+          const nb = x === 1 ? [0, y] : x === W - 2 ? [W - 1, y] : y === H - 2 ? [x, H - 1] : [x, 0];
+          px(x, y, near ? mix('#1d1d21', hue(ring(nb[0], nb[1]) / LEN + t), 0.16) : '#1d1d21');
+        }
+        // la carita (como en el dibujo original)
+        const blink = f === 18 || f === 19;
+        if (blink) { px(2, 4, '#2c3034'); px(7, 4, '#2c3034'); } else { px(2, 4, '#474f52'); px(7, 4, '#474f52'); }
+        [3, 4, 5, 6].forEach(x => px(x, 5, '#9d9d97'));
+        px(4, 6, '#9d9d97'); px(5, 6, '#474f52'); px(6, 6, '#474f52');
+      }
+    },
+    {
       id: 'void', name: 'Vacío', rarity: 'legendary', frames: 16, fps: 8,
       draw(px, f) {
         const t = f / 16 * TAU;

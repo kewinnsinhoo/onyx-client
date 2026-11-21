@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.0', date: '2026-11-20', items: [
+      ['sparkles', 'Nueva capa legendaria TACHAMANIKA: borde RGB que recorre todos los colores del arcoíris.',
+        'New legendary cape TACHAMANIKA: an RGB border that cycles through every colour of the rainbow.',
+        'Nova capa llegendària TACHAMANIKA: vora RGB que recorre tots els colors de l’arc de Sant Martí.',
+        'Nouvelle cape légendaire TACHAMANIKA : une bordure RGB qui passe par toutes les couleurs de l’arc-en-ciel.']
+    ]
+  },
+  {
     v: '1.7.9', date: '2026-11-20', items: [
       ['clock', 'Cuenta atrás: antes de que abra una instancia o empiece su evento, ves en grande los días, horas, minutos y segundos que faltan. Al llegar a cero… ¡fiesta!',
         'Countdown: before an instance opens or its event starts, you see the days, hours, minutes and seconds left in big numbers. When it hits zero… party!',

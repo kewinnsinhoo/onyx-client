@@ -329,6 +329,7 @@
     "Épica": ["Epic", "Èpica", "Épique"],
     "Rara": ["Rare", "Rara", "Rare"],
     "Común": ["Common", "Comuna", "Commune"],
+    "TACHAMANIKA": ["TACHAMANIKA", "TACHAMANIKA", "TACHAMANIKA"],
     "Vacío": ["Void", "Buit", "Néant"],
     "Tinta": ["Ink", "Tinta", "Encre"],
     "Aurora": ["Aurora", "Aurora", "Aurore"],
