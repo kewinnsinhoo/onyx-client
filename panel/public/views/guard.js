@@ -13,8 +13,8 @@
   const head = (name) => `<span class="g-head"><span>${initials(name)}</span><img src="https://mc-heads.net/avatar/${encodeURIComponent(name)}/28" alt="" loading="lazy" onerror="this.remove()"></span>`;
   const badge = ([cls, label], extra = '') => `<span class="badge ${cls}">${extra}${esc(t(label))}</span>`;
 
-  V.guard = async (view) => {
-    const f = { type: '', status: '', severity: '', q: '', instance: '', from: '', to: '' };
+  V.guard = async (view, route) => {
+    const f = { type: '', status: '', severity: '', q: (route && route.query.get('q')) || '', instance: '', from: '', to: '' };
     let rows = [], more = false, last = null;
 
     const query = (before) => {
@@ -62,7 +62,7 @@
               <td class="nowrap" title="${esc(fmtDateTime(e.at))}">${timeAgo(e.at)}</td>
               <td class="nowrap"><span class="g-inst">${esc(e.instanceName)}</span></td>
               <td><span class="badge g-type t-${e.type}">${icon(TYPE_NAME[e.type][0])}${esc(t(TYPE_NAME[e.type][1]))}</span></td>
-              <td><span class="g-player">${head(e.player)}<b>${esc(e.player)}</b></span></td>
+              <td><a class="g-player" href="#/players/${encodeURIComponent(e.player)}" onclick="event.stopPropagation()">${head(e.player)}<b>${esc(e.player)}</b></a></td>
               <td class="g-detail">${esc(e.detail)}${e.extra ? ` <span class="g-more">${t('y {n} más', { n: e.extra })}</span>` : ''}</td>
               <td class="nowrap">${badge(SEV[e.severity])} ${badge(ST[e.status])}${e.kicked ? ` <span class="badge danger solid">${icon('logout')}${t('Expulsado')}</span>` : ''}</td>
             </tr>`).join('')}</tbody></table></div>
@@ -117,7 +117,7 @@
         const canEdit = can('editor') || (S.me && S.me.user.role === 'creator');
         m.innerHTML = html`<div class="mh"><h3>${icon('shield')}${t('Detección de KopiGuard')}</h3><button class="btn ghost icon sm" data-x title="${t('Cerrar')}">${icon('x')}</button></div>
           <div class="mb g-dbody">
-            <div class="g-who">${head(e.player)}<div><b>${esc(e.player)}</b><small>${esc(e.instanceName)} · ${esc(fmtDateTime(e.at))}</small></div>
+            <div class="g-who">${head(e.player)}<div><a href="#/players/${encodeURIComponent(e.player)}"><b>${esc(e.player)}</b></a><small>${esc(e.instanceName)} · ${esc(fmtDateTime(e.at))}</small></div>
               <span class="grow"></span>${e.playing ? `<span class="badge ok">${icon('activity')}${t('Jugando ahora')}</span>` : ''}</div>
             ${e.livePlay && (can('editor') || (S.me && S.me.user.role === 'creator')) ? `<a class="btn sm g-live-btn" href="#/cameras?play=${encodeURIComponent(e.livePlay)}" data-x>${icon('video')}${t('Ver su cámara en directo')}</a>` : ''}
             <div class="g-tags"><span class="badge g-type t-${e.type}">${icon(TYPE_NAME[e.type][0])}${esc(t(TYPE_NAME[e.type][1]))}</span>${badge(SEV[e.severity])}${badge(ST[e.status])}${e.kicked ? `<span class="badge danger solid">${icon('logout')}${t('Expulsado')}</span>` : ''}</div>

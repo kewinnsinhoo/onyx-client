@@ -18,6 +18,7 @@ import { sendReport } from './reports.js';
 import { launcherStreams, studioStreams, refreshDue } from './streams.js';
 import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
 import { launcherPublic } from './profile.js';
+import { studioPlayers } from './players.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -300,6 +301,7 @@ async function studioApi(c, parts, m) {
   if (a === 'bans') return bansApi(c, `studio:${studio.id}`, b, m);
   if (a === 'streams' && b) return studioStreams(c, b, m);
   if (a === 'badges') return studioBadges(c, b, m, sub);
+  if (a === 'players') return studioPlayers(c, b ? decodeURIComponent(b) : '', m);
   if (a === 'guard') return guardApi(c, b, m, (r) => c.need(r), sub, d);
   if (a === 'brand') return studioBrandApi(c, b, m);
   if (a === 'notices') { if (m !== 'GET') c.need('admin'); return noticesApi(c, studio.id, b, m); }

@@ -507,7 +507,7 @@
         const r2 = await sapi('GET', `${base}/players`).catch(() => ({ players: [] }));
         el.innerHTML = html`<div class="card"><div class="card-head"><div><h3>${icon('activity')}${t('Jugando ahora')}<span class="badge ok">${r2.players.length}</span></h3><p class="sub">${t('Se actualiza solo cada 15 segundos.')}</p></div></div>
           ${r2.players.length ? html`<table class="table"><thead><tr><th>${t('Jugador')}</th><th>${t('Desde')}</th><th>${t('Última señal')}</th></tr></thead><tbody>
-            ${r2.players.map(p => `<tr><td><b>${esc(p.player_name)}</b></td><td>${fmtDateTime(p.started_at)}</td><td>${timeAgo(p.last_seen)}</td></tr>`).join('')}</tbody></table>`
+            ${r2.players.map(p => `<tr><td><a href="#/players/${encodeURIComponent(p.player_name)}"><b>${esc(p.player_name)}</b></a></td><td>${fmtDateTime(p.started_at)}</td><td>${timeAgo(p.last_seen)}</td></tr>`).join('')}</tbody></table>`
             : `<div class="empty"><div class="ic">${icon('gamepad')}</div><h4>${t('Nadie conectado')}</h4><p>${t('Cuando alguien pulse Jugar en el launcher, aparecerá aquí.')}</p></div>`}</div>`;
       };
       await draw();

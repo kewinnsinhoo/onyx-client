@@ -1323,4 +1323,47 @@ await test('Cuenta atrás: opciones del studio y próximo evento en el launcher'
   assert.strictEqual(r.data.instances.find(i => i.id === iid).schedule.countdown, false);
 });
 
+await test('Ficha del jugador: búsqueda, horas, instancias, KopiGuard y baneos (solo del studio)', async () => {
+  const t = Date.now(), H = 3600e3;
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Ficha' } });
+  const iid = made.data.id;
+  const ins = (id, inst, studio, start, ms, ended = true) => env.DB.prepare('INSERT INTO plays (id, instance_id, studio_id, player_key, player_name, started_at, last_seen, ended_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, inst, studio, 'fichado', 'Fichado', start, start + ms, ended ? start + ms : null).run();
+  await ins('f1', iid, 'onyx-studios', t - 3 * 864e5, 2 * H);
+  await ins('f2', iid, 'onyx-studios', t - 864e5, 1 * H);
+  await ins('f3', 'otra-de-otro-studio', 'otro-studio', t - 864e5, 5 * H); // de otro studio: no cuenta
+  await ins('f4', iid, 'onyx-studios', t - 10 * 60e3, 10 * 60e3, false);   // jugando ahora
+  await env.DB.prepare("INSERT INTO guard_events (id, studio_id, instance_id, player_key, player_name, type, severity, detail, status, created_at) VALUES ('gf1', 'onyx-studios', ?, 'fichado', 'Fichado', 'mod', 'high', 'Mod de trampas', 'sanctioned', ?)").bind(iid, t - H).run();
+  await env.DB.prepare("INSERT INTO guard_events (id, studio_id, instance_id, player_key, player_name, type, severity, detail, status, created_at) VALUES ('gf2', 'otro-studio', 'x', 'fichado', 'Fichado', 'mod', 'high', 'De otro studio', 'new', ?)").bind(t - H).run();
+  // lista y búsqueda
+  let r = await call('GET', '/api/s/onyx-studios/players?q=fich', { cookie: creator });
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.data.players.map(p => [p.name, p.online, p.sessions]), [['Fichado', true, 3]]);
+  r = await call('GET', '/api/s/onyx-studios/players', { cookie: creator });
+  assert.strictEqual(r.data.players[0].name, 'Fichado', 'el que está jugando, primero');
+  // la ficha
+  r = await call('GET', '/api/s/onyx-studios/players/Fichado', { cookie: creator });
+  assert.strictEqual(r.status, 200);
+  const f = r.data;
+  assert.strictEqual(f.name, 'Fichado');
+  assert.strictEqual(f.stats.sessions, 3);
+  assert.ok(Math.abs(f.stats.hours - 3.2) < 0.05, 'solo horas de este studio: ' + f.stats.hours);
+  assert.strictEqual(f.online.instanceId, iid);
+  assert.deepStrictEqual(f.instances.map(i => i.id), [iid], 'solo instancias del studio');
+  assert.strictEqual(f.days.length, 30);
+  assert.ok(Math.abs(f.days.reduce((a, d) => a + d.hours, 0) - 3.2) < 0.1);
+  assert.strictEqual(f.guard.total, 1, 'las detecciones de otros studios no salen');
+  assert.strictEqual(f.guard.byStatus.sanctioned, 1);
+  assert.ok(f.badges.some(b => b.id === 'hours-1'));
+  // baneo del studio: sale en la ficha
+  assert.strictEqual((await call('POST', '/api/s/onyx-studios/bans', { cookie: creator, body: { kind: 'name', value: 'Fichado' } })).status, 200);
+  r = await call('GET', '/api/s/onyx-studios/players/fichado', { cookie: creator });
+  assert.deepStrictEqual(r.data.bans.map(b => b.scope), ['studio']);
+  // nombres raros y jugadores que no existen
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/players/nadie_jamas', { cookie: creator })).status, 404);
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/players/mal%20nombre', { cookie: creator })).status, 400);
+  // de otro studio no se puede mirar
+  assert.strictEqual((await call('GET', '/api/s/onyx-studios/players/Fichado', { cookie: other })).status, 403);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);
