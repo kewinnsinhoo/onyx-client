@@ -3,7 +3,7 @@
   const V = window.Views;
   const TABS = [
     ['summary', 'info', 'Resumen'], ['news', 'megaphone', 'Novedades'], ['files', 'folder', 'Archivos'], ['look', 'sparkles', 'Personalización'],
-    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['streams', 'video', 'Directos'], ['players', 'activity', 'Jugadores']
+    ['game', 'gamepad', 'Juego'], ['launch', 'rocket', 'Arranque'], ['access', 'users', 'Acceso'], ['protect', 'shield', 'Protección'], ['streams', 'video', 'Directos'], ['perf', 'zap', 'Rendimiento'], ['players', 'activity', 'Jugadores']
   ];
   const B32 = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const genCode = () => { const a = crypto.getRandomValues(new Uint8Array(12)); const s = [...a].map(b => B32[b % 32]).join(''); return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}`; };
@@ -67,7 +67,7 @@
     async function drawTab() {
       const el = $('#tab');
       if (timer) { clearInterval(timer); timer = null; }
-      const fn = { summary, news, files, look, game, launch, access, protect, streams, players }[tab];
+      const fn = { summary, news, files, look, game, launch, access, protect, streams, perf, players }[tab];
       await fn(el);
       if (!editable) $$('#tab input, #tab select, #tab textarea, #tab .option, #tab .chip, #tab [data-edit]').forEach(x => { x.disabled = true; });
     }
@@ -518,6 +518,86 @@
     }
 
     // Jugadores en vivo
+    // Rendimiento: lo que el launcher mide de cada partida (carga, memoria, PC y cierres) y qué hacer
+    async function perf(el) {
+      const r = await sapi('GET', `${base}/perf`);
+      if (!r.sessions) {
+        el.innerHTML = html`<div class="card empty"><div class="ic">${icon('zap')}</div><h4>${t('Aún no hay datos de rendimiento')}</h4>
+          <p>${t('Cuando la gente juegue con Kopi Client 1.8.1 o más nuevo, aquí verás cuánto tarda en cargar, cuánta memoria usa y si se cierra.')}</p></div>`;
+        return;
+      }
+      const plural = (n, one, many) => (n === 1 ? t(one) : t(many, { n }));
+      const gb = (mb) => mb >= 1024 ? `${(mb / 1024).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 })} GB` : `${mb} MB`;
+      const TIPS = {
+        oom: '{n} partidas se cerraron por falta de memoria. Sube la memoria recomendada de la instancia o quita algún mod pesado.',
+        badmod: 'El mod {mod} ha cerrado el juego {n} veces. Actualízalo o quítalo.',
+        crashes: 'El {pct} % de las partidas se cierra con un error. Abajo ves por qué.',
+        slowload: 'Tarda {s} s de media en cargar. Si sobra algún mod, quitarlo ayuda.',
+        pcfull: 'En el {pct} % de las partidas el juego casi llena la memoria del PC. Pide menos memoria o aligera la instancia.',
+        lowram: 'El {pct} % de los jugadores tiene 8 GB de RAM o menos y la instancia usa {mb}: a ellos les puede ir lento.',
+        drivers: '{n} partidas se cerraron por los drivers de la gráfica. Pide a esos jugadores que los actualicen.',
+        ok: 'Todo bien: la instancia carga rápido y casi no se cierra.'
+      };
+      const KINDS = { memory: 'Falta de memoria', heap: 'Falta de memoria', jvmargs: 'Ajustes de Java', java: 'Java no válido', missing: 'Falta un mod', incompatible: 'Mods incompatibles',
+        duplicate: 'Mods repetidos', corrupt: 'Archivos dañados', perf: 'Modo rendimiento', mixin: 'Un mod falla', driver: 'Drivers de la gráfica', jvm: 'Java se cerró', generic: 'Otro error' };
+      const kinds = {};
+      for (const [k, n] of Object.entries(r.crashes.kinds)) kinds[KINDS[k] || KINDS.generic] = (kinds[KINDS[k] || KINDS.generic] || 0) + n;
+      const RAM = [['r4', '4 GB o menos'], ['r8', '8 GB'], ['r16', '16 GB'], ['r32', 'Más de 16 GB']];
+      const GPU = [['nvidia', 'NVIDIA'], ['amd', 'AMD'], ['intel', 'Intel'], ['apple', 'Apple'], ['other', 'Otra'], ['unknown', 'Sin datos']];
+      const row = (label, val, pctW, sub) => html`<div class="st-inst"><div class="st-inst-t"><b>${label}</b><span>${val}</span></div>
+        <div class="st-track"><i style="width:${Math.max(2, pctW).toFixed(1)}%"></i></div>${sub ? `<small>${sub}</small>` : ''}</div>`;
+      const kpi = (ic, k, v, s, extra = '') => html`<div class="card stat st-kpi"><span class="k"><i>${icon(ic)}</i>${k}</span><span class="v">${v}</span>${extra}${s ? `<small>${s}</small>` : ''}</div>`;
+      const memPct = r.mem && r.mem.alloc ? Math.round(r.mem.peak * 100 / r.mem.alloc) : null;
+      // barras: carga media de cada día (una serie, el título la nombra)
+      const chart = () => {
+        const W = 980, Hh = 210, L = 38, R = 6, T = 10, B = 26, n = r.days.length;
+        const max = Math.max(10, ...r.days.map(d => d.load || 0));
+        const step = [10, 20, 30, 60, 120].find(s => s >= max / 4) || 300, top = step * Math.ceil(max / step);
+        const cw = (W - L - R) / n, bw = Math.min(34, cw - 10), y = (v) => T + (Hh - T - B) * (1 - v / top);
+        const ticks = []; for (let v = 0; v <= top; v += step) ticks.push(v);
+        const day = (ts, o) => new Date(ts).toLocaleDateString(I18N.locale(), o);
+        return `<svg class="st-bars" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(t('Tiempo de carga cada día'))}">
+          ${ticks.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="st-grid"/><text x="${L - 8}" y="${y(v) + 4}" class="st-ax" text-anchor="end">${v} s</text>`).join('')}
+          ${r.days.map((d, i) => {
+            const x = L + i * cw + (cw - bw) / 2, h = d.load ? y(0) - y(d.load) : 0, rr = Math.min(4, h, bw / 2);
+            const tip = `${day(d.day, { weekday: 'long', day: 'numeric', month: 'long' })}|${d.load ? t('Carga media: {s} s', { s: d.load }) : t('Sin partidas')}|${`${plural(d.n, '1 partida', '{n} partidas')} · ${plural(d.crashes, '1 cierre', '{n} cierres')}`}`;
+            return `<g class="st-col" data-tip="${esc(tip)}"><rect x="${L + i * cw}" y="${T}" width="${cw}" height="${Hh - T - B}" class="st-hit"/>
+              ${h ? `<path d="M${x},${y(0)} v${-(h - rr)} q0,-${rr} ${rr},-${rr} h${bw - 2 * rr} q${rr},0 ${rr},${rr} v${h - rr} z" class="st-bar"/>` : ''}
+              ${i % 2 === (n - 1) % 2 ? `<text x="${L + i * cw + cw / 2}" y="${Hh - 8}" class="st-ax" text-anchor="middle">${day(d.day, { day: 'numeric', month: 'short' })}</text>` : ''}</g>`;
+          }).join('')}</svg>`;
+      };
+      const ramMax = Math.max(1, ...RAM.map(([k]) => (r.loadByRam[k] || {}).s || 0));
+      const gpuTotal = Math.max(1, ...GPU.map(([k]) => r.gpus[k] || 0));
+      const kindMax = Math.max(1, ...Object.values(kinds));
+      el.innerHTML = html`
+        <div class="card pf-head"><div class="card-head"><div><h3>${icon('zap')}${t('Rendimiento')}</h3>
+          <p class="sub">${t('Últimos 30 días · {n} partidas de {p} jugadores', { n: r.sessions, p: r.players })}</p></div></div>
+          ${r.tips.length ? `<div class="pf-tips">${r.tips.map(x => `<div class="pf-tip ${x.level}">${icon(x.level === 'ok' ? 'check' : x.level === 'bad' ? 'alert' : 'info')}<span>${esc(t(TIPS[x.code], { ...x.vars, mb: x.vars.mb ? gb(x.vars.mb) : '' }))}</span></div>`).join('')}</div>`
+            : `<p class="help">${t('Aún hay pocas partidas para dar consejos.')}</p>`}
+          <p class="pf-note">${icon('info')}<span>${t('Minecraft no le da los FPS al launcher: esto es lo que Kopi mide desde fuera en cada partida.')}</span></p></div>
+        <div class="st-kpis pf-kpis">
+          ${kpi('clock', t('Tarda en cargar'), r.load ? `${r.load.median} s` : '—', r.load ? t('El 10 % más lento: {s} s', { s: r.load.p90 }) : t('Sin datos'))}
+          ${kpi('cpu', t('Memoria que usa'), r.mem ? gb(r.mem.peak) : '—', r.mem ? t('de {a} asignados · máximo {m}', { a: gb(r.mem.alloc), m: gb(r.mem.max) }) : t('Sin datos'),
+            memPct != null ? `<div class="st-track pf-mem ${memPct > 95 ? 'hot' : ''}"><i style="width:${Math.min(100, memPct)}%"></i></div>` : '')}
+          ${kpi('alert', t('Se cierran con error'), `${r.crashes.pct} %`, t('{n} de {m} partidas', { n: r.crashes.n, m: r.sessions }))}
+          ${kpi('package', t('Mods'), r.modsInFolder != null ? r.modsInFolder : '—', t('El {n} % juega con el modo rendimiento', { n: r.perfMode }))}
+        </div>
+        <div class="card st-row"><div class="card-head"><h3>${icon('chart')}${t('Tiempo de carga cada día')}</h3></div>${chart()}</div>
+        <div class="grid g3 st-row pf-grid">
+          <div class="card"><div class="card-head"><h3>${icon('hardDrive')}${t('Según la memoria del PC')}</h3></div>
+            <p class="help pf-sub">${t('Cuánto tarda en cargar según la RAM del jugador.')}</p>
+            ${RAM.map(([k, l]) => { const v = r.loadByRam[k]; return row(t(l), v ? `${v.s} s` : '—', v ? v.s / ramMax * 100 : 0, plural(r.ram[k] || 0, '1 jugador', '{n} jugadores')); }).join('')}</div>
+          <div class="card"><div class="card-head"><h3>${icon('alert')}${t('Por qué se cierra')}</h3></div>
+            ${r.crashes.n ? html`${Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([k, n]) => row(t(k), plural(n, '1 vez', '{n} veces'), n / kindMax * 100)).join('')}
+              ${r.crashes.mods.length ? `<div class="pf-mods"><span>${t('Mods que cierran el juego')}</span>${r.crashes.mods.map(m => `<b class="chip">${icon('puzzle')}${esc(m.mod)} <em>×${m.n}</em></b>`).join('')}</div>` : ''}`
+              : `<div class="empty sm"><div class="ic">${icon('check')}</div><h4>${t('Ninguna partida se ha cerrado con error')}</h4></div>`}</div>
+          <div class="card"><div class="card-head"><h3>${icon('monitor')}${t('Gráficas de los jugadores')}</h3></div>
+            ${GPU.filter(([k]) => r.gpus[k]).map(([k, l]) => row(t(l), plural(r.gpus[k], '1 jugador', '{n} jugadores'), r.gpus[k] / gpuTotal * 100)).join('')}
+            <p class="help pf-sub">${t('Si a muchos les va lento con gráficas Intel, el modo rendimiento ayuda.')}</p></div>
+        </div>`;
+      window.stTips && window.stTips(el);
+    }
+
     async function players(el) {
       const draw = async () => {
         const r2 = await sapi('GET', `${base}/players`).catch(() => ({ players: [] }));

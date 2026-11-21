@@ -21,6 +21,7 @@ import { launcherPublic } from './profile.js';
 import { studioPlayers } from './players.js';
 import { groupsApi, inGroups } from './groups.js';
 import { launcherReports, studioReports } from './preports.js';
+import { launcherPerf, instancePerf } from './perf.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -52,6 +53,7 @@ export default {
     ctx.waitUntil(runChecks(env));
     ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
     ctx.waitUntil(env.DB.prepare('DELETE FROM guard_live WHERE at IS NULL OR at < ?').bind(now() - 10 * 60e3).run()); // cámaras viejas
+    ctx.waitUntil(env.DB.prepare('DELETE FROM play_perf WHERE at < ?').bind(now() - 90 * 864e5).run()); // rendimiento: 3 meses
     ctx.waitUntil(refreshDue(env).catch(e => console.warn('[directos]', e.message))); // quién está en directo
   }
 };
@@ -453,6 +455,7 @@ async function instanceApi(c, row, sub, d, m) {
   if (sub === 'codes') return codesApi(c, row, d, m);
   if (sub === 'access') return accessApi(c, row, d, m);
   if (sub === 'bans') return bansApi(c, `instance:${iid}`, d, m);
+  if (sub === 'perf' && m === 'GET') return instancePerf(env, iid);
   if (sub === 'players' && m === 'GET') {
     const rows = (await env.DB.prepare('SELECT player_name, started_at, last_seen FROM plays WHERE instance_id = ? AND ended_at IS NULL AND last_seen > ? ORDER BY started_at').bind(iid, now() - ACTIVE_MS).all()).results;
     return json({ players: rows });
@@ -797,6 +800,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // Perfil público en la web, insignias y directos
   if (parts[0] === 'public' && !parts[1]) return launcherPublic(env, P, m, req);
+  if (parts[0] === 'perf' && m === 'POST') return launcherPerf(env, P, req);
   if (parts[0] === 'preport' || parts[0] === 'online') { const r = await launcherReports(env, P, parts, m, req); if (r) return r; }
   if (parts[0] === 'badges') { const r = await launcherBadges(env, P, parts, m, req, u.searchParams); if (r) return r; }
   if (parts[0] === 'channels' || parts[0] === 'live') { const r = await launcherStreams(env, P, parts, m, req); if (r) return r; }

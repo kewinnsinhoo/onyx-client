@@ -510,6 +510,14 @@ handle('instances:play', async (id, opts) => {
           });
           if (crash) log.warn(`[cierre] ${id}: ${crash.kind} ${JSON.stringify(crash.vars)}`);
         } catch (e) { log.warn('[cierre] No se pudo revisar el cierre:', e.message); }
+        // Rendimiento: el resumen de la partida, para el panel del studio
+        if (info.perf && info.play) {
+          try {
+            const p = info.perf.finish({ crash });
+            log.info(`[rendimiento] ${id}: carga ${p.loadMs ? Math.round(p.loadMs / 1000) + ' s' : '?'}, memoria ${p.memPeakMb || '?'} MB de ${p.memAllocMb} MB, PC ${p.ramMb} MB`);
+            panel.sendPerf(account, info.play, p).catch(e => log.warn('[rendimiento] No se pudo enviar:', e.message));
+          } catch (e) { log.warn('[rendimiento]', e.message); }
+        }
         if (lastFriendsAddr) { lastFriendsAddr = null; send('instances:friends', { id, address: null }); }
         send('instances:progress', { id, stage: 'exited', code, kicked: !!info.kicked, crash });
         presence.stopped();

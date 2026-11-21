@@ -160,6 +160,7 @@ const getInstance = (account, id) => call(account, 'GET', `instance/${encodeURIC
 const startPlay = (account, id) => call(account, 'POST', 'play', { instance: id });
 const beat = (account, play) => call(account, 'POST', 'beat', { play });
 const endPlay = (account, play) => call(account, 'POST', 'end', { play });
+const sendPerf = (account, play, perf) => call(account, 'POST', 'perf', { play, ...perf });
 const referral = (account, studio) => call(account, 'POST', 'referral', { studio });
 // KopiGuard: avisos de lo que se vio durante la partida → { saved, kick }
 const guardReport = (account, play, events) => call(account, 'POST', 'guard', { play, events });
@@ -246,4 +247,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, sendPerf, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

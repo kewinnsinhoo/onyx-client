@@ -227,6 +227,32 @@ async function seed() {
     await run('INSERT INTO player_reports (id, studio_id, instance_id, reporter_key, reporter_name, target_key, target_name, reason, text, shot, status, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       id, 'onyx-studios', 'ignite-extremo-3', by.toLowerCase(), by, target.toLowerCase(), target, reason, text, size, status, status === 'actioned' ? 'Expulsado 1 día' : null, t - ago);
   }
+  // Rendimiento de ejemplo: 14 días de partidas en IGNITE con PCs de todo tipo
+  {
+    let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const PCS = [
+      ['ElRayo', 32768, 'AMD Ryzen 7 5800X', 16, 'NVIDIA GeForce RTX 3070'], ['Luna_MC', 16384, 'Intel Core i5-10400F', 12, 'NVIDIA GeForce GTX 1660 SUPER'],
+      ['Pixel', 8192, 'Intel Core i3-10100', 8, 'Intel UHD Graphics 630'], ['Steve_Pro', 16384, 'AMD Ryzen 5 5600', 12, 'AMD Radeon RX 6600'],
+      ['Mia_2010', 8192, 'Intel Core i5-8250U', 8, 'Intel UHD Graphics 620'], ['Dante', 16384, 'Apple M2', 8, 'Apple M2'],
+      ['StreamerAna', 32768, 'AMD Ryzen 9 7900X', 24, 'NVIDIA GeForce RTX 4070'], ['LeoKick', 16384, 'Intel Core i7-9700', 8, 'NVIDIA GeForce RTX 2060'],
+      ['Jugador0', 8192, 'AMD Ryzen 3 3200G', 4, 'AMD Radeon Vega 8'], ['Jugador1', 12288, 'Intel Core i5-9400F', 6, 'NVIDIA GeForce GTX 1050 Ti'],
+      ['Jugador3', 4096, 'Intel Celeron N4020', 2, 'Intel UHD Graphics 600'], ['Jugador7', 16384, 'Intel Core i5-12400F', 12, 'NVIDIA GeForce RTX 3060']
+    ];
+    for (let i = 0; i < 140; i++) {
+      const [name, ram, cpu, cores, gpu] = PCS[Math.floor(rnd() * PCS.length)];
+      const at = t - Math.floor(rnd() * 13.8 * DAY);
+      const slow = ram <= 8192 ? 1.9 : ram <= 16384 ? 1.25 : 1;
+      const load = Math.round((38 + rnd() * 30) * slow * 1000);
+      const peak = Math.round(Math.min(ram * 0.92, 4600 + rnd() * 1900));
+      let ck = null, cm = null; const r = rnd();
+      if (ram <= 8192 && r < 0.16) ck = 'memory';
+      else if (r < 0.05) { ck = 'mixin'; cm = 'iris'; }
+      else if (r < 0.07) { ck = 'driver'; cm = 'Intel'; }
+      await run(`INSERT INTO play_perf (play_id, instance_id, studio_id, player_key, at, load_ms, minutes, mem_peak, mem_avg, mem_alloc, mods, perf_mode, ram, cpu, cores, gpu, os, crash_kind, crash_mod)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 'pf' + i, 'ignite-extremo-3', 'onyx-studios', name.toLowerCase(), at, ck === 'memory' && r < 0.08 ? null : load,
+        Math.round(20 + rnd() * 140), peak, Math.round(peak * 0.8), 6144, 87, rnd() < 0.3 ? 1 : 0, ram, cpu, cores, gpu, gpu === 'Apple M2' ? 'mac' : 'windows', ck, cm);
+    }
+  }
   // Insignias de ejemplo del studio
   const sbg = (id, name, desc, rarity, d) => run('INSERT INTO studio_badges (id, studio_id, name, description, rarity, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)', id, 'onyx-studios', name, desc, rarity, JSON.stringify(d), t);
   await sbg('campeon', 'Campeón de IGNITE 3', 'Ganó la final del evento', 'legendary', { icon: 'trophy', rule: { type: 'manual' } });

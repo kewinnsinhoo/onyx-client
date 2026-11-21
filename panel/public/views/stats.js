@@ -114,7 +114,8 @@
     await load();
   };
 
-  // Un único tooltip que sigue al ratón por las barras y las celdas
+  // Un único tooltip que sigue al ratón por las barras y las celdas (también lo usa Rendimiento)
+  window.stTips = (view) => tips(view);
   function tips(view) {
     let tip = $('.st-tip', view);
     if (!tip) { tip = document.createElement('div'); tip.className = 'st-tip'; view.appendChild(tip); }

@@ -408,7 +408,30 @@ CREATE INDEX group_members_player ON group_members(player_key)`,
 );
 CREATE INDEX player_reports_studio ON player_reports(studio_id, status, created_at);
 CREATE INDEX player_reports_target ON player_reports(studio_id, target_key);
-CREATE INDEX player_reports_reporter ON player_reports(reporter_key, created_at)`
+CREATE INDEX player_reports_reporter ON player_reports(reporter_key, created_at)`,
+  // Rendimiento: el resumen de cada partida que manda el launcher (carga, memoria, PC y cierres)
+  `CREATE TABLE play_perf (
+  play_id TEXT PRIMARY KEY,
+  instance_id TEXT NOT NULL,
+  studio_id TEXT NOT NULL,
+  player_key TEXT NOT NULL,
+  at INTEGER NOT NULL,
+  load_ms INTEGER,
+  minutes INTEGER,
+  mem_peak INTEGER,
+  mem_avg INTEGER,
+  mem_alloc INTEGER,
+  mods INTEGER,
+  perf_mode INTEGER,
+  ram INTEGER,
+  cpu TEXT,
+  cores INTEGER,
+  gpu TEXT,
+  os TEXT,
+  crash_kind TEXT,
+  crash_mod TEXT
+);
+CREATE INDEX play_perf_instance ON play_perf(instance_id, at)`
 ];
 
 export function statements(sql) {

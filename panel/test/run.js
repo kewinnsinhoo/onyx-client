@@ -1453,4 +1453,38 @@ await test('Reportes de jugadores: denunciar desde el launcher con captura y res
   assert.strictEqual((await call('GET', '/api/s/onyx-studios/reports', { cookie: other })).status, 403);
 });
 
+await test('Rendimiento: el launcher manda el resumen y el panel da consejos', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Pesada' } });
+  const iid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true } } } });
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/instances/${iid}/perf`, { cookie: creator })).data.sessions, 0, 'sin datos');
+  const pcs = [['PcLento', 8192, 'Intel UHD Graphics 620'], ['PcBueno', 32768, 'NVIDIA GeForce RTX 3070'], ['PcMedio', 16384, 'AMD Radeon RX 6600']];
+  let sent = 0;
+  for (const [name, ram, gpu] of pcs) {
+    const h = await player(name, false);
+    for (let i = 0; i < 2; i++) {
+      const pl = await call('POST', '/api/l/play', { headers: h, body: { instance: iid } });
+      const crash = name === 'PcLento' ? { kind: 'memory', mod: null } : (name === 'PcMedio' && i === 0 ? { kind: 'mixin', mod: 'iris' } : null);
+      const r = await call('POST', '/api/l/perf', { headers: h, body: { play: pl.data.play, loadMs: ram <= 8192 ? 120000 : 95000, minutes: 30, memPeakMb: ram <= 8192 ? 7400 : 5200, memAllocMb: 6144, mods: 90, ramMb: ram, cores: 8, cpu: 'CPU', gpu, os: 'windows', crash } });
+      assert.strictEqual(r.status, 200); sent++;
+    }
+    if (name === 'PcBueno') {
+      assert.strictEqual((await call('POST', '/api/l/perf', { headers: h, body: { play: 'no-existe' } })).status, 404);
+      const other = await player('Intruso', false);
+      const pl = await call('POST', '/api/l/play', { headers: h, body: { instance: iid } });
+      assert.strictEqual((await call('POST', '/api/l/perf', { headers: other, body: { play: pl.data.play } })).status, 404, 'la partida de otro no');
+    }
+  }
+  const r = await call('GET', `/api/s/onyx-studios/instances/${iid}/perf`, { cookie: creator });
+  assert.strictEqual(r.data.sessions, sent);
+  assert.strictEqual(r.data.players, 3);
+  assert.deepStrictEqual([r.data.load.median, r.data.crashes.n, r.data.crashes.kinds.memory], [95, 3, 2]);
+  assert.deepStrictEqual(r.data.gpus.intel + r.data.gpus.nvidia + r.data.gpus.amd, 3);
+  assert.deepStrictEqual(r.data.ram, { r4: 0, r8: 1, r16: 1, r32: 1 });
+  const codes = r.data.tips.map(x => x.code);
+  assert.ok(codes.includes('oom') && codes.includes('crashes') && codes.includes('slowload'), codes.join());
+  assert.ok(!codes.includes('ok'));
+  assert.strictEqual((await call('GET', `/api/s/onyx-studios/instances/${iid}/perf`, { cookie: other })).status, 403, 'otro studio no');
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

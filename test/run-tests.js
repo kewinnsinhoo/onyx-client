@@ -1296,3 +1296,23 @@ try {
   assert.strictEqual(JSON.stringify(C.parts(-5)), JSON.stringify({ d: 0, h: 0, m: 0, s: 0 }));
   console.log('  ✓ cuenta atrás: cuándo abre, próximo evento y apagada');
 } catch (e) { console.error('  ✗ cuenta atrás\n    ' + (e.stack || e.message)); process.exitCode = 1; }
+
+(async () => { try {
+  const perf = require('../src/main/perf');
+  assert.strictEqual(perf.gpuIn('[Render thread/INFO]: OpenGL Renderer: NVIDIA GeForce RTX 3060/PCIe/SSE2\n'), 'NVIDIA GeForce RTX 3060');
+  assert.strictEqual(perf.gpuIn('[main/INFO]: Backend library: LWJGL version 3.2.2\n'), null);
+  assert.ok(perf.READY_RE.test('[Render thread/INFO]: Sound engine started'));
+  let n = 0;
+  const run = perf.track({ pid: 1, startedAt: Date.now() - 42000, memoryMb: 4096, gameDir: '/no/existe', every: 5, firstDelay: 0, sample: async () => [3100, 3900, 3500][n++ % 3] });
+  run.log('[Render thread/INFO]: OpenGL Renderer: AMD Radeon RX 6600\n');
+  run.log('[Render thread/INFO]: Sound engine started\n');
+  for (let i = 0; i < 200 && n < 3; i++) await new Promise(r => setTimeout(r, 10));
+  await new Promise(r => setTimeout(r, 5));
+  const s = run.finish({ crash: { kind: 'mixin', vars: { mod: 'iris' } } });
+  assert.ok(s.loadMs >= 42000 && s.loadMs < 50000, 'carga ' + s.loadMs);
+  assert.strictEqual(s.memPeakMb, 3900); assert.strictEqual(s.memAllocMb, 4096);
+  assert.strictEqual(s.gpu, 'AMD Radeon RX 6600'); assert.strictEqual(s.mods, 0);
+  assert.strictEqual(JSON.stringify(s.crash), JSON.stringify({ kind: 'mixin', mod: 'iris' }));
+  assert.ok(s.ramMb > 0 && s.cores > 0);
+  console.log('  ✓ rendimiento: carga, memoria y gráfica de una partida');
+} catch (e) { console.error('  ✗ rendimiento\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();

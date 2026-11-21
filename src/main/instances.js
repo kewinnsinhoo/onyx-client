@@ -385,9 +385,11 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     const guardFirst = guardOn ? guard.foreign(gameDir, inst.managedFiles, { packsOk: !!m.guard.packsOk }) : null;
     gameInfo.jvmProps = await hideMods(id, gameDir, gameInfo.loader);
     const started = Date.now();
+    let perfRun = null; // Rendimiento: carga, memoria y PC del jugador (solo instancias de un studio)
     const child = await game.launch(root, {
       instance: gameInfo,
-      account, settings, progress, onLog, launcherVersion,
+      account, settings, progress, launcherVersion,
+      onLog: (text) => { if (perfRun) perfRun.log(text); onLog && onLog(text); },
       onExit: (code) => {
         running.delete(id);
         stopBeat();
@@ -397,12 +399,13 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         if (i2) { i2.playTime = (i2.playTime || 0) + (Date.now() - started); store.replace(d2); }
         lockMods(id, gameDir); // el juego se cerró: los mods vuelven bajo llave
         const stopped = stopping.delete(id) && !kicked;
-        onExit && onExit(code, { kicked, stopped, gameDir, perfMode: !!inst.perfMode, memoryMb: inst.memoryMb || settings.memoryMb || 4096 });
+        onExit && onExit(code, { kicked, stopped, gameDir, perfMode: !!inst.perfMode, memoryMb: inst.memoryMb || settings.memoryMb || 4096, perf: perfRun, play: session && session.play });
       }
     });
     running.set(id, child);
     launched = true;
     if (session) {
+      perfRun = require('./perf').track({ pid: child && child.pid, startedAt: started, memoryMb: inst.memoryMb || settings.memoryMb || 4096, gameDir, perfMode: !!inst.perfMode });
       const kick = () => {
         if (kicked) return;
         kicked = true;
