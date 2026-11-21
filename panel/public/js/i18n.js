@@ -66,6 +66,18 @@
     "Texto encima de la cuenta atrás": ["Text above the countdown", "Text a sobre del compte enrere", "Texte au-dessus du compte à rebours"],
     "Ej.: {name} empieza en": ["E.g.: {name} starts in", "Ex.: {name} comença en", "Ex. : {name} commence dans"],
     "Si lo dejas vacío pone «{name} abre en». Los eventos del calendario de esta instancia también tienen cuenta atrás.": ["If you leave it empty it says “{name} opens in”. This instance’s calendar events get a countdown too.", "Si ho deixes buit posa «{name} obre en». Els esdeveniments del calendari d’aquesta instància també tenen compte enrere.", "Si tu le laisses vide, il affiche « {name} ouvre dans ». Les événements du calendrier de cette instance ont aussi un compte à rebours."],
+    // Archivos: buscar y actualizar mods
+    "Buscar mods": ["Find mods", "Cercar mods", "Chercher des mods"],
+    "Arrastra aquí archivos o carpetas, o usa Subir. Para mods, pulsa Buscar mods.": ["Drag files or folders here, or use Upload. For mods, click Find mods.", "Arrossega aquí fitxers o carpetes, o fes servir Pujar. Per a mods, prem Cercar mods.", "Glisse ici des fichiers ou des dossiers, ou utilise Envoyer. Pour les mods, clique sur Chercher des mods."],
+    "1 mod tiene versión nueva para Minecraft {mc}.": ["1 mod has a new version for Minecraft {mc}.", "1 mod té una versió nova per a Minecraft {mc}.", "1 mod a une nouvelle version pour Minecraft {mc}."],
+    "{n} mods tienen versión nueva para Minecraft {mc}.": ["{n} mods have a new version for Minecraft {mc}.", "{n} mods tenen una versió nova per a Minecraft {mc}.", "{n} mods ont une nouvelle version pour Minecraft {mc}."],
+    "Ver y actualizar": ["Review and update", "Veure i actualitzar", "Voir et mettre à jour"],
+    "Actualizar mods": ["Update mods", "Actualitzar mods", "Mettre à jour les mods"],
+    "Versiones nuevas de Modrinth para Minecraft {mc}. Los jugadores descargan solo los mods que cambian.": ["New Modrinth versions for Minecraft {mc}. Players only download the mods that change.", "Versions noves de Modrinth per a Minecraft {mc}. Els jugadors només descarreguen els mods que canvien.", "Nouvelles versions Modrinth pour Minecraft {mc}. Les joueurs ne téléchargent que les mods qui changent."],
+    "Estable": ["Stable", "Estable", "Stable"],
+    "Actualizar {n}": ["Update {n}", "Actualitzar {n}", "Mettre à jour {n}"],
+    "1 mod actualizado": ["1 mod updated", "1 mod actualitzat", "1 mod mis à jour"],
+    "{n} mods actualizados": ["{n} mods updated", "{n} mods actualitzats", "{n} mods mis à jour"],
     // Uso del launcher
     "Desconocido": ["Unknown", "Desconegut", "Inconnu"],
     "Uso del launcher": ["Launcher usage", "Ús del launcher", "Utilisation du launcher"],

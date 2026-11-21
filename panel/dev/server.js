@@ -70,10 +70,10 @@ async function seed() {
   await mk('ignite-extremo-3', { name: 'IGNITE EXTREMO 3', category: 'Serie', description: 'Supervivencia extrema con vidas limitadas', minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' },
     look: { background: '/m/0123456789abcdef0123/fondo.webp', icon: '/m/0123456789abcdef0124/skin.webp', accent: '#f59e0b', playColor: '#ea580c' }, access: { maxPlayers: 100, staff: ['kewinn'] },
     files: [
-      { path: 'mods/sodium.jar', url: 'https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar', size: 1048000, at: t - 4 * DAY },
+      { path: 'mods/sodium-fabric-0.5.11+mc1.21.jar', url: 'https://cdn.modrinth.com/data/AANobbMI/versions/x/sodium.jar', sha1: '1'.repeat(40), mr: 'AANobbMI', size: 1048000, at: t - 4 * DAY },
       { path: 'mods/voicechat.jar', url: '/m/0123456789abcdef0123/voicechat.jar', size: 3400000, sha1: 'a'.repeat(40), at: t - 4 * DAY },
       { path: 'mods/muertes-epicas-1.21.1-1.12.0.jar', url: '/m/0123456789abcdef0125/muertes.jar', size: 5800000, at: t - 2 * 3600e3 },
-      { path: 'mods/iris.jar', url: 'https://cdn.modrinth.com/data/YL57xq9U/versions/y/iris.jar', size: 2900000, at: t - 4 * DAY },
+      { path: 'mods/iris-fabric-1.7.6+mc1.21.1.jar', url: 'https://cdn.modrinth.com/data/YL57xq9U/versions/y/iris.jar', sha1: '2'.repeat(40), mr: 'YL57xq9U', size: 2900000, at: t - 4 * DAY },
       { path: 'config/sodium-options.json', url: '/m/0123456789abcdef0126/sodium-options.json', size: 1200, at: t - 3 * DAY },
       { path: 'config/voicechat/voicechat-client.properties', url: '/m/0123456789abcdef0127/vc.properties', size: 900, at: t - 3 * DAY },
       { path: 'config/voicechat/voicechat-server.properties', url: '/m/0123456789abcdef0128/vcs.properties', size: 1400, at: t - 3 * DAY },

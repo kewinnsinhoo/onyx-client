@@ -127,7 +127,7 @@
 
   // ---------------------------------------------------------------- la pestaña
   window.FilesTab = function (el, { getData, editable, persist }) {
-    const st = { cwd: '', q: '', sel: new Set(), sort: { k: 'name', dir: 1 }, busy: null, mr: null };
+    const st = { cwd: '', q: '', sel: new Set(), sort: { k: 'name', dir: 1 }, busy: null, mr: null, upd: null };
     const D = () => getData();
     const files = () => D().files || [];
     const dirs = () => D().dirs || [];
@@ -190,6 +190,9 @@
       const mrBanner = st.mr && st.mr.length && editable
         ? `<div class="fm-banner">${icon('modrinth')}<span>${t('{n} archivos subidos también están en Modrinth ({size}). Con el enlace de Modrinth se descargan más rápido y no ocupan espacio.', { n: st.mr.length, size: fmtSize(st.mr.reduce((a, x) => a + (x.f.size || 0), 0)) })}</span><button class="btn sm" id="fm-tomr">${t('Pasar a Modrinth')}</button></div>` : '';
 
+      const updBanner = st.upd && st.upd.length && editable
+        ? `<div class="fm-banner upd">${icon('refresh')}<span>${st.upd.length === 1 ? t('1 mod tiene versión nueva para Minecraft {mc}.', { mc: esc(D().minecraft) }) : t('{n} mods tienen versión nueva para Minecraft {mc}.', { n: st.upd.length, mc: esc(D().minecraft) })}</span><button class="btn sm primary" id="fm-upd">${t('Ver y actualizar')}</button></div>` : '';
+
       el.innerHTML = html`<div class="card fm">
         <div class="fm-head">
           <div><h3>${icon('folder')}${t('Archivos')}</h3><p class="sub">${t('Mods, configuración y mundos que recibe el jugador. Solo se descarga lo que cambia.')}</p></div>
@@ -197,12 +200,13 @@
           <span class="fm-stats">${t('{n} archivos', { n: all.length })}${total ? ` · ${fmtSize(total)}` : ''}${nMr ? ` · ${t('{n} de Modrinth', { n: nMr })}` : ''}</span>
           <button class="btn sm" id="fm-export" ${all.length ? '' : 'disabled'}>${icon('download')}${t('Exportar')}</button>
         </div>
-        ${mrBanner}
+        ${updBanner}${mrBanner}
         <div class="fm-bar">
           <nav class="fm-crumbs"><a href="#" data-cd="">${icon('home')}${t('raíz')}</a>${crumbs.map((c, i) => `<span class="sep">${icon('chevRight')}</span><a href="#" data-cd="${esc(crumbs.slice(0, i + 1).join('/'))}">${esc(c)}</a>`).join('')}</nav>
           <span class="grow"></span>
           <label class="fm-search">${icon('search')}<input id="fm-q" placeholder="${t('Buscar…')}" value="${esc(st.q)}"></label>
-          ${editable ? `<button class="btn sm" id="fm-new">${icon('plus')}${t('Nuevo')}${icon('chevDown')}</button>
+          ${editable ? `<button class="btn sm fm-modsbtn" id="fm-mods">${icon('modrinth')}${t('Buscar mods')}</button>
+          <button class="btn sm" id="fm-new">${icon('plus')}${t('Nuevo')}${icon('chevDown')}</button>
           <button class="btn sm" id="fm-imp">${icon('download')}${t('Importar')}${icon('chevDown')}</button>
           <button class="btn sm primary" id="fm-up">${icon('upload')}${t('Subir')}${icon('chevDown')}</button>` : ''}
         </div>
@@ -229,7 +233,7 @@
             <span class="fm-num">${fmtSize(f.size)}</span><span class="fm-num">${ago(f.at)}</span>
             <span class="fm-act"><button class="btn sm icon ghost" data-menu="f:${esc(f.path)}">${icon('more')}</button></span></div>`).join('')}
           ${!folders.length && !list.length ? `<div class="fm-empty">${st.q ? `<p>${t('Nada coincide con «{q}».', { q: esc(st.q) })}</p>` : html`<div class="ic">${icon('folder')}</div><h4>${st.cwd ? t('Carpeta vacía') : t('Sin archivos')}</h4>
-            <p>${editable ? t('Arrastra aquí archivos o carpetas, o usa Subir. Para mods, Importar → Modrinth.') : t('Todavía no hay archivos.')}</p>`}</div>` : ''}
+            <p>${editable ? t('Arrastra aquí archivos o carpetas, o usa Subir. Para mods, pulsa Buscar mods.') : t('Todavía no hay archivos.')}</p>${editable && !st.cwd ? `<button class="btn primary" id="fm-mods2" style="margin-top:12px">${icon('modrinth')}${t('Buscar mods')}</button>` : ''}`}</div>` : ''}
         </div>
         <p class="help" style="margin:12px 0 0">${t('Máximo 500 MB por archivo subido. Los mods también se pueden añadir desde Modrinth o con un enlace.')}</p>
       </div>`;
@@ -278,6 +282,9 @@
       ]));
       on('#fm-export', exportZip);
       on('#fm-tomr', toModrinth);
+      on('#fm-mods', () => modrinthModal());
+      on('#fm-mods2', () => modrinthModal());
+      on('#fm-upd', updatesModal);
       on('#fm-unsel', () => { st.sel.clear(); draw(); });
       on('#fm-rm', () => removeKeys([...st.sel]));
       on('#fm-mv', () => moveModal([...st.sel]));
@@ -572,6 +579,7 @@
                 b.classList.remove('busy', 'primary'); b.innerHTML = icon('check') + t('Añadido');
                 toast(got.length > 1 ? t('{name} añadido (+{n} dependencias)', { name: got[0].name, n: got.length - 1 }) : t('{name} añadido', { name: got[0].name }));
                 draw();
+                checkUpdates();
               } catch (e) { busy(b, false); fail(e); }
             });
           } catch { res.innerHTML = `<p class="help">${t('No se pudo conectar con Modrinth.')}</p>`; }
@@ -601,6 +609,82 @@
       st.mr = mine.map(f => ({ f, hit: mrCache.get(f.sha1) })).filter(x => x.hit);
       if (st.mr.length !== before && !st.busy) draw();
     }
+    // Mods de Modrinth con versión nueva para esta versión de Minecraft y este loader (de una vez, por su huella)
+    async function checkUpdates() {
+      const d = D();
+      const lo = LOADER_MR[d.loader && d.loader.type];
+      const mods = files().filter(f => isModrinth(f) && f.sha1 && /\.jar$/i.test(f.path) && f.path.startsWith('mods/'));
+      if (!lo || !mods.length) { if (st.upd && st.upd.length) { st.upd = []; draw(); } return; }
+      const out = [];
+      try {
+        for (let i = 0; i < mods.length; i += 500) {
+          const part = mods.slice(i, i + 500);
+          const r = await mrJson('/version_files/update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hashes: part.map(f => f.sha1), algorithm: 'sha1', loaders: [lo], game_versions: [d.minecraft] }) });
+          for (const f of part) {
+            const v = r[f.sha1];
+            if (!v) continue;
+            const nf = v.files.find(x => x.primary) || v.files[0];
+            if (!nf || nf.hashes.sha1 === f.sha1) continue;
+            out.push({ f, v, nf });
+          }
+        }
+      } catch { return; }
+      // ¿cómo se llaman? (para enseñar el nombre bonito y el icono)
+      const ids = [...new Set(out.map(x => x.v.project_id))];
+      if (ids.length) {
+        try {
+          const ps = await mrJson(`/projects?ids=${encodeURIComponent(JSON.stringify(ids))}`);
+          const by = Object.fromEntries(ps.map(p => [p.id, p]));
+          out.forEach(x => { const p = by[x.v.project_id]; x.title = p ? p.title : base(x.f.path); x.icon = p && p.icon_url; });
+        } catch { out.forEach(x => { x.title = base(x.f.path); }); }
+      }
+      const had = st.upd ? st.upd.length : -1;
+      st.upd = out;
+      if (out.length !== had && !st.busy) draw();
+    }
+
+    function updatesModal() {
+      const list = st.upd || [];
+      const pick = new Set(list.map(x => x.f.path));
+      modal((m, close) => {
+        const paint = () => {
+          m.innerHTML = html`<div class="mh"><h3>${icon('refresh')}${t('Actualizar mods')}</h3><button class="btn sm icon ghost" id="x">${icon('x')}</button></div>
+            <div class="mb">
+              <p class="help" style="margin:0 0 12px">${t('Versiones nuevas de Modrinth para Minecraft {mc}. Los jugadores descargan solo los mods que cambian.', { mc: esc(D().minecraft) })}</p>
+              <label class="fm-uall"><input type="checkbox" id="ua" ${pick.size === list.length ? 'checked' : ''}><b>${t('Todos')}</b><span class="muted">${pick.size} / ${list.length}</span></label>
+              <div class="fm-ulist">${list.map(x => html`<label class="fm-u">
+                <input type="checkbox" data-u="${esc(x.f.path)}" ${pick.has(x.f.path) ? 'checked' : ''}>
+                ${x.icon ? `<img src="${esc(x.icon)}" alt="">` : `<span class="ph">${icon('puzzle')}</span>`}
+                <div class="grow"><b>${esc(x.title || base(x.f.path))}</b>
+                  <span class="fm-uv"><s>${esc(base(x.f.path))}</s>${icon('chevRight')}<em>${esc(x.nf.filename)}</em></span></div>
+                <span class="fm-tag ${x.v.version_type === 'release' ? 'mr' : 'mute'}">${esc(x.v.version_type === 'release' ? t('Estable') : x.v.version_type === 'beta' ? 'Beta' : 'Alpha')}</span></label>`).join('')}</div>
+            </div>
+            <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn primary" id="ok" ${pick.size ? '' : 'disabled'}>${icon('refresh')}${t('Actualizar {n}', { n: pick.size })}</button></div>`;
+          $('#x', m).onclick = close; $('#no', m).onclick = close;
+          $('#ua', m).onchange = (e) => { pick.clear(); if (e.target.checked) list.forEach(x => pick.add(x.f.path)); paint(); };
+          $$('[data-u]', m).forEach(c => c.onchange = () => { c.checked ? pick.add(c.dataset.u) : pick.delete(c.dataset.u); paint(); });
+          $('#ok', m).onclick = async (e) => {
+            busy(e.currentTarget, true);
+            const d = D();
+            const swap = new Map(list.filter(x => pick.has(x.f.path)).map(x => [x.f.path, x]));
+            d.files = d.files.map(f => {
+              const x = swap.get(f.path);
+              if (!x) return f;
+              return { path: dirOf(f.path) ? dirOf(f.path) + '/' + x.nf.filename : x.nf.filename, url: x.nf.url, sha1: x.nf.hashes.sha1, size: x.nf.size, name: x.nf.filename, at: Date.now(), mr: x.v.project_id };
+            });
+            try {
+              await save();
+              st.upd = list.filter(x => !swap.has(x.f.path));
+              close(); draw();
+              toast(swap.size === 1 ? t('1 mod actualizado') : t('{n} mods actualizados', { n: swap.size }));
+            } catch (err) { busy(e.currentTarget, false); fail(err); }
+          };
+        };
+        paint();
+      }, { wide: true });
+    }
+
     async function toModrinth(btn) {
       busy(btn, true);
       const map = new Map(st.mr.map(x => [x.f.path, x.hit]));
@@ -678,5 +762,6 @@
 
     draw();
     checkModrinth();
+    checkUpdates();
   };
 })();
