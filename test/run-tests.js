@@ -1332,12 +1332,13 @@ test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () 
 (async () => { try {
   const net = require('../src/main/net');
   const mk = (code) => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('x'), { code }) });
-  const saved = globalThis.fetch;
   const ok = { ok: true, status: 200 };
   let mode = 'chromeOk', nodeCalls = 0, chromeCalls = 0;
   const chrome = async () => { chromeCalls++; if (mode === 'chromeOk') return ok; throw new TypeError('net::ERR_CONNECTION_RESET'); };
   const node = async () => { nodeCalls++; if (mode === 'nodeOk') return ok; throw mk(mode === 'cert' ? 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' : 'ENOTFOUND'); };
-  net.install({ fetchImpl: node, chromium: () => chrome, sleep: async () => {} });
+  const T = {}; // copia propia: no toca la conexión de las otras pruebas
+  net.install({ fetchImpl: node, chromium: () => chrome, sleep: async () => {}, target: T });
+  const fetch = T.fetch;
   // 1) Chrome conecta: Node ni se usa (antivirus / proxy de Windows)
   assert.strictEqual(await fetch('https://api.modrinth.com/v2/x'), ok); assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 0]);
   // 2) Chrome falla y Node conecta: funciona igual, sin error
@@ -1380,7 +1381,6 @@ test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () 
   assert.strictEqual(net.kindOf(mk('LOQUESEA')), 'other');
   const i18n = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'i18n.js'), 'utf8');
   for (const m of Object.values(net.MESSAGES)) assert.ok(i18n.includes(m.replace(/'/g, "\\'")), 'falta traducir: ' + m);
-  globalThis.fetch = saved;
   console.log('  ✓ conexión: primero como Chrome, luego Node; nunca «fetch failed»');
 } catch (e) { console.error('  ✗ conexión\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();
 

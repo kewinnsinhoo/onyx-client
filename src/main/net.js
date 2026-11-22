@@ -112,11 +112,12 @@ function report(err, chromeErr, nodeErr) {
 const aborted = (e, opts) => !!((opts && opts.signal && opts.signal.aborted) || (e && e.name === 'AbortError'));
 
 let installed = false;
-function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, sleep = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
-  if (installed || typeof fetchImpl !== 'function') return;
-  installed = true;
+// target: dónde se pone (todo el launcher; las pruebas usan un objeto propio para no molestar a otras pruebas)
+function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, sleep = (ms) => new Promise(r => setTimeout(r, ms)), target = globalThis } = {}) {
+  if (typeof fetchImpl !== 'function' || (target === globalThis && installed)) return;
+  if (target === globalThis) installed = true;
   const node = fetchImpl;
-  globalThis.fetch = async function kopiFetch(url, opts = {}) {
+  target.fetch = async function kopiFetch(url, opts = {}) {
     if (opts && opts.kopiNoReport) { const { kopiNoReport, ...rest } = opts; return node(url, rest); } // el propio aviso al panel
     const method = String((opts && opts.method) || 'GET').toUpperCase();
     // Orden: Chrome → Node → (descargas) otra vez Chrome tras una pausa
