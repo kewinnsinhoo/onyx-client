@@ -201,9 +201,11 @@ export async function guardFrame(env, P, b) {
   const frame = b.frame ? String(b.frame) : null;
   if (frame && (frame.length > FRAME_MAX * 1.4 || !frame.startsWith('/9j/'))) fail(400, 'data', 'Imagen no válida'); // «/9j/» = JPEG en base64
   const t = now();
+  // Ahorro de escrituras: en la cuadrícula basta una imagen cada 12 s; mirando en grande (si el vídeo no conecta), 1 por segundo
   await env.DB.prepare(`INSERT INTO guard_live (play_id, studio_id, frame, hd, none, at) VALUES (?, ?, ?, ?, ?, ?)
-    ON CONFLICT(play_id) DO UPDATE SET frame = COALESCE(excluded.frame, guard_live.frame), hd = excluded.hd, none = excluded.none, at = excluded.at`)
-    .bind(pl.id, pl.studio_id, frame, b.hd ? 1 : 0, frame ? 0 : b.off ? 2 : 1, t).run();
+    ON CONFLICT(play_id) DO UPDATE SET frame = COALESCE(excluded.frame, guard_live.frame), hd = excluded.hd, none = excluded.none, at = excluded.at
+    WHERE guard_live.at IS NULL OR guard_live.at < ? OR guard_live.none IS NOT excluded.none`) // minimizar o volver se guarda al momento
+    .bind(pl.id, pl.studio_id, frame, b.hd ? 1 : 0, frame ? 0 : b.off ? 2 : 1, t, t - (cam === 'live' ? 900 : 12e3)).run();
   return json({ ok: true, cam, ...(rtc ? { rtc } : {}) });
 }
 
@@ -363,7 +365,7 @@ async function liveApi(c, play, m, need, sub) {
   if (m === 'GET') {
     const playing = !pl.ended_at && pl.last_seen > t - LIVE_MS;
     // mirar en grande: el launcher pasa a mandar imágenes seguidas y más nítidas
-    if (playing && (!live || !live.focus_at || live.focus_at < t - 5e3)) {
+    if (playing && (!live || !live.focus_at || live.focus_at < t - 8e3)) { // como mucho cada 8 s (se mira en grande 15 s)
       await env.DB.prepare('INSERT INTO guard_live (play_id, studio_id, focus_at) VALUES (?, ?, ?) ON CONFLICT(play_id) DO UPDATE SET focus_at = excluded.focus_at').bind(pl.id, studio.id, t).run();
     }
     return json({ play: pl.id, player: pl.player_name, instance: pl.instance_id, instanceName: names[pl.instance_id] || pl.instance_id, startedAt: pl.started_at,

@@ -45,6 +45,10 @@ export default {
     } catch (e) {
       if (e instanceof HttpError) return json({ error: e.code, message: e.message }, e.status);
       console.error(e);
+      // La base de datos llegó a su límite del día (plan gratis de Cloudflare): se explica en vez de «error interno»
+      if (/daily row (write|read) limit|exceeded D1/i.test(String(e && e.message))) {
+        return json({ error: 'db_limit', message: 'El panel de Kopi ha llegado a su límite de hoy. Vuelve a funcionar solo en unas horas (a las 00:00 UTC).' }, 503);
+      }
       return json({ error: 'server', message: 'Error interno del servidor' }, 500);
     }
   },
@@ -891,7 +895,9 @@ async function launcherApi(req, env, u, path, m, ctx) {
       await env.DB.prepare('DELETE FROM guard_live WHERE play_id = ?').bind(pl.id).run();
       return json({ ok: true });
     }
-    await env.DB.prepare('UPDATE plays SET last_seen = ? WHERE id = ?').bind(t, pl.id).run();
+    // Ahorro de escrituras (la base de datos tiene un límite diario): «sigue jugando» se guarda como mucho cada 45 s.
+    // Una partida cuenta como activa 90 s, así que nunca sale como desconectado.
+    await env.DB.prepare('UPDATE plays SET last_seen = ? WHERE id = ? AND last_seen < ?').bind(t, pl.id, t - 45e3).run();
     // ¿Hay que sacarle? (instancia cerrada con "sacar al cerrar", baneado o bloqueada sin ser staff)
     const row = await env.DB.prepare('SELECT * FROM instances WHERE id = ?').bind(pl.instance_id).first();
     let kick = !row || !!row.deleted_at;
