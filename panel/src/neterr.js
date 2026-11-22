@@ -14,11 +14,15 @@ export async function reportNetErr(env, req) {
   if (!/^[a-z0-9.-]{3,100}$/.test(host)) fail(400, 'host', 'Web no válida');
   const cf = req.cf || {};
   // límite: 30 avisos por minuto en total (por si algo se vuelve loco)
-  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM net_errors WHERE at > ?').bind(now() - 60e3).first();
+  let recent;
+  try { recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM net_errors WHERE at > ?').bind(now() - 60e3).first(); }
+  catch (e) { return json({ ok: false, why: 'select: ' + String(e && e.message || e).slice(0, 300) }, 500); }
   if (recent && recent.n >= 30) return json({ ok: true, skipped: true });
+  try {
   await env.DB.prepare('INSERT INTO net_errors (at, host, kind, chrome, node, version, os, country, isp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
     .bind(now(), host, KINDS.includes(b.kind) ? b.kind : 'other', str(b.chrome, 120) || null, str(b.node, 120) || null,
       str(b.version, 20) || null, OS.includes(b.os) ? b.os : null, str(cf.country, 4) || null, str(cf.asOrganization, 80) || null).run();
+  } catch (e) { return json({ ok: false, why: String(e && e.message || e).slice(0, 300) }, 500); } // temporal: ver qué falla
   return json({ ok: true });
 }
 
