@@ -1,0 +1,17 @@
+# Comprueba las webs de donde se descargan los archivos de una instancia (certificados y descargas). Solo lectura.
+name: Diagnostico webs
+on:
+  workflow_dispatch:
+    inputs:
+      instancia:
+        description: 'Parte del nombre de la instancia'
+        default: 'colonizado'
+jobs:
+  webs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/diag-hosts.js "${{ inputs.instancia }}"
