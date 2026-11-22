@@ -379,6 +379,18 @@ Para que se cuenten solos:
 - No hay que tocar nada en el servidor. Si el servidor bloquea clientes con Fabric, el studio puede apagarlo en **Instancia → Juego → Skins de Kopi**.
 - Probado con Minecraft 1.21.1 real y cuenta no premium (prueba **Prueba del juego** en GitHub → Actions).
 
+## Cámaras en vídeo (desde la 1.8.5)
+
+- Antes las cámaras eran fotos sueltas que pasaban por el panel: ~1 imagen por segundo y con retraso.
+- Ahora, al abrir a un jugador **en grande** en **Jugadores → Cámaras**, el vídeo va **directo del PC del jugador al navegador del staff** (WebRTC, como Discord o Meet): **720p a 30 imágenes por segundo**, con menos de 1 segundo de retraso. Arriba se ve la calidad real («En directo · 720p · 30 img/s»).
+- Tarda unos segundos en conectar (lo que tarda el launcher en enterarse de que alguien mira). Mientras tanto, y si la conexión directa no se puede hacer, se ven las imágenes de siempre.
+- **Guardar captura** guarda la imagen del vídeo a tamaño real.
+- La cuadrícula de todas las cámaras sigue con imágenes pequeñas cada 5 s (para no gastar internet de todos los jugadores a la vez).
+- Hace falta Kopi Client 1.8.5 o más nuevo en el jugador. Solo se ve la ventana del juego, nunca la pantalla entera ni el sonido.
+- En Mac el vídeo va en H.264 (lo hace el chip de vídeo del Mac).
+- Opcional: con un TURN de Cloudflare (variables `TURN_KEY_ID` y `TURN_KEY_TOKEN` en el panel) conecta incluso con routers muy cerrados.
+- Prueba **Prueba de cámaras** (GitHub → Actions): mide el vídeo de verdad en Windows, Mac y Linux.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

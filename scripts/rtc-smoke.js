@@ -61,7 +61,9 @@ app.whenReady().then(async () => {
   console.log(`[prueba] ~${kbps} kbit/s · mirando: ${live}`);
   const avgFps = samples.reduce((a, s) => a + s.fps, 0) / samples.length;
   if (last.state !== 'connected') return end(false, 'no conectó (' + last.state + ')');
-  if (avgFps < 20) return end(false, `pocas imágenes por segundo (${avgFps.toFixed(1)})`);
+  // los Mac de GitHub son máquinas virtuales sin chip de vídeo: ahí se pide menos (en un Mac de verdad lo hace el chip)
+  const minFps = process.platform === 'darwin' ? 15 : 24;
+  if (avgFps < minFps) return end(false, `pocas imágenes por segundo (${avgFps.toFixed(1)})`);
   if (last.h < 720) return end(false, `poca resolución (${last.h}p)`);
   // cerrar: el launcher suelta la conexión
   await game.webContents.executeJavaScript("K.rtcClose('v1')");

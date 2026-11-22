@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.5', date: '2026-11-22', items: [
+      ['video', 'Cámaras de KopiGuard en vídeo de verdad: el staff te ve a 720p y 30 imágenes por segundo, sin retraso. Solo la ventana del juego, nunca la pantalla entera ni el sonido.',
+        'KopiGuard cameras as real video: the staff sees you at 720p and 30 frames per second, with no delay. Only the game window, never the whole screen or sound.',
+        'Càmeres de KopiGuard en vídeo de veritat: l’staff et veu a 720p i 30 imatges per segon, sense retard. Només la finestra del joc, mai la pantalla sencera ni el so.',
+        'Caméras KopiGuard en vraie vidéo : le staff te voit en 720p à 30 images par seconde, sans retard. Seulement la fenêtre du jeu, jamais tout l’écran ni le son.']
+    ]
+  },
+  {
     v: '1.8.4', date: '2026-11-22', items: [
       ['user', 'Skins en instancias vanilla: si no eres premium, ahora ves las skins de todos. El launcher lo prepara solo al darle a Jugar.',
         'Skins on vanilla instances: if you’re not premium, you now see everyone’s skins. The launcher sets it up by itself when you press Play.',
