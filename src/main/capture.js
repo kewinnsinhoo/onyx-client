@@ -51,6 +51,14 @@ window.K = {
     if (!tx) { K.rtcClose(id); return null; }
     tx.direction = 'sendonly';
     await tx.sender.replaceTrack(tr);
+    // Mac: H.264 lo hace el chip de vídeo del Mac (mucho más fluido que VP8 hecho por el procesador)
+    if (/Mac/.test(navigator.userAgent) && tx.setCodecPreferences && window.RTCRtpReceiver && RTCRtpReceiver.getCapabilities) {
+      try {
+        const all = RTCRtpReceiver.getCapabilities('video').codecs;
+        const h264 = all.filter(c => /h264/i.test(c.mimeType));
+        if (h264.length) tx.setCodecPreferences([...h264, ...all.filter(c => !/h264/i.test(c.mimeType))]);
+      } catch (e) { /* se queda con el de siempre */ }
+    }
     await pc.setLocalDescription(await pc.createAnswer());
     await new Promise((ok) => {
       if (pc.iceGatheringState === 'complete') return ok();

@@ -48,11 +48,12 @@ app.whenReady().then(async () => {
   for (let i = 0; i < 5; i++) {
     await new Promise(r => setTimeout(r, 1000));
     samples.push(await viewer.webContents.executeJavaScript(`(async () => { const out = {}; (await pc.getStats()).forEach(x => {
-      if (x.type === 'inbound-rtp' && x.kind === 'video') Object.assign(out, { fps: x.framesPerSecond || 0, w: x.frameWidth || 0, h: x.frameHeight || 0, bytes: x.bytesReceived, codec: x.codecId, decoded: x.framesDecoded });
+      if (x.type === 'inbound-rtp' && x.kind === 'video') Object.assign(out, { fps: x.framesPerSecond || 0, w: x.frameWidth || 0, h: x.frameHeight || 0, bytes: x.bytesReceived, codecId: x.codecId, decoded: x.framesDecoded });
+    }); (await pc.getStats()).forEach(x => { if (x.type === 'codec' && x.id === out.codecId) out.codec = x.mimeType;
     }); out.state = pc.connectionState; return out; })()`));
   }
   const live = await game.webContents.executeJavaScript('K.live()');
-  samples.forEach((s, i) => console.log(`[prueba] seg ${i + 1}: ${s.state} ${s.w}x${s.h} ${Math.round(s.fps)} img/s, ${(s.bytes / 1e6).toFixed(1)} MB recibidos`));
+  samples.forEach((s, i) => console.log(`[prueba] seg ${i + 1}: ${s.state} ${s.w}x${s.h} ${Math.round(s.fps)} img/s, ${(s.bytes / 1e6).toFixed(1)} MB recibidos (${s.codec || '?'})`));
   const last = samples[samples.length - 1];
   const kbps = Math.round((last.bytes - samples[0].bytes) * 8 / 4 / 1000);
   console.log(`[prueba] ~${kbps} kbit/s · mirando: ${live}`);
