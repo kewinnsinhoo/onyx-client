@@ -14,9 +14,9 @@ const check = async (name, fn) => {
 const assert = (c, m) => { if (!c) throw new Error(m); };
 
 app.whenReady().then(async () => {
-  await check('GET con User-Agent y tiempo límite (GitHub API)', async () => {
-    const r = await fetch('https://api.github.com/repos/kewinnsinhoo/onyx-client', { headers: { 'User-Agent': 'KopiClient/1.0', Accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
-    assert(r.ok, 'HTTP ' + r.status); assert((await r.json()).name === 'onyx-client', 'json raro');
+  await check('GET con User-Agent y tiempo límite (Modrinth API)', async () => {
+    const r = await fetch('https://api.modrinth.com/v2/project/sodium', { headers: { 'User-Agent': 'KopiClient/1.0', Accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
+    assert(r.ok, 'HTTP ' + r.status); assert((await r.json()).slug === 'sodium', 'json raro');
   });
   await check('Redirección de GitHub y texto (latest-mac.yml)', async () => {
     const r = await fetch('https://github.com/kewinnsinhoo/onyx-client/releases/latest/download/latest-mac.yml', { cache: 'no-store' });
@@ -59,7 +59,7 @@ app.whenReady().then(async () => {
   await check('DNS seguro', async () => {
     const on = await net.secureDns({ log: console });
     console.log('  DNS seguro activado:', on);
-    const r = await fetch('https://api.github.com/zen', { headers: { 'User-Agent': 'KopiClient' } });
+    const r = await fetch('https://api.modrinth.com/v2/project/lithium', { headers: { 'User-Agent': 'KopiClient' } });
     assert(r.ok, 'con DNS seguro no conecta: HTTP ' + r.status);
   });
   await check('Se usó la conexión de Chrome', async () => assert(chrome >= 6, 'Chrome se usó ' + chrome + ' veces'));

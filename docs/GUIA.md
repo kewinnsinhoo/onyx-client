@@ -391,6 +391,12 @@ Para que se cuenten solos:
 - Opcional: con un TURN de Cloudflare (variables `TURN_KEY_ID` y `TURN_KEY_TOKEN` en el panel) conecta incluso con routers muy cerrados.
 - Prueba **Prueba de cámaras** (GitHub → Actions): mide el vídeo de verdad en Windows, Mac y Linux.
 
+## DNS seguro y fallos de conexión (desde la 1.8.6)
+
+- Algunas compañías de internet o filtros de red cambian la dirección de ciertas webs (pasa con dominios nuevos como `.site` o `.xyz`). Entonces sale «No se pudo conectar … de forma segura» aunque el internet vaya bien.
+- Desde la 1.8.6 la conexión tipo Chrome del launcher pregunta las direcciones con **DNS seguro** (Cloudflare y Google por HTTPS). Si en esa red no se puede, se usa el DNS normal.
+- Cuando una conexión falla del todo, el launcher avisa al panel de **qué web y qué error** (sin nombre ni IP del jugador). El resumen se ve en `panel.onyxclient.site/api/public/neterrs?h=24` (web, error, país y compañía de internet). Se borra a las 2 semanas.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.6', date: '2026-11-22', items: [
+      ['globe', 'DNS seguro: si tu compañía de internet o tu red cambian la dirección de una web, el launcher la pregunta de forma segura (Cloudflare/Google). Arregla el error de «conexión segura» aunque tu internet vaya bien.',
+        'Secure DNS: if your internet provider or network changes a website’s address, the launcher asks for it securely (Cloudflare/Google). Fixes the “secure connection” error even when your internet works fine.',
+        'DNS segur: si la teva companyia d’internet o la teva xarxa canvien l’adreça d’una web, el launcher la pregunta de forma segura (Cloudflare/Google). Arregla l’error de «connexió segura» encara que el teu internet vagi bé.',
+        'DNS sécurisé : si ton fournisseur internet ou ton réseau modifie l’adresse d’un site, le launcher la demande de façon sécurisée (Cloudflare/Google). Corrige l’erreur de « connexion sécurisée » même si ta connexion marche bien.']
+    ]
+  },
+  {
     v: '1.8.5', date: '2026-11-22', items: [
       ['video', 'Cámaras de KopiGuard en vídeo de verdad: el staff te ve a 720p y 30 imágenes por segundo, sin retraso. Solo la ventana del juego, nunca la pantalla entera ni el sonido.',
         'KopiGuard cameras as real video: the staff sees you at 720p and 30 frames per second, with no delay. Only the game window, never the whole screen or sound.',
