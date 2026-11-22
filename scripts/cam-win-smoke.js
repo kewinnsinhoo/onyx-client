@@ -12,31 +12,26 @@ const capture = require('../src/main/capture');
 
 const ICE = [{ urls: ['stun:stun.cloudflare.com:3478'] }];
 const OUT = process.env.OUT_DIR || process.cwd();
-const end = (ok, msg) => { console.log(`\n[prueba] ${ok ? 'BIEN' : 'MAL'}: ${msg}`); setTimeout(() => app.exit(ok ? 0 : 1), 300); };
+const dump = (name) => { try { const b = fs.readFileSync(path.join(OUT, name)).toString('base64'); console.log(`\n=====IMG ${name} ${b.length}=====\n${b}\n=====FIN=====`); } catch { /* no existe */ } };
+const end = (ok, msg) => { ['antes.jpg', 'pantalla.jpg', 'panel.jpg'].forEach(dump); console.log(`\n[prueba] ${ok ? 'BIEN' : 'MAL'}: ${msg}`); setTimeout(() => app.exit(ok ? 0 : 1), 300); };
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 function screenshot(file) {
-  const ps = `Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp=New-Object System.Drawing.Bitmap $b.Width,$b.Height; $g=[System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size); $bmp.Save('${file.replace(/'/g, "''")}'); "$($b.Width)x$($b.Height)"`;
+  const ps = `Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp=New-Object System.Drawing.Bitmap $b.Width,$b.Height; $g=[System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size); $bmp.Save('${file.replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Jpeg); "$($b.Width)x$($b.Height)"`;
   return new Promise((ok) => execFile('powershell.exe', ['-NoProfile', '-Command', ps], { windowsHide: true }, (e, out, err) => ok(e ? 'error: ' + (err || e.message) : String(out).trim())));
 }
 
 app.whenReady().then(async () => {
   setTimeout(() => end(false, 'tiempo agotado'), 120000);
-  // «el juego»: ventana visible con el título de Minecraft y mucho movimiento
-  const game = new BrowserWindow({ show: true, x: 80, y: 60, width: 1280, height: 720, title: 'Minecraft* 1.21.1', backgroundColor: '#000', webPreferences: { backgroundThrottling: false } });
-  await game.loadURL('data:text/html,' + encodeURIComponent(`<title>Minecraft* 1.21.1</title><body style="margin:0;overflow:hidden;background:#000"><canvas id=c></canvas><script>
-    const c = document.getElementById('c'), g = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight; let f = 0;
-    (function draw() { f++; g.fillStyle = 'hsl(' + (f % 360) + ',55%,30%)'; g.fillRect(0, 0, c.width, c.height);
-      for (let i = 0; i < 30; i++) { g.fillStyle = 'hsl(' + (i * 12) + ',80%,60%)'; g.fillRect((f * 6 + i * 91) % c.width, (i * 47 + f * 2) % c.height, 90, 90); }
-      g.fillStyle = '#fff'; g.font = 'bold 90px sans-serif'; g.fillText('MINECRAFT ' + f, 60 + (f * 4) % 500, c.height / 2); requestAnimationFrame(draw); })();
-  </script>`));
-  game.setTitle('Minecraft* 1.21.1');
-  await sleep(2500);
-
+  // «el juego»: otro programa (como Minecraft), con su ventana visible y mucho movimiento
+  const { spawn } = require('child_process');
+  const gameProc = spawn(process.execPath, [path.join(__dirname, 'fake-game.js')], { stdio: 'ignore' });
+  app.on('will-quit', () => { try { gameProc.kill(); } catch { /* */ } });
+  await sleep(6000);
   const { desktopCapturer } = require('electron');
   const list = await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 0, height: 0 } });
   console.log('[prueba] ventanas que ve el sistema:', JSON.stringify(list.map(x => x.name + ' (' + x.id + ')')));
-  console.log('[prueba] captura antes de grabar:', await screenshot(path.join(OUT, 'antes.png')));
+  console.log('[prueba] captura antes de grabar:', await screenshot(path.join(OUT, 'antes.jpg')));
   // el launcher busca la ventana como con el juego de verdad
   capture.setTarget({ pid: 0, hint: 'Minecraft' });
   const viewer = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: false } });
@@ -55,7 +50,7 @@ app.whenReady().then(async () => {
   await sleep(8000);
 
   // lo que ve el jugador (¿borde amarillo?) mientras le están mirando
-  console.log('[prueba] captura de pantalla:', await screenshot(path.join(OUT, 'pantalla.png')));
+  console.log('[prueba] captura de pantalla:', await screenshot(path.join(OUT, 'pantalla.jpg')));
   const samples = [];
   for (let i = 0; i < 5; i++) {
     await sleep(1000);
@@ -64,8 +59,8 @@ app.whenReady().then(async () => {
   }
   samples.forEach((s, i) => console.log(`[prueba] seg ${i + 1}: ${s.state} ${s.w}x${s.h} ${Math.round(s.fps)} img/s`));
   // lo que ve el staff
-  const png = await viewer.webContents.executeJavaScript(`(() => { const v = document.querySelector('video'); const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0); return c.toDataURL('image/png').split(',')[1]; })()`);
-  fs.writeFileSync(path.join(OUT, 'panel.png'), Buffer.from(png, 'base64'));
+  const png = await viewer.webContents.executeJavaScript(`(() => { const v = document.querySelector('video'); const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0); return c.toDataURL('image/jpeg', 0.8).split(',')[1]; })()`);
+  fs.writeFileSync(path.join(OUT, 'panel.jpg'), Buffer.from(png, 'base64'));
   const avg = samples.reduce((a, s) => a + s.fps, 0) / samples.length, last = samples[samples.length - 1];
   if (last.state !== 'connected') return end(false, 'no conectó');
   end(avg >= 20, `${last.w}x${last.h} a ${avg.toFixed(1)} img/s grabando la ventana de verdad`);
