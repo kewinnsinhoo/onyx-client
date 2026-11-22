@@ -1,0 +1,24 @@
+# Windows: graba una ventana «Minecraft» como KopiGuard y hace una captura de pantalla para ver si sale el borde amarillo.
+name: Prueba del borde amarillo
+on:
+  workflow_dispatch:
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Grabar la ventana y mirar la pantalla
+        env:
+          OUT_DIR: ${{ github.workspace }}
+        run: npx electron scripts/cam-win-smoke.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capturas
+          path: |
+            pantalla.png
+            panel.png
