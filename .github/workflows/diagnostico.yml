@@ -1,0 +1,20 @@
+# Diagnóstico desde fuera: qué contesta el panel y cuánto tarda (solo lectura, datos públicos).
+name: Diagnostico
+on:
+  workflow_dispatch:
+jobs:
+  mirar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Panel y datos públicos
+        run: |
+          P=https://panel.onyxclient.site
+          for u in "$P/api/public/status" "$P/api/public/events" "$P/api/public/studios" "$P/csl/kewinnsinhoo.json" "$P/api/public/skin/kewinnsinhoo?debug" ; do
+            echo "=== $u"; curl -s -o /tmp/o -w "HTTP %{http_code} en %{time_total}s\n" --max-time 40 "$u"; head -c 3000 /tmp/o; echo; done
+      - name: Tiempos repetidos del panel
+        run: |
+          for i in 1 2 3 4 5; do curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 40 https://panel.onyxclient.site/api/public/status; done
+      - name: CustomSkinLoader en Modrinth
+        run: |
+          for v in 1.21.1 1.21.4 1.21.5 1.21.8 1.21.10; do for l in fabric forge neoforge; do
+            n=$(curl -s "https://api.modrinth.com/v2/project/idMHQ4n2/version?loaders=%5B%22$l%22%5D&game_versions=%5B%22$v%22%5D" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))"); echo "$v $l: $n"; done; done
