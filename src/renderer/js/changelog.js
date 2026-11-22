@@ -4,6 +4,18 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.7', date: '2026-11-22', items: [
+      ['alert', 'Avisos más claros cuando el panel tiene un problema, en vez de «Error interno del servidor».',
+        'Clearer warnings when the panel has a problem, instead of “Internal server error”.',
+        'Avisos més clars quan el panell té un problema, en lloc d’«Error intern del servidor».',
+        'Messages plus clairs quand le panel a un problème, au lieu de « Erreur interne du serveur ».'],
+      ['video', 'KopiGuard gasta menos internet: la cuadrícula de cámaras se actualiza cada 12 segundos (el vídeo en grande sigue en directo).',
+        'KopiGuard uses less internet: the camera grid updates every 12 seconds (the large live video stays real time).',
+        'KopiGuard gasta menys internet: la quadrícula de càmeres s’actualitza cada 12 segons (el vídeo en gran continua en directe).',
+        'KopiGuard consomme moins : la grille des caméras se met à jour toutes les 12 secondes (la grande vidéo reste en direct).']
+    ]
+  },
+  {
     v: '1.8.6', date: '2026-11-22', items: [
       ['globe', 'DNS seguro: si tu compañía de internet o tu red cambian la dirección de una web, el launcher la pregunta de forma segura (Cloudflare/Google). Arregla el error de «conexión segura» aunque tu internet vaya bien.',
         'Secure DNS: if your internet provider or network changes a website’s address, the launcher asks for it securely (Cloudflare/Google). Fixes the “secure connection” error even when your internet works fine.',

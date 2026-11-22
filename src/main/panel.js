@@ -27,6 +27,8 @@ class PanelError extends Error {
 }
 
 const MESSAGES = {
+  db_limit: 'El panel de Kopi ha llegado a su límite de hoy. Vuelve a funcionar solo en unas horas (a las 00:00 UTC).',
+  server: 'El panel de Kopi tuvo un problema. Inténtalo de nuevo en un momento.',
   banned: 'No puedes entrar a esta instancia',
   no_access: 'Ya no tienes acceso a esta instancia',
   premium: 'Esta instancia es Premium: inicia sesión con una cuenta de Microsoft que tenga Minecraft.',

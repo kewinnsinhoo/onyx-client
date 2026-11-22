@@ -129,7 +129,7 @@ function start(opts) {
   const { gameDir } = opts;
   const managed = opts.managed || [];
   const packsOk = !!g.packsOk;
-  const T = { files: 15e3, programs: 30e3, grace: 60e3, flush: 3e3, video: 10e3, live: 600, grid: 5e3, ...(opts.timers || {}) };
+  const T = { files: 15e3, programs: 30e3, grace: 60e3, flush: 3e3, video: 10e3, live: 600, grid: 12e3, ...(opts.timers || {}) };
   const cap = opts.capture || null;
   let mediaLeft = 6; // como en el panel: foto y vídeo de las 6 primeras detecciones que importan
   const list = opts.list || listProcesses;

@@ -1,7 +1,7 @@
 {
   "name": "onyx-client",
   "productName": "Kopi Client",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Launcher de Minecraft de Kopi Studio",
   "main": "src/main/main.js",
   "author": {
