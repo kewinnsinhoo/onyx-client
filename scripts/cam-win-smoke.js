@@ -7,7 +7,7 @@ const fs = require('fs');
 const { execFile } = require('child_process');
 const { app, BrowserWindow } = require('electron');
 // lo mismo que src/main/main.js (sin esto, Windows pinta el borde amarillo)
-if (process.platform === 'win32') app.commandLine.appendSwitch('disable-features', 'AllowWgcWindowCapturer,AllowWgcScreenCapturer');
+if (process.platform === 'win32' && !process.env.SIN_ARREGLO) app.commandLine.appendSwitch('disable-features', 'AllowWgcWindowCapturer,AllowWgcScreenCapturer');
 const capture = require('../src/main/capture');
 
 const ICE = [{ urls: ['stun:stun.cloudflare.com:3478'] }];

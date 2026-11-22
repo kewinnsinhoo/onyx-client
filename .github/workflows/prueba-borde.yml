@@ -2,6 +2,11 @@
 name: Prueba del borde amarillo
 on:
   workflow_dispatch:
+    inputs:
+      sin_arreglo:
+        description: 'Quitar el arreglo (para ver el borde amarillo)'
+        type: boolean
+        default: false
 jobs:
   windows:
     runs-on: windows-latest
@@ -14,6 +19,7 @@ jobs:
       - name: Grabar la ventana y mirar la pantalla
         env:
           OUT_DIR: ${{ github.workspace }}
+          SIN_ARREGLO: ${{ inputs.sin_arreglo && '1' || '' }}
         run: npx electron scripts/cam-win-smoke.js
       - uses: actions/upload-artifact@v4
         if: always()
