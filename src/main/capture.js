@@ -44,21 +44,19 @@ window.K = {
     };
     // que empiece ya con buena calidad (si no, arranca muy bajo y tarda en subir)
     const HINT = 'x-google-start-bitrate=2500;x-google-min-bitrate=1200;x-google-max-bitrate=5000';
-    const sdp = String(offer).replace(/^(a=fmtp:\\d+ .*)$/gm, (l) => /x-google-/.test(l) ? l : l + ';' + HINT)
-      .replace(/^(a=rtpmap:(\\d+) (VP8|VP9|H264|AV1)\\/90000)$/gm, (l, a, pt) => new RegExp('^a=fmtp:' + pt + ' ', 'm').test(offer) ? l : l + '\\r\\na=fmtp:' + pt + ' ' + HINT);
+    let src = String(offer);
+    // Mac: H.264 primero (lo hace el chip de vídeo del Mac, mucho más fluido). Se envía con el primero de la propuesta.
+    if (/Mac/.test(navigator.userAgent)) {
+      const h264 = (src.match(/^a=rtpmap:(\\d+) H264\\/90000/gm) || []).map(l => l.split(':')[1].split(' ')[0]);
+      if (h264.length) src = src.replace(/^(m=video \\S+ \\S+) ([\\d ]+)$/m, (l, head, pts) => head + ' ' + [...h264, ...pts.trim().split(' ').filter(p => !h264.includes(p))].join(' '));
+    }
+    const sdp = src.replace(/^(a=fmtp:\\d+ .*)$/gm, (l) => /x-google-/.test(l) ? l : l + ';' + HINT)
+      .replace(/^(a=rtpmap:(\\d+) (VP8|VP9|H264|AV1)\\/90000)$/gm, (l, a, pt) => new RegExp('^a=fmtp:' + pt + ' ', 'm').test(src) ? l : l + '\\r\\na=fmtp:' + pt + ' ' + HINT);
     await pc.setRemoteDescription({ type: 'offer', sdp });
     const tx = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video');
     if (!tx) { K.rtcClose(id); return null; }
     tx.direction = 'sendonly';
     await tx.sender.replaceTrack(tr);
-    // Mac: H.264 lo hace el chip de vídeo del Mac (mucho más fluido que VP8 hecho por el procesador)
-    if (/Mac/.test(navigator.userAgent) && tx.setCodecPreferences && window.RTCRtpReceiver && RTCRtpReceiver.getCapabilities) {
-      try {
-        const all = RTCRtpReceiver.getCapabilities('video').codecs;
-        const h264 = all.filter(c => /h264/i.test(c.mimeType));
-        if (h264.length) tx.setCodecPreferences([...h264, ...all.filter(c => !/h264/i.test(c.mimeType))]);
-      } catch (e) { /* se queda con el de siempre */ }
-    }
     await pc.setLocalDescription(await pc.createAnswer());
     await new Promise((ok) => {
       if (pc.iceGatheringState === 'complete') return ok();
