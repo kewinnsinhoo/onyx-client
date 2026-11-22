@@ -150,19 +150,61 @@ export async function camWanted(env, pl) {
   return d.guard && d.guard.enabled ? 'grid' : null;
 }
 
+// ---------------------------------------------------------------- cámaras en vídeo (WebRTC)
+// El navegador del staff propone (offer), el launcher contesta (answer) y el vídeo va directo entre los dos,
+// a 30 imágenes por segundo. Si no se pueden conectar, siguen las imágenes de siempre.
+const RTC_TTL = 60e3;          // una propuesta sin contestar caduca al minuto
+const SDP_MAX = 20000;
+const STUN = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }];
+
+// Servidores para conectar. Con TURN de Cloudflare (TURN_KEY_ID y TURN_KEY_TOKEN) conecta incluso tras routers difíciles.
+export async function iceServers(env) {
+  if (env.TURN_KEY_ID && env.TURN_KEY_TOKEN) {
+    try {
+      const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.TURN_KEY_ID}/credentials/generate-ice-servers`, {
+        method: 'POST', headers: { Authorization: `Bearer ${env.TURN_KEY_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ttl: 86400 })
+      });
+      if (r.ok) { const j = await r.json(); const list = Array.isArray(j.iceServers) ? j.iceServers : j.iceServers ? [j.iceServers] : []; if (list.length) return [...STUN, ...list]; }
+    } catch { /* solo STUN */ }
+  }
+  return STUN;
+}
+
+// Propuestas nuevas para esta partida (se marcan como recogidas). Las recoge el launcher en el latido o al mandar imagen.
+export async function rtcPending(env, playId) {
+  const rows = (await env.DB.prepare("SELECT id, offer FROM guard_rtc WHERE play_id = ? AND state = 'new' AND created_at > ? LIMIT 4").bind(playId, now() - RTC_TTL).all()).results;
+  if (!rows.length) return null;
+  await env.DB.prepare(`UPDATE guard_rtc SET state = 'taken', updated_at = ? WHERE id IN (${rows.map(() => '?').join(',')})`).bind(now(), ...rows.map(r => r.id)).run();
+  const ice = await iceServers(env);
+  return rows.map(r => ({ id: r.id, offer: r.offer, ice }));
+}
+
+// El launcher contesta: { play, id, answer (SDP) | null }
+export async function guardRtcAnswer(env, P, b) {
+  const pl = await env.DB.prepare('SELECT id FROM plays WHERE id = ? AND player_key = ? AND ended_at IS NULL').bind(str(b.play, 40), P.key).first();
+  if (!pl) fail(404, 'play', 'Partida no encontrada');
+  const answer = b.answer ? String(b.answer) : null;
+  if (answer && (answer.length > SDP_MAX || !answer.startsWith('v=0'))) fail(400, 'data', 'Respuesta no válida');
+  const r = await env.DB.prepare("UPDATE guard_rtc SET answer = ?, state = ?, updated_at = ? WHERE id = ? AND play_id = ? AND state IN ('new', 'taken')")
+    .bind(answer, answer ? 'answered' : 'failed', now(), str(b.id, 40), pl.id).run();
+  if (!r.meta || !r.meta.changes) fail(404, 'rtc', 'Esa conexión ya no existe');
+  return json({ ok: true });
+}
+
 // El launcher manda una imagen del juego: { play, frame: base64 JPEG | null (no se ve la ventana), hd }
 export async function guardFrame(env, P, b) {
   const pl = await env.DB.prepare('SELECT * FROM plays WHERE id = ? AND player_key = ? AND ended_at IS NULL').bind(String(b.play || ''), P.key).first();
   if (!pl) fail(404, 'play', 'Partida no encontrada');
   const cam = await camWanted(env, pl);
   if (!cam) return json({ ok: true, cam: null });
+  const rtc = await rtcPending(env, pl.id);
   const frame = b.frame ? String(b.frame) : null;
   if (frame && (frame.length > FRAME_MAX * 1.4 || !frame.startsWith('/9j/'))) fail(400, 'data', 'Imagen no válida'); // «/9j/» = JPEG en base64
   const t = now();
   await env.DB.prepare(`INSERT INTO guard_live (play_id, studio_id, frame, hd, none, at) VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(play_id) DO UPDATE SET frame = COALESCE(excluded.frame, guard_live.frame), hd = excluded.hd, none = excluded.none, at = excluded.at`)
     .bind(pl.id, pl.studio_id, frame, b.hd ? 1 : 0, frame ? 0 : b.off ? 2 : 1, t).run();
-  return json({ ok: true, cam });
+  return json({ ok: true, cam, ...(rtc ? { rtc } : {}) });
 }
 
 const TYPE_NAME = { mod: 'Mod', pack: 'Paquete', file: 'Archivo', program: 'Programa', move: 'Movimiento', combat: 'Combate' };
@@ -285,6 +327,34 @@ async function liveApi(c, play, m, need, sub) {
   const pl = await env.DB.prepare('SELECT * FROM plays WHERE id = ? AND studio_id = ?').bind(str(play, 40), studio.id).first();
   if (!pl) fail(404, 'play', 'Partida no encontrada');
   const live = await env.DB.prepare('SELECT at, none, hd, focus_at, frame FROM guard_live WHERE play_id = ?').bind(pl.id).first();
+  if (sub === 'rtc') {
+    const playing = !pl.ended_at && pl.last_seen > t - LIVE_MS;
+    if (m === 'POST' && c.u.searchParams.get('close')) {
+      await env.DB.prepare("UPDATE guard_rtc SET state = 'closed', updated_at = ? WHERE id = ? AND play_id = ?").bind(t, str(c.u.searchParams.get('id'), 40), pl.id).run();
+      return json({ ok: true });
+    }
+    if (m === 'POST') {
+      if (!playing) fail(409, 'not_playing', 'Ese jugador no está jugando ahora');
+      const b = await readJson(c.req, 64 * 1024);
+      const offer = String(b.offer || '');
+      if (!offer.startsWith('v=0') || offer.length > SDP_MAX) fail(400, 'data', 'Propuesta no válida');
+      const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM guard_rtc WHERE play_id = ? AND state IN ('new', 'taken', 'answered') AND created_at > ?").bind(pl.id, t - 10 * 60e3).first();
+      if (open && open.n >= 6) fail(429, 'busy', 'Demasiadas personas mirando a este jugador a la vez');
+      const id = randomToken(10);
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO guard_rtc (id, play_id, studio_id, user_id, offer, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, pl.id, studio.id, user.id, offer, t),
+        // mirar en grande: el launcher se entera antes (pasa a modo «live»)
+        env.DB.prepare('INSERT INTO guard_live (play_id, studio_id, focus_at) VALUES (?, ?, ?) ON CONFLICT(play_id) DO UPDATE SET focus_at = excluded.focus_at').bind(pl.id, studio.id, t)
+      ]);
+      return json({ id, ice: await iceServers(env) }, 201);
+    }
+    if (m === 'GET' && !c.u.searchParams.get('id')) return json({ ice: await iceServers(env), playing }); // con qué servidores conectar
+    if (m === 'GET') {
+      const r = await env.DB.prepare('SELECT state, answer FROM guard_rtc WHERE id = ? AND play_id = ?').bind(str(c.u.searchParams.get('id'), 40), pl.id).first();
+      if (!r) fail(404, 'rtc', 'Esa conexión ya no existe');
+      return json({ state: r.state, answer: r.answer || null, playing });
+    }
+  }
   if (m === 'GET' && sub === 'img') {
     if (!live || !live.frame) return new Response(null, { status: 404 });
     const bin = Uint8Array.from(atob(live.frame), ch => ch.charCodeAt(0));

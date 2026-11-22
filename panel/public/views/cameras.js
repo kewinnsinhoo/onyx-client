@@ -77,6 +77,8 @@ ${p.off ? `<div class="cam-hidden">${icon('monitor')}<small>${t('Este equipo no 
   // ---------------------------------------------------------------- un jugador en grande
   function watch(play, p) {
     let alive = true, timer = 0, lastAt = 0, frames = [];
+    // Vídeo en directo (WebRTC): va directo del PC del jugador a este navegador. Si no conecta, siguen las imágenes.
+    let pc = null, rtcId = null, videoOn = false, tries = 0, statsTimer = 0;
     const close = modal((m, done) => {
       m.classList.add('wide', 'cam-viewer');
       m.innerHTML = html`<div class="mh">${head(p.player)}<h3 style="flex:none">${esc(p.player)}</h3><span class="cam-sub">${esc(p.instanceName)}</span>
@@ -96,8 +98,88 @@ ${p.off ? `<div class="cam-hidden">${icon('monitor')}<small>${t('Este equipo no 
       $('#cv-full', m).onclick = () => { (stage.requestFullscreen || stage.webkitRequestFullscreen || (() => {})).call(stage); };
       $('#cv-shot', m).onclick = () => {
         const a = document.createElement('a');
-        a.href = imgUrl(play, lastAt); a.download = `${p.player}-${new Date(lastAt).toISOString().slice(0, 19).replace(/[:T]/g, '-')}.jpg`;
+        const stamp = new Date(videoOn ? Date.now() : lastAt).toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        const v = $('video', stage);
+        if (videoOn && v && v.videoWidth) { // captura del vídeo, a su tamaño real
+          const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight;
+          c.getContext('2d').drawImage(v, 0, 0); a.href = c.toDataURL('image/png'); a.download = `${p.player}-${stamp}.png`;
+        } else { a.href = imgUrl(play, lastAt); a.download = `${p.player}-${stamp}.jpg`; }
         document.body.appendChild(a); a.click(); a.remove();
+      };
+      const base = `/guard/live/${encodeURIComponent(play)}/rtc`;
+      const stopRtc = () => {
+        clearInterval(statsTimer);
+        if (pc) { try { pc.close(); } catch { /* nada */ } pc = null; }
+        if (rtcId) { sapi('POST', `${base}?id=${encodeURIComponent(rtcId)}&close=1`, {}, { quiet: true }).catch(() => {}); rtcId = null; }
+        if (videoOn) { videoOn = false; const v = $('video', stage); if (v) v.remove(); $('img', stage) && ($('img', stage).style.display = ''); }
+      };
+      const showVideo = (stream) => {
+        let v = $('video', stage);
+        if (!v) {
+          v = document.createElement('video');
+          v.autoplay = true; v.muted = true; v.playsInline = true;
+          stage.prepend(v);
+        }
+        if (v.srcObject !== stream) v.srcObject = stream;
+        v.onplaying = () => {
+          if (!alive) return;
+          videoOn = true;
+          stage.querySelector('.cam-wait') && stage.querySelector('.cam-wait').remove();
+          const img = $('img', stage); if (img) img.style.display = 'none';
+          if (!$('.cam-live', stage)) stage.insertAdjacentHTML('beforeend', '<span class="cam-live">' + esc(t('EN DIRECTO')) + '</span>');
+          $('#cv-shot', m).disabled = false;
+        };
+      };
+      // calidad real: resolución e imágenes por segundo que llegan
+      const stats = async () => {
+        if (!pc || !videoOn) return;
+        try {
+          const r = await pc.getStats();
+          r.forEach((x) => {
+            if (x.type === 'inbound-rtp' && x.kind === 'video') {
+              const fps = Math.round(x.framesPerSecond || 0), h = x.frameHeight || 0;
+              state.className = 'badge danger solid';
+              state.textContent = t('En directo · {q} · {n} img/s', { q: h ? `${h}p` : 'HD', n: fps });
+            }
+          });
+        } catch { /* nada */ }
+      };
+      const startRtc = async () => {
+        if (!window.RTCPeerConnection || !alive || tries >= 3) return;
+        tries++;
+        try {
+          const { ice, playing } = await sapi('GET', base, undefined, { quiet: true });
+          if (!playing || !alive) return;
+          pc = new RTCPeerConnection({ iceServers: ice || [] });
+          const me = pc;
+          pc.addTransceiver('video', { direction: 'recvonly' });
+          pc.ontrack = (e) => showVideo(e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]));
+          pc.onconnectionstatechange = () => {
+            if (me !== pc) return;
+            if (pc.connectionState === 'connected') { clearInterval(statsTimer); statsTimer = setInterval(stats, 1000); }
+            const drop = () => { if (me !== pc) return; stopRtc(); if (alive) setTimeout(startRtc, 4000); }; // vuelven las imágenes y se prueba otra vez
+            if (pc.connectionState === 'failed') drop();
+            if (pc.connectionState === 'disconnected') setTimeout(() => { if (me === pc && pc.connectionState !== 'connected') drop(); }, 5000); // un corte corto se arregla solo
+          };
+          await pc.setLocalDescription(await pc.createOffer());
+          await new Promise((ok) => {
+            if (me.iceGatheringState === 'complete') return ok();
+            const to = setTimeout(ok, 2500);
+            me.addEventListener('icegatheringstatechange', () => { if (me.iceGatheringState === 'complete') { clearTimeout(to); ok(); } });
+          });
+          if (!alive || me !== pc) return;
+          const r = await sapi('POST', base, { offer: pc.localDescription.sdp }, { quiet: true });
+          rtcId = r.id;
+          // el launcher contesta en unos segundos (cuando se entera de que alguien mira)
+          for (let i = 0; i < 70 && alive && me === pc; i++) {
+            await new Promise(ok => setTimeout(ok, 500));
+            const a = await sapi('GET', `${base}?id=${encodeURIComponent(rtcId)}`, undefined, { quiet: true }).catch(() => null);
+            if (!a) continue;
+            if (a.answer) { await pc.setRemoteDescription({ type: 'answer', sdp: a.answer }); return; }
+            if (a.state === 'failed' || a.state === 'closed' || !a.playing) break; // este equipo no puede: quedan las imágenes
+          }
+          if (me === pc && !videoOn) stopRtc();
+        } catch { stopRtc(); }
       };
       const kick = $('#cv-kick', m);
       if (kick) kick.onclick = async () => {
@@ -126,6 +208,9 @@ ${p.off ? `<div class="cam-hidden">${icon('monitor')}<small>${t('Este equipo no 
           } else if (r.off) {
             stage.innerHTML = `<div class="cam-wait">${icon('monitor')}<small>${esc(t('Este equipo no permite capturar el juego (en Mac hay que dar permiso para grabar la pantalla).'))}</small></div>`;
             state.className = 'badge mute'; state.textContent = t('Sin cámara');
+          } else if (videoOn) {
+            stage.classList.toggle('hidden-win', r.hidden);
+            if (r.hidden) { state.className = 'badge warn'; state.textContent = t('Juego minimizado'); }
           } else if (r.frameAt && r.frameAt !== lastAt) {
             lastAt = r.frameAt;
             await show(r.frameAt);
@@ -138,11 +223,18 @@ ${p.off ? `<div class="cam-hidden">${icon('monitor')}<small>${t('Este equipo no 
             state.className = 'badge warn'; state.textContent = t('Sin imagen nueva hace {n} s', { n: Math.round((Date.now() - r.frameAt) / 1000) });
           }
         } catch { /* se reintenta */ }
-        timer = setTimeout(loop, 600);
+        timer = setTimeout(loop, videoOn ? 2000 : 600);
       };
       loop();
+      startRtc();
     }, { wide: true });
-    const obs = new MutationObserver(() => { if (!document.querySelector('.cam-viewer')) { alive = false; clearTimeout(timer); obs.disconnect(); } });
+    const obs = new MutationObserver(() => {
+      if (document.querySelector('.cam-viewer')) return;
+      alive = false; clearTimeout(timer); obs.disconnect();
+      clearInterval(statsTimer);
+      if (pc) { try { pc.close(); } catch { /* nada */ } }
+      if (rtcId) sapi('POST', `/guard/live/${encodeURIComponent(play)}/rtc?id=${encodeURIComponent(rtcId)}&close=1`, {}, { quiet: true }).catch(() => {});
+    });
     obs.observe(document.body, { childList: true, subtree: true });
     return close;
   }

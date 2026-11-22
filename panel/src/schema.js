@@ -431,7 +431,21 @@ CREATE INDEX player_reports_reporter ON player_reports(reporter_key, created_at)
   crash_kind TEXT,
   crash_mod TEXT
 );
-CREATE INDEX play_perf_instance ON play_perf(instance_id, at)`
+CREATE INDEX play_perf_instance ON play_perf(instance_id, at)`,
+  // Cámaras en vídeo (WebRTC): el panel solo «presenta» al navegador del staff y al launcher del jugador.
+  // offer = lo que propone el navegador; answer = lo que contesta el launcher. El vídeo va directo entre los dos.
+  `CREATE TABLE guard_rtc (
+  id TEXT PRIMARY KEY,
+  play_id TEXT NOT NULL,
+  studio_id TEXT NOT NULL,
+  user_id TEXT,
+  offer TEXT NOT NULL,
+  answer TEXT,
+  state TEXT NOT NULL DEFAULT 'new',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER
+);
+CREATE INDEX guard_rtc_play ON guard_rtc(play_id, state)`
 ];
 
 export function statements(sql) {

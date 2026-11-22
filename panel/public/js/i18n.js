@@ -249,6 +249,8 @@
     "Gráficas de los jugadores": ["Players’ graphics cards", "Gràfiques dels jugadors", "Cartes graphiques des joueurs"],
     "Si a muchos les va lento con gráficas Intel, el modo rendimiento ayuda.": ["If it runs slowly for many on Intel graphics, performance mode helps.", "Si a molts els va lent amb gràfiques Intel, el mode rendiment ajuda.", "Si ça rame pour beaucoup avec des puces Intel, le mode performance aide."],
     "En Vanilla: a los jugadores no premium el launcher les pone Fabric por debajo, solo con el mod de skins, para que vean las skins de todos. Los premium siguen en Vanilla.": ["On Vanilla: for non-premium players the launcher adds Fabric underneath, only with the skins mod, so they can see everyone’s skins. Premium players stay on Vanilla.", "En Vanilla: als jugadors no prèmium el launcher els posa Fabric per sota, només amb el mod de skins, perquè vegin les skins de tothom. Els prèmium continuen en Vanilla.", "En Vanilla : pour les joueurs non premium, le launcher ajoute Fabric en dessous, seulement avec le mod de skins, pour qu’ils voient les skins de tout le monde. Les premium restent en Vanilla."],
+    "En directo · {q} · {n} img/s": ["Live · {q} · {n} fps", "En directe · {q} · {n} img/s", "En direct · {q} · {n} img/s"],
+    "Demasiadas personas mirando a este jugador a la vez": ["Too many people watching this player at once", "Massa persones mirant aquest jugador alhora", "Trop de personnes regardent ce joueur en même temps"],
     // Uso del launcher
     "Desconocido": ["Unknown", "Desconegut", "Inconnu"],
     "Uso del launcher": ["Launcher usage", "Ús del launcher", "Utilisation du launcher"],

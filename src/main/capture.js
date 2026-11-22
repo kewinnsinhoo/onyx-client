@@ -13,15 +13,58 @@ let target = { pid: 0, hint: '' }, hwnd = null; // el proceso del juego (para en
 // El script de la ventana oculta
 const PAGE = `
 window.K = {
-  async open(id) {
-    if (K.s && K.id === id && K.s.active) return true;
-    K.close(); K.id = id;
-    K.s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id, maxWidth: 1280, maxHeight: 720, maxFrameRate: 20 } } });
+  pcs: {},
+  // hd: para el vídeo en directo (1080p a 30 imágenes por segundo); si no, 720p a 20 (fotos y vídeos cortos)
+  async open(id, hd) {
+    if (K.s && K.id === id && K.s.active && (K.hd || !hd)) return true;
+    const old = K.s;
+    K.id = id; K.hd = !!hd;
+    const max = hd ? { maxWidth: 1920, maxHeight: 1080, maxFrameRate: 30 } : { maxWidth: 1280, maxHeight: 720, maxFrameRate: 20 };
+    K.s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id, ...max } } });
+    const tr = K.s.getVideoTracks()[0];
+    try { tr.contentHint = 'motion'; } catch (e) { /* nada */ }
+    for (const pc of Object.values(K.pcs)) for (const x of pc.getSenders()) x.replaceTrack(tr).catch(() => {}); // los que ya miran siguen viendo
+    if (old) old.getTracks().forEach(t => t.stop());
     K.v = document.createElement('video'); K.v.muted = true; K.v.srcObject = K.s;
     await K.v.play();
     for (let i = 0; i < 20 && !K.v.videoWidth; i++) await new Promise(r => setTimeout(r, 50));
     return true;
   },
+  // Vídeo en directo (WebRTC): contesta a la propuesta del navegador del staff y le manda el juego
+  async rtc(id, offer, ice) {
+    const tr = K.s && K.s.getVideoTracks()[0];
+    if (!tr) return null;
+    K.rtcClose(id);
+    const pc = new RTCPeerConnection({ iceServers: ice || [] });
+    K.pcs[id] = pc;
+    pc.onconnectionstatechange = () => {
+      const st = pc.connectionState;
+      if (st === 'failed' || st === 'closed') K.rtcClose(id);
+      if (st === 'disconnected') setTimeout(() => { if (pc.connectionState !== 'connected') K.rtcClose(id); }, 8000);
+    };
+    await pc.setRemoteDescription({ type: 'offer', sdp: offer });
+    const tx = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video');
+    if (!tx) { K.rtcClose(id); return null; }
+    tx.direction = 'sendonly';
+    await tx.sender.replaceTrack(tr);
+    await pc.setLocalDescription(await pc.createAnswer());
+    await new Promise((ok) => {
+      if (pc.iceGatheringState === 'complete') return ok();
+      const to = setTimeout(ok, 2500);
+      pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(to); ok(); } });
+    });
+    try { // nítido: hasta 6 Mbit/s y 30 imágenes por segundo (si la conexión no da, baja solo)
+      const p = tx.sender.getParameters();
+      if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+      p.encodings[0].maxBitrate = 6000000; p.encodings[0].maxFramerate = 30;
+      p.degradationPreference = 'balanced';
+      await tx.sender.setParameters(p);
+    } catch (e) { /* nada */ }
+    return pc.localDescription.sdp;
+  },
+  rtcClose(id) { const pc = K.pcs[id]; if (pc) { try { pc.close(); } catch (e) { /* nada */ } delete K.pcs[id]; } },
+  // cuántos están viendo el vídeo ahora (o conectándose)
+  live() { return Object.values(K.pcs).filter(p => p.connectionState === 'connected' || p.connectionState === 'connecting' || p.connectionState === 'new').length; },
   frame(w, q) {
     const v = K.v;
     if (!v || !v.videoWidth) return null;
@@ -53,7 +96,7 @@ window.K = {
       const tr = K.s.getVideoTracks()[0]; if (tr) tr.addEventListener('ended', stop);
     });
   },
-  close() { if (K.s) K.s.getTracks().forEach(t => t.stop()); K.s = null; K.v = null; K.id = null; }
+  close() { Object.keys(K.pcs).forEach(K.rtcClose); if (K.s) K.s.getTracks().forEach(t => t.stop()); K.s = null; K.v = null; K.id = null; K.hd = false; }
 };
 true;`;
 
@@ -127,17 +170,30 @@ async function page() {
 }
 
 let opening = null; // la foto y el vídeo piden la ventana a la vez: una sola apertura
-function open() {
-  if (opening) return opening;
+function open(hd = false) {
+  if (opening) return opening.then((ok) => (ok && hd ? open(true) : ok));
   opening = (async () => {
     if (!supported()) return false;
     const id = await findSource();
     if (!id) return false;
     await page();
-    try { return await win.webContents.executeJavaScript(`K.open(${JSON.stringify(id)})`); }
+    try { return await win.webContents.executeJavaScript(`K.open(${JSON.stringify(id)}, ${hd ? 'true' : 'false'})`); }
     catch (e) { source = null; throw e; }
   })().finally(() => { opening = null; });
   return opening;
+}
+
+// Vídeo en directo para el panel: contesta a la propuesta (offer) → la respuesta (answer) o null si no se puede
+async function rtc(id, offer, ice) {
+  try {
+    if (!(await open(true))) return null;
+    return await win.webContents.executeJavaScript(`K.rtc(${JSON.stringify(String(id))}, ${JSON.stringify(String(offer))}, ${JSON.stringify(ice || [])})`);
+  } catch (e) { return quiet('vídeo en directo')(e); }
+}
+// ¿Cuántos miran el vídeo ahora? (mientras alguien lo vea, sobran las imágenes seguidas)
+async function streaming() {
+  if (!win || win.isDestroyed() || !ready) return 0;
+  try { return Number(await win.webContents.executeJavaScript('K.live()')) || 0; } catch { return 0; }
 }
 
 let lastWarn = '';
@@ -195,4 +251,4 @@ function close() {
 // Al cerrar el launcher
 function destroy() { if (win && !win.isDestroyed()) win.destroy(); win = null; ready = null; }
 
-module.exports = { shot, frame, video, close, destroy, setTarget, pick: (list) => pick(list) };
+module.exports = { shot, frame, video, rtc, streaming, close, destroy, setTarget, pick: (list) => pick(list), PAGE };

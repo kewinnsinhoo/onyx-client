@@ -452,11 +452,12 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
           gameDir, manifest: m, managed: inst.managedFiles, initial: guardFirst, onKick: kick, capture,
           report: (events) => panel.guardReport(account, session.play, events),
           upload: (eventId, kind, buf) => panel.guardMedia(account, session.play, eventId, kind, buf),
-          sendFrame: (frame, hd) => panel.guardFrame(account, session.play, frame, hd)
+          sendFrame: (frame, hd) => panel.guardFrame(account, session.play, frame, hd),
+          sendRtc: (rtcId, answer) => panel.guardRtc(account, session.play, rtcId, answer)
         });
       }
       // el latido también dice si alguien del studio quiere ver la cámara
-      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick, (r) => { if (!guardRun) return; if ('cam' in r) guardRun.cam(r.cam); if (r.snap) guardRun.snap(r.snap); });
+      stopBeat = panel.heartbeat(account, session.play, session.beatEvery, kick, (r) => { if (!guardRun) return; if ('cam' in r) guardRun.cam(r.cam); if (r.rtc) guardRun.rtc(r.rtc); if (r.snap) guardRun.snap(r.snap); });
     }
   } catch (e) {
     if (session) panel.endPlay(account, session.play).catch(() => {});

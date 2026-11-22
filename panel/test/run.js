@@ -1487,4 +1487,41 @@ await test('Rendimiento: el launcher manda el resumen y el panel da consejos', a
   assert.strictEqual((await call('GET', `/api/s/onyx-studios/instances/${iid}/perf`, { cookie: other })).status, 403, 'otro studio no');
 });
 
+await test('Cámaras en vídeo: el navegador propone, el launcher contesta', async () => {
+  const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Con cámara' } });
+  const iid = made.data.id;
+  await call('PATCH', `/api/s/onyx-studios/instances/${iid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, guard: { enabled: true } } } });
+  const h = await player('Camarita', false);
+  const pl = await call('POST', '/api/l/play', { headers: h, body: { instance: iid } });
+  const play = pl.data.play;
+  const base = `/api/s/onyx-studios/guard/live/${play}/rtc`;
+  const ice = await call('GET', base, { cookie: creator });
+  assert.strictEqual(ice.status, 200); assert.ok(Array.isArray(ice.data.ice) && ice.data.ice.length, 'servidores para conectar');
+  assert.strictEqual((await call('POST', base, { cookie: creator, body: { offer: 'hola' } })).status, 400, 'propuesta rara');
+  const off = await call('POST', base, { cookie: creator, body: { offer: 'v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\n' } });
+  assert.strictEqual(off.status, 201); const id = off.data.id;
+  assert.strictEqual((await call('GET', `${base}?id=${id}`, { cookie: creator })).data.state, 'new');
+  // el launcher la recoge en el latido (una sola vez)
+  const b1 = await call('POST', '/api/l/beat', { headers: h, body: { play } });
+  assert.strictEqual(b1.data.cam, 'live'); assert.strictEqual(b1.data.rtc.length, 1); assert.strictEqual(b1.data.rtc[0].id, id);
+  assert.ok(b1.data.rtc[0].offer.startsWith('v=0') && b1.data.rtc[0].ice.length);
+  const b2 = await call('POST', '/api/l/beat', { headers: h, body: { play } });
+  assert.ok(!b2.data.rtc, 'no se repite');
+  // otro jugador no puede contestar por él
+  const miron = await player('Miron', false);
+  assert.strictEqual((await call('POST', '/api/l/guard/rtc', { headers: miron, body: { play, id, answer: 'v=0\r\n' } })).status, 404);
+  assert.strictEqual((await call('POST', '/api/l/guard/rtc', { headers: h, body: { play, id, answer: 'v=0\r\nfin' } })).status, 200);
+  const a = await call('GET', `${base}?id=${id}`, { cookie: creator });
+  assert.deepStrictEqual([a.data.state, a.data.answer], ['answered', 'v=0\r\nfin']);
+  assert.strictEqual((await call('POST', '/api/l/guard/rtc', { headers: h, body: { play, id, answer: 'v=0\r\notra' } })).status, 404, 'solo una respuesta');
+  // cerrar
+  assert.strictEqual((await call('POST', `${base}?id=${id}&close=1`, { cookie: creator, body: {} })).status, 200);
+  assert.strictEqual((await call('GET', `${base}?id=${id}`, { cookie: creator })).data.state, 'closed');
+  // también llega al mandar imagen; y otro studio no ve nada
+  const off2 = await call('POST', base, { cookie: creator, body: { offer: 'v=0\r\nx' } });
+  const fr = await call('POST', '/api/l/guard/frame', { headers: h, body: { play, frame: null, hd: true } });
+  assert.strictEqual(fr.data.rtc[0].id, off2.data.id);
+  assert.strictEqual((await call('GET', base, { cookie: other })).status, 403);
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

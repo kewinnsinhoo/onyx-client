@@ -13,7 +13,7 @@ import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
 import { statsApi } from './studio-stats.js';
 import { hello, launcherStats } from './kopistats.js';
-import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport } from './guard.js';
+import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport, rtcPending, guardRtcAnswer } from './guard.js';
 import { sendReport } from './reports.js';
 import { launcherStreams, studioStreams, refreshDue } from './streams.js';
 import { launcherBadges, studioBadges, creatorBadges } from './badges.js';
@@ -53,6 +53,7 @@ export default {
     ctx.waitUntil(runChecks(env));
     ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
     ctx.waitUntil(env.DB.prepare('DELETE FROM guard_live WHERE at IS NULL OR at < ?').bind(now() - 10 * 60e3).run()); // cámaras viejas
+    ctx.waitUntil(env.DB.prepare('DELETE FROM guard_rtc WHERE created_at < ?').bind(now() - 60 * 60e3).run()); // conexiones de vídeo viejas
     ctx.waitUntil(env.DB.prepare('DELETE FROM play_perf WHERE at < ?').bind(now() - 90 * 864e5).run()); // rendimiento: 3 meses
     ctx.waitUntil(refreshDue(env).catch(e => console.warn('[directos]', e.message))); // quién está en directo
   }
@@ -809,6 +810,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
   // KopiGuard: el launcher avisa de lo que ha visto mientras se juega
   if (parts[0] === 'guard' && parts[1] === 'media' && m === 'POST') return guardMedia(env, P, req, u.searchParams);
   if (parts[0] === 'guard' && parts[1] === 'frame' && m === 'POST') return guardFrame(env, P, await readJson(req, 1024 * 1024));
+  if (parts[0] === 'guard' && parts[1] === 'rtc' && m === 'POST') return guardRtcAnswer(env, P, await readJson(req, 64 * 1024));
   if (parts[0] === 'guard' && m === 'POST') return guardReport(env, ctx, P, await readJson(req, 256 * 1024));
 
   if (parts[0] === 'redeem' && m === 'POST') {
@@ -899,7 +901,9 @@ async function launcherApi(req, env, u, path, m, ctx) {
     }
     // El plugin del servidor vio algo: el launcher manda foto y vídeo para esa detección
     if (pl.snap) await env.DB.prepare('UPDATE plays SET snap = NULL WHERE id = ?').bind(pl.id).run();
-    return json({ ok: true, kick, cam: kick ? null : await camWanted(env, pl), snap: kick ? null : pl.snap || null });
+    const cam = kick ? null : await camWanted(env, pl);
+    const rtc = cam ? await rtcPending(env, pl.id) : null; // alguien quiere verle en vídeo
+    return json({ ok: true, kick, cam, snap: kick ? null : pl.snap || null, ...(rtc ? { rtc } : {}) });
   }
 
   fail(404, 'not_found', 'Ruta no encontrada');

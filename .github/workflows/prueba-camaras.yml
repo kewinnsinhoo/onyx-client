@@ -1,0 +1,23 @@
+# Prueba real del vídeo de las cámaras (WebRTC) en Windows, Mac y Linux, con el código del launcher.
+name: Prueba de cámaras
+on:
+  workflow_dispatch:
+jobs:
+  video:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Probar (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npx electron --no-sandbox scripts/rtc-smoke.js
+      - name: Probar (Windows y Mac)
+        if: runner.os != 'Linux'
+        run: npx electron scripts/rtc-smoke.js

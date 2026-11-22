@@ -170,6 +170,8 @@ const guardMedia = (account, play, event, kind, buf) =>
 // Una imagen para las cámaras en directo (base64 JPEG, '' si el juego está minimizado) → { cam: 'live'|'grid'|null }
 // frame null = este equipo no puede capturar (p. ej. macOS sin permiso de grabar pantalla)
 const guardFrame = (account, play, frame, hd) => call(account, 'POST', 'guard/frame', { play, frame: frame || null, hd: !!hd, off: frame === null });
+// Vídeo en directo: la respuesta a la propuesta del navegador del staff (null = no se pudo)
+const guardRtc = (account, play, id, answer) => call(account, 'POST', 'guard/rtc', { play, id, answer: answer || null });
 
 // Kopi Skins: sube la skin de una cuenta no premium para que se vea en los servidores con el plugin.
 // Solo si cambió desde la última vez. skin = { png (base64), variant } o null para quitarla.
@@ -247,4 +249,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, sendPerf, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, sendPerf, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, guardRtc, heartbeat, publicGet, token, PanelError, MESSAGES, toError };

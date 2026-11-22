@@ -710,7 +710,8 @@ a.g-shot:hover { border-color: var(--accent); }
 .cam-sub { color: var(--muted); font-size: 13px; }
 .cam-viewer #cv-state { height: 26px; }
 .cv-stage { position: relative; aspect-ratio: 16 / 9; background: #05040a; display: grid; }
-.cv-stage > img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cv-stage > img, .cv-stage > video { width: 100%; height: 100%; object-fit: contain; display: block; grid-area: 1 / 1; }
+.cv-stage.hidden-win > video { filter: grayscale(.6) brightness(.55); }
 .cv-stage.hidden-win > img { filter: grayscale(.6) brightness(.55); }
 .cv-stage:fullscreen { aspect-ratio: auto; }
 .g-who .grow, .cam-viewer .mh .grow { flex: 1; }

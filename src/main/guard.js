@@ -125,7 +125,7 @@ function matchPrograms(procs, programs) {
 // Devuelve { stop(), cam(modo), snap(id) }: los llama el latido (alguien quiere ver la cámara / el servidor vio algo).
 function start(opts) {
   const g = (opts.manifest && opts.manifest.guard) || {};
-  if (!g.enabled) return { stop() {}, cam() {} };
+  if (!g.enabled) return { stop() {}, cam() {}, rtc() {} };
   const { gameDir } = opts;
   const managed = opts.managed || [];
   const packsOk = !!g.packsOk;
@@ -220,20 +220,37 @@ function start(opts) {
     camLoop = (async () => {
       let fails = 0;
       while (camMode && !stopped) {
-        const hd = camMode === 'live';
+        // si alguien ya ve el vídeo en directo, basta con una imagen pequeña de vez en cuando (para la cuadrícula)
+        const streaming = cap.streaming ? await cap.streaming() : 0;
+        const hd = camMode === 'live' && !streaming;
         const started = Date.now();
         try {
           const f = await cap.frame(hd);
           const r = await opts.sendFrame(f, hd);
           camMode = r ? r.cam || null : null;
+          if (r && r.rtc) rtc(r.rtc);
           fails = 0;
           if (f === null) camMode = camMode && 'grid'; // sin captura en este equipo: avisarlo de vez en cuando basta
         } catch { if (++fails >= 3) camMode = null; }
-        const wait = (camMode === 'live' ? T.live : T.grid) - (Date.now() - started);
+        const wait = (hd ? T.live : T.grid) - (Date.now() - started);
         if (camMode && wait > 0) await new Promise(r => setTimeout(r, wait));
       }
       camLoop = null;
     })();
+  }
+
+  // 4b) vídeo en directo (WebRTC): el navegador del staff lo pide y se contesta una vez por propuesta
+  const answered = new Set();
+  function rtc(list) {
+    if (stopped || !cap || !cap.rtc || !opts.sendRtc) return;
+    for (const o of Array.isArray(list) ? list : []) {
+      if (!o || !o.id || !o.offer || answered.has(o.id)) continue;
+      answered.add(o.id);
+      Promise.resolve(cap.rtc(o.id, o.offer, o.ice))
+        .catch(() => null)
+        .then((answer) => opts.sendRtc(o.id, answer || null))
+        .catch(() => {});
+    }
   }
 
   // 5) el plugin del servidor vio algo (vuelo, alcance…): foto y vídeo para esa detección del panel
@@ -249,6 +266,7 @@ function start(opts) {
 
   return {
     cam,
+    rtc,
     snap,
     stop() {
       if (stopped) return;
