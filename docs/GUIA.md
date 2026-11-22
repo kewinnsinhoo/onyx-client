@@ -371,6 +371,14 @@ Para que se cuenten solos:
 - Solo si falla todo dice qué web falló (Mojang, Microsoft, Modrinth, el panel…) y qué hacer.
 - La prueba **Prueba de red** (en GitHub → Actions) comprueba todo esto en Windows, Mac y Linux con conexiones reales.
 
+## Skins en instancias vanilla (desde la 1.8.4)
+
+- Desde Minecraft 1.20.2, el juego **sin cuenta premium** no enseña las skins que manda el servidor: los no premium veían a todos con la skin por defecto.
+- En instancias con Fabric, Quilt, Forge o NeoForge ya se arreglaba con el mod de skins (CustomSkinLoader).
+- En instancias **vanilla**, a los jugadores **no premium** el launcher les pone ahora Fabric por debajo, solo con el mod de skins. Los premium siguen en vanilla.
+- No hay que tocar nada en el servidor. Si el servidor bloquea clientes con Fabric, el studio puede apagarlo en **Instancia → Juego → Skins de Kopi**.
+- Probado con Minecraft 1.21.1 real y cuenta no premium (prueba **Prueba del juego** en GitHub → Actions).
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

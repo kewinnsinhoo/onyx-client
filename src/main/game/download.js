@@ -25,7 +25,8 @@ async function fetchRetry(url, opts = {}, retries = 3) {
     } catch (e) {
       lastErr = e;
       if (e.status && !e.retry) throw e;
-      await new Promise(r => setTimeout(r, 600 * (i + 1)));
+      // si la web tarda en contestar, se espera más antes de volver a probar (2 s, 4 s, 6 s)
+      await new Promise(r => setTimeout(r, (e.kind === 'timeout' ? 2000 : 600) * (i + 1)));
     }
   }
   throw lastErr;

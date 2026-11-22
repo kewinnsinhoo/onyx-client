@@ -4,6 +4,18 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.4', date: '2026-11-22', items: [
+      ['user', 'Skins en instancias vanilla: si no eres premium, ahora ves las skins de todos. El launcher lo prepara solo al darle a Jugar.',
+        'Skins on vanilla instances: if you’re not premium, you now see everyone’s skins. The launcher sets it up by itself when you press Play.',
+        'Skins en instàncies vanilla: si no ets prèmium, ara veus les skins de tothom. El launcher ho prepara sol quan prems Jugar.',
+        'Skins sur les instances vanilla : si tu n’es pas premium, tu vois maintenant les skins de tout le monde. Le launcher s’en occupe tout seul quand tu appuies sur Jouer.'],
+      ['globe', 'Los avisos de conexión dicen siempre qué web falló, y las descargas lentas se reintentan con más calma.',
+        'Connection warnings always say which site failed, and slow downloads are retried more patiently.',
+        'Els avisos de connexió diuen sempre quina web ha fallat, i les descàrregues lentes es reintenten amb més calma.',
+        'Les avertissements de connexion indiquent toujours quel site a échoué, et les téléchargements lents sont réessayés plus calmement.']
+    ]
+  },
+  {
     v: '1.8.3', date: '2026-11-21', items: [
       ['globe', 'Conexión más fuerte: el launcher se conecta a internet igual que Google Chrome, así funciona con antivirus, VPN y proxies que antes daban «fetch failed». Si una forma falla, prueba otra sola.',
         'Stronger connection: the launcher connects to the internet just like Google Chrome, so it works with antivirus, VPNs and proxies that used to cause “fetch failed”. If one way fails, it tries another by itself.',
