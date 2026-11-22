@@ -73,6 +73,42 @@ function chromiumFetch() {
   return null;
 }
 
+// DNS seguro (DoH): algunas compañías de internet o filtros de red cambian la dirección de ciertas webs (dominios
+// nuevos como .site o .xyz) y la conexión falla con «certificado no válido» aunque el internet vaya bien.
+// Con DNS seguro la conexión tipo Chrome pregunta la dirección a Cloudflare/Google por HTTPS y nadie la cambia.
+// Solo se enciende si esos servidores responden en esta red; si no, todo sigue como siempre.
+const DOH = ['https://cloudflare-dns.com/dns-query', 'https://dns.google/dns-query'];
+async function secureDns({ log, nodeFetch = globalThis.fetch } = {}) {
+  try {
+    const { app } = require('electron');
+    if (!app || typeof app.configureHostResolver !== 'function') return false;
+    const ok = await Promise.any(DOH.map(u => nodeFetch(`${u}?name=panel.onyxclient.site&type=A`, { headers: { Accept: 'application/dns-json' }, signal: AbortSignal.timeout(5000) })
+      .then(r => (r.ok ? true : Promise.reject(new Error('HTTP ' + r.status)))))).catch(() => false);
+    if (!ok) { if (log) log.info('[red] DNS seguro no disponible en esta red: se usa el normal'); return false; }
+    app.configureHostResolver({ secureDnsMode: 'secure', secureDnsServers: DOH });
+    if (log) log.info('[red] DNS seguro activado (Cloudflare/Google)');
+    return true;
+  } catch (e) { if (log) log.warn('[red] DNS seguro:', e.message); return false; }
+}
+
+// Cuando una conexión falla del todo, se avisa al panel de qué web y qué error (sin nombres ni datos del jugador),
+// una vez por web y tipo cada hora. Así se ve qué está pasando de verdad en los PCs de los jugadores.
+const reported = new Map();
+let reporter = null; // (info) => Promise
+function setReporter(fn) { reporter = typeof fn === 'function' ? fn : null; }
+function report(err, chromeErr, nodeErr) {
+  if (!reporter || !err || !err.vars) return;
+  const key = err.vars.host + '|' + err.kind;
+  if (reported.has(key) && Date.now() - reported.get(key) < 3600e3) return;
+  reported.set(key, Date.now());
+  const info = {
+    host: err.vars.host, kind: err.kind,
+    chrome: chromeErr ? String(chromeErr.message || '').slice(0, 120) : null,
+    node: nodeErr ? (causeCode(nodeErr) || String(nodeErr.message || '')).slice(0, 120) : null
+  };
+  Promise.resolve().then(() => reporter(info)).catch(() => {});
+}
+
 const aborted = (e, opts) => !!((opts && opts.signal && opts.signal.aborted) || (e && e.name === 'AbortError'));
 
 let installed = false;
@@ -81,12 +117,13 @@ function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, 
   installed = true;
   const node = fetchImpl;
   globalThis.fetch = async function kopiFetch(url, opts = {}) {
+    if (opts && opts.kopiNoReport) { const { kopiNoReport, ...rest } = opts; return node(url, rest); } // el propio aviso al panel
     const method = String((opts && opts.method) || 'GET').toUpperCase();
     // Orden: Chrome → Node → (descargas) otra vez Chrome tras una pausa
     const cf = chromium();
     const plan = cf ? [cf, node] : [node];
     if (method === 'GET' || method === 'HEAD') plan.push(cf || node);
-    let first = null, last = null, nodeErr = null;
+    let first = null, last = null, nodeErr = null, chromeErr = null;
     for (let i = 0; i < plan.length; i++) {
       try { return await plan[i](url, opts); } catch (e) {
         const sig = opts && opts.signal;
@@ -95,7 +132,7 @@ function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, 
         }
         if (aborted(e, opts)) throw e; // lo cancelamos nosotros
         first = first || e; last = e;
-        if (plan[i] === node) nodeErr = e;
+        if (plan[i] === node) nodeErr = e; else chromeErr = chromeErr || e;
         if (i === plan.length - 2 && plan.length > 2) await sleep(1200);
       }
     }
@@ -104,8 +141,9 @@ function install({ log, fetchImpl = globalThis.fetch, chromium = chromiumFetch, 
     if (!isNetError(pick) && !/^net::ERR_/.test(String(pick && pick.message))) throw pick;
     const err = netError(pick, url);
     if (log) log.warn('[red] ' + err.detail + (first && first !== last ? ` | también: ${first.message}` : ''));
+    report(err, chromeErr, nodeErr);
     throw err;
   };
 }
 
-module.exports = { install, netError, kindOf, isNetError, hostOf, chromiumFetch, MESSAGES };
+module.exports = { install, netError, kindOf, isNetError, hostOf, chromiumFetch, secureDns, setReporter, MESSAGES };

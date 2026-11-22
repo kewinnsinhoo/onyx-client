@@ -1343,13 +1343,27 @@ test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () 
   // 2) Chrome falla y Node conecta: funciona igual, sin error
   mode = 'nodeOk'; chromeCalls = nodeCalls = 0;
   assert.strictEqual(await fetch('https://api.modrinth.com/v2/x'), ok); assert.deepStrictEqual([chromeCalls, nodeCalls], [1, 1]);
-  // 3) Falla todo: descarga = Chrome, Node y Chrome otra vez; el error dice qué web y por qué
+  // 3) Falla todo: descarga = Chrome, Node y Chrome otra vez; el error dice qué web y por qué (y se avisa al panel)
+  const reports = [];
+  net.setReporter((info) => { reports.push(info); return Promise.resolve(); });
   mode = 'cert'; chromeCalls = nodeCalls = 0;
   try { await fetch('https://sessionserver.mojang.com/session'); assert.fail('debía fallar'); } catch (e) {
     assert.strictEqual(e.code, 'net'); assert.strictEqual(e.kind, 'cert'); assert.deepStrictEqual(e.vars, { host: 'sessionserver.mojang.com' });
     assert.ok(e.message.includes('{host}') && !/fetch failed/.test(e.message));
   }
   assert.deepStrictEqual([chromeCalls, nodeCalls], [2, 1]);
+  await new Promise(r => setTimeout(r, 5));
+  assert.strictEqual(reports.length, 1, 'aviso al panel');
+  assert.deepStrictEqual([reports[0].host, reports[0].kind, reports[0].node], ['sessionserver.mojang.com', 'cert', 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY']);
+  assert.ok(/ERR_CONNECTION_RESET/.test(reports[0].chrome));
+  try { await fetch('https://sessionserver.mojang.com/otra'); } catch { /* */ }
+  await new Promise(r => setTimeout(r, 5));
+  assert.strictEqual(reports.length, 1, 'la misma web y error: un aviso por hora');
+  // el propio aviso va directo (sin reintentos ni avisos de sí mismo)
+  chromeCalls = nodeCalls = 0;
+  try { await fetch('https://panel.onyxclient.site/api/l/neterr', { method: 'POST', kopiNoReport: true }); } catch { /* */ }
+  assert.deepStrictEqual([chromeCalls, nodeCalls], [0, 1]);
+  net.setReporter(null);
   // 4) Un POST no se repite con el mismo sistema (Chrome y luego Node, nada más)
   chromeCalls = nodeCalls = 0;
   try { await fetch('https://panel.onyxclient.site/api/l/play', { method: 'POST' }); } catch (e) { assert.strictEqual(e.code, 'net'); }

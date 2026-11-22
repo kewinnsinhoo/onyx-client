@@ -1,4 +1,5 @@
 // Eventos, histórico, referidos y estado de los servicios.
+import { publicNetErrs } from './neterr.js';
 import { publicSkin } from './skins.js';
 import { publicPlayer } from './profile.js';
 import { json, fail, now, randomToken, readJson, str, url as cleanUrl, color, int } from './util.js';
@@ -149,6 +150,7 @@ export async function publicApi(req, env, u, parts, m) {
     return json({ studios: rows.map(r => ({ ...r, code: r.id.toUpperCase(), logo: r.logo && r.logo.startsWith('/m/') ? origin + r.logo : r.logo })) }, 200, CORS);
   }
   if (parts[0] === 'status') return json(await statusSummary(env), 200, CORS);
+  if (parts[0] === 'neterrs' && m === 'GET') return publicNetErrs(env, u);
   if (parts[0] === 'player' && m === 'GET') return publicPlayer(env, u, parts);
   if (parts[0] === 'skin' && m === 'GET') return publicSkin(env, parts[1], u.searchParams.has('debug'));
   if (parts[0] === 'brands') return publicBrandsApi(env, u, parts);

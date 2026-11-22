@@ -1524,4 +1524,16 @@ await test('Cámaras en vídeo: el navegador propone, el launcher contesta', asy
   assert.strictEqual((await call('GET', base, { cookie: other })).status, 403);
 });
 
+await test('Fallos de conexión: el launcher avisa y se ve el resumen (sin datos del jugador)', async () => {
+  const r = await call('POST', '/api/l/neterr', { body: { host: 'panel.onyxclient.site', kind: 'cert', chrome: 'net::ERR_CERT_COMMON_NAME_INVALID', node: 'ERR_TLS_CERT_ALTNAME_INVALID', version: '1.8.6', os: 'win32' } });
+  assert.strictEqual(r.status, 200);
+  await call('POST', '/api/l/neterr', { body: { host: 'panel.onyxclient.site', kind: 'cert', chrome: 'net::ERR_CERT_COMMON_NAME_INVALID', node: 'ERR_TLS_CERT_ALTNAME_INVALID', version: '1.8.6', os: 'win32' } });
+  assert.strictEqual((await call('POST', '/api/l/neterr', { body: { host: 'no vale/raro', kind: 'cert' } })).status, 400);
+  const s = await call('GET', '/api/public/neterrs?h=1');
+  assert.strictEqual(s.status, 200);
+  const row = s.data.errors.find(x => x.host === 'panel.onyxclient.site');
+  assert.ok(row && row.n === 2 && row.kind === 'cert' && /COMMON_NAME/.test(row.chrome));
+  assert.ok(!('ip' in row) && !('player' in row));
+});
+
 console.log(`\n${passed} pruebas superadas${process.exitCode ? ' (con fallos)' : ''}`);

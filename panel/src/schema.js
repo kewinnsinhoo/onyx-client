@@ -445,7 +445,21 @@ CREATE INDEX play_perf_instance ON play_perf(instance_id, at)`,
   created_at INTEGER NOT NULL,
   updated_at INTEGER
 );
-CREATE INDEX guard_rtc_play ON guard_rtc(play_id, state)`
+CREATE INDEX guard_rtc_play ON guard_rtc(play_id, state)`,
+  // Fallos de conexión de los launchers (sin datos del jugador): web, error, país y compañía de internet
+  `CREATE TABLE net_errors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  at INTEGER NOT NULL,
+  host TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  chrome TEXT,
+  node TEXT,
+  version TEXT,
+  os TEXT,
+  country TEXT,
+  isp TEXT
+);
+CREATE INDEX net_errors_at ON net_errors(at)`
 ];
 
 export function statements(sql) {

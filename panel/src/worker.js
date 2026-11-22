@@ -22,6 +22,7 @@ import { studioPlayers } from './players.js';
 import { groupsApi, inGroups } from './groups.js';
 import { launcherReports, studioReports } from './preports.js';
 import { launcherPerf, instancePerf } from './perf.js';
+import { reportNetErr } from './neterr.js';
 import { deleteMediaKeys } from './media.js';
 import { audit, auditList, creatorApi, allStudiosFull, noticesApi, usage, orphanMedia, cleanOrphans, checkInstanceLimit, checkStorageLimit, maintenance } from './onyx.js';
 export { peaksByDay };
@@ -54,6 +55,7 @@ export default {
     ctx.waitUntil(env.DB.prepare('DELETE FROM audit WHERE at < ?').bind(now() - 180 * 864e5).run());
     ctx.waitUntil(env.DB.prepare('DELETE FROM guard_live WHERE at IS NULL OR at < ?').bind(now() - 10 * 60e3).run()); // cámaras viejas
     ctx.waitUntil(env.DB.prepare('DELETE FROM guard_rtc WHERE created_at < ?').bind(now() - 60 * 60e3).run()); // conexiones de vídeo viejas
+    ctx.waitUntil(env.DB.prepare('DELETE FROM net_errors WHERE at < ?').bind(now() - 14 * 864e5).run()); // fallos de conexión: 2 semanas
     ctx.waitUntil(env.DB.prepare('DELETE FROM play_perf WHERE at < ?').bind(now() - 90 * 864e5).run()); // rendimiento: 3 meses
     ctx.waitUntil(refreshDue(env).catch(e => console.warn('[directos]', e.message))); // quién está en directo
   }
@@ -752,6 +754,7 @@ async function launcherApi(req, env, u, path, m, ctx) {
     await env.DB.prepare('DELETE FROM challenges WHERE created_at < ?').bind(now() - 10 * 60e3).run();
     return json({ serverId: id });
   }
+  if (parts[0] === 'neterr' && m === 'POST') return reportNetErr(env, req); // sin cuenta: puede fallar antes de entrar
   if (parts[0] === 'auth' && m === 'POST') {
     const b = await readJson(req);
     const name = String(b.name || '').trim();

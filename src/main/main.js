@@ -79,6 +79,10 @@ function createWindow() {
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
 
 app.whenReady().then(() => {
+  // Red: DNS seguro (que la compañía de internet no cambie la dirección de las webs) y avisos de fallos al panel
+  const net = require('./net');
+  net.secureDns({ log }).catch(() => {});
+  net.setReporter((info) => { const b = panel.base(); if (!b) return null; return fetch(`${b}/api/l/neterr`, { method: 'POST', kopiNoReport: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...info, version: app.getVersion(), os: process.platform }), signal: AbortSignal.timeout(10000) }); });
   if (process.platform === 'win32') app.setAppUserModelId(config.brand ? `site.onyxclient.brand.${config.brand.id}` : 'com.onyxstudios.client');
   accounts.init(userData);
   skins.init(userData);

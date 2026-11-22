@@ -45,6 +45,23 @@ app.whenReady().then(async () => {
       console.log('  (tipo: ' + e.kind + ')');
     }
   });
+  await check('Certificado malo → error de certificado con el nombre de la web', async () => {
+    for (const h of ['wrong.host.badssl.com', 'self-signed.badssl.com', 'expired.badssl.com']) {
+      try { await fetch(`https://${h}/`); throw new Error('no falló: ' + h); } catch (e) {
+        console.log(`  ${h}: tipo=${e.kind} vars=${JSON.stringify(e.vars)} · ${e.detail}`);
+        assert(e.code === 'net' && e.kind === 'cert' && e.vars && e.vars.host === h, 'mal: ' + h + ' ' + e.message);
+        // así viaja al panel/pantalla (IPC): los datos siguen ahí
+        const back = require('v8').deserialize(require('v8').serialize({ error: e.message, code: e.code, vars: e.vars }));
+        assert(back.vars.host === h, 'se pierde el nombre al viajar');
+      }
+    }
+  });
+  await check('DNS seguro', async () => {
+    const on = await net.secureDns({ log: console });
+    console.log('  DNS seguro activado:', on);
+    const r = await fetch('https://api.github.com/zen', { headers: { 'User-Agent': 'KopiClient' } });
+    assert(r.ok, 'con DNS seguro no conecta: HTTP ' + r.status);
+  });
   await check('Se usó la conexión de Chrome', async () => assert(chrome >= 6, 'Chrome se usó ' + chrome + ' veces'));
   for (const [m, n] of checks) console.log(`${m} ${n}`);
   app.exit(checks.some(c => c[0] === '✗') ? 1 : 0);
