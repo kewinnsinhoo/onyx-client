@@ -33,6 +33,10 @@ app.whenReady().then(async () => {
   game.setTitle('Minecraft* 1.21.1');
   await sleep(2500);
 
+  const { desktopCapturer } = require('electron');
+  const list = await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 0, height: 0 } });
+  console.log('[prueba] ventanas que ve el sistema:', JSON.stringify(list.map(x => x.name + ' (' + x.id + ')')));
+  console.log('[prueba] captura antes de grabar:', await screenshot(path.join(OUT, 'antes.png')));
   // el launcher busca la ventana como con el juego de verdad
   capture.setTarget({ pid: 0, hint: 'Minecraft' });
   const viewer = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: false } });

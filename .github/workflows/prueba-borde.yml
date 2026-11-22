@@ -20,5 +20,6 @@ jobs:
         with:
           name: capturas
           path: |
+            antes.png
             pantalla.png
             panel.png
