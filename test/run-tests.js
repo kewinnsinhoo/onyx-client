@@ -1388,8 +1388,10 @@ test('Cámaras: el código de la ventana de captura es válido y mejora la calid
   const { PAGE } = require('../src/main/capture');
   new Function(PAGE.replace('window.K =', 'var K =')); // sin errores de sintaxis
   const src = PAGE.slice(PAGE.indexOf('const HINT'), PAGE.indexOf('await pc.setRemoteDescription'));
-  const fix = new Function('offer', src + '; return sdp;');
-  const out = fix('v=0\r\na=rtpmap:96 VP8/90000\r\na=rtpmap:98 VP9/90000\r\na=fmtp:98 profile-id=0\r\n');
+  const fix = new Function('offer', 'navigator', src + '; return sdp;'); // navigator: no existe en Node 20
+  const out = fix('v=0\r\na=rtpmap:96 VP8/90000\r\na=rtpmap:98 VP9/90000\r\na=fmtp:98 profile-id=0\r\n', { userAgent: 'Windows' });
+  const mac = fix('v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96 102\r\na=rtpmap:96 VP8/90000\r\na=rtpmap:102 H264/90000\r\n', { userAgent: 'Macintosh' });
+  assert.ok(/^m=video 9 UDP\/TLS\/RTP\/SAVPF 102 96$/m.test(mac), 'en Mac, H.264 primero');
   assert.ok(/a=fmtp:96 x-google-start-bitrate=2500/.test(out), 'VP8 sin fmtp: se añade');
   assert.ok(/a=fmtp:98 profile-id=0;x-google-start-bitrate=2500/.test(out), 'VP9 con fmtp: se completa');
   assert.ok(/K\.rtc|async rtc/.test(PAGE) && /maintain-resolution/.test(PAGE));
