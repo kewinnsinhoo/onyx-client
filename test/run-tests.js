@@ -1396,3 +1396,10 @@ test('Cámaras: el código de la ventana de captura es válido y mejora la calid
   assert.ok(/a=fmtp:98 profile-id=0;x-google-start-bitrate=2500/.test(out), 'VP9 con fmtp: se completa');
   assert.ok(/K\.rtc|async rtc/.test(PAGE) && /maintain-resolution/.test(PAGE));
 });
+
+test('KopiGuard en Windows: sin borde amarillo al grabar el juego', () => {
+  const main = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'main.js'), 'utf8');
+  const head = main.split('\n').slice(0, 12).join('\n'); // tiene que ir antes de que arranque la app
+  assert.ok(/appendSwitch\('disable-features', 'AllowWgcWindowCapturer,AllowWgcScreenCapturer'\)/.test(head), 'falta apagar la captura WGC');
+  assert.strictEqual((main.match(/appendSwitch\('disable-features'/g) || []).length, 1, 'un segundo disable-features pisaría el primero');
+});
