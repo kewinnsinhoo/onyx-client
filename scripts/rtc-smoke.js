@@ -37,7 +37,9 @@ app.whenReady().then(async () => {
     return pc.localDescription.sdp; })()`);
   console.log('[prueba] propuesta del panel:', offer.length, 'bytes');
 
+  console.log('[prueba] códecs del launcher:', await game.webContents.executeJavaScript("RTCRtpSender.getCapabilities('video').codecs.map(c => c.mimeType).filter((x, i, a) => a.indexOf(x) === i).join(' ')"), '·', await game.webContents.executeJavaScript('navigator.userAgent'));
   const answer = await game.webContents.executeJavaScript(`K.rtc('v1', ${JSON.stringify(offer)}, ${JSON.stringify(ICE)})`);
+  console.log('[prueba] códec elegido en la respuesta:', (/^m=video \S+ \S+ (\d+)/m.exec(answer) || [])[1], (answer.match(/^a=rtpmap:\d+ [^\r\n]+/gm) || []).slice(0, 3).join(' | '));
   if (!answer) return end(false, 'el launcher no contestó');
   console.log('[prueba] respuesta del launcher:', answer.length, 'bytes');
   await viewer.webContents.executeJavaScript(`pc.setRemoteDescription({ type: 'answer', sdp: ${JSON.stringify(answer)} })`);
