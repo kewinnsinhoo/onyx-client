@@ -211,7 +211,7 @@
       m.querySelector('[data-l=ms]').onclick = async (e) => {
         e.currentTarget.classList.add('busy');
         try { await microsoftLogin(); close(); await refreshAccountUi(); toast(t('Cuenta añadida'), 'success'); }
-        catch (err) { if (err.code !== 'cancelled') toast(err.message, 'error', 6000); e.currentTarget && e.currentTarget.classList.remove('busy'); }
+        catch (err) { if (err.code !== 'cancelled') toast(err, 'error', 6000); e.currentTarget && e.currentTarget.classList.remove('busy'); }
       };
       m.querySelector('[data-l=off]').onclick = () => { close(); offlineModal(async () => { await refreshAccountUi(); toast(t('Cuenta añadida'), 'success'); }); };
     });
@@ -670,7 +670,7 @@
     const v = Views[name] || Views.home;
     const r = v(view, params);
     if (typeof r === 'function') cleanup = r;
-    else if (r && r.then) r.then(fn => { if (typeof fn === 'function') cleanup = fn; }).catch(e => toast(e.message, 'error'));
+    else if (r && r.then) r.then(fn => { if (typeof fn === 'function') cleanup = fn; }).catch(e => toast(e, 'error'));
   }
   function rerender() { if (S.route) go(S.route.name, S.route.params); }
 

@@ -37,7 +37,7 @@
     ms.onclick = async () => {
       ms.disabled = true; ms.classList.add('busy');
       try { await App.microsoftLogin(); await done(); }
-      catch (err) { if (err.code !== 'cancelled') toast(err.message, 'error', 7000); }
+      catch (err) { if (err.code !== 'cancelled') toast(err, 'error', 7000); }
       finally { ms.disabled = false; ms.classList.remove('busy'); }
     };
     root.querySelector('#lg-off').onclick = () => App.offlineModal(done);

@@ -7,7 +7,7 @@
     root.innerHTML = `<div class="page"><h1 class="title">${t('Galería')}</h1><div id="g-body"></div></div>`;
     const body = root.querySelector('#g-body');
     let shots = [];
-    try { shots = await onyx.gallery.list(); } catch (e) { toast(e.message, 'error'); }
+    try { shots = await onyx.gallery.list(); } catch (e) { toast(e, 'error'); }
     if (!shots.length) {
       body.innerHTML = html`<div class="center-empty"><div class="ico">${icon('image')}</div>
         <div class="t">${t('No hay capturas aún')}</div><div class="s">${t('Pulsa F2 mientras juegas')}</div></div>`;

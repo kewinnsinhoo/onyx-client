@@ -176,14 +176,17 @@ async function ensure(gameDir, opts, deps) {
   return r;
 }
 
-async function ensureSkins(gameDir, { mc, loader, enabled = true, panelBase }, deps) {
+async function ensureSkins(gameDir, { mc, loader, enabled = true, panelBase, capes = true }, deps) {
   const modsDir = path.join(gameDir, 'mods');
   const type = loader && loader.type ? loader.type : 'vanilla';
   // Fabric API no se toca aquí (la lleva ensureFabricApi)
   const remove = (keep) => { for (const f of ours(modsDir)) if (f !== keep && !f.startsWith(FAPI)) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
   // Solo el de CustomSkinLoader (también los nombres antiguos); los de las capas los lleva ensureCapes
   const removeCsl = (keep) => { for (const f of ours(modsDir)) if (f !== keep && !f.startsWith(CAPES) && !f.startsWith(FAPI)) { try { fs.unlinkSync(path.join(modsDir, f)); } catch { /* nada */ } } };
-  const withCapes = async (r) => { const c = await ensureCapes(gameDir, { mc, type, panelBase }, deps); return { ...r, capes: c.status, needFabricApi: !!c.needFabricApi }; };
+  const withCapes = async (r) => {
+    if (!capes) { cleanOurs(modsDir, CAPES, null); return { ...r, capes: 'off' }; }
+    const c = await ensureCapes(gameDir, { mc, type, panelBase }, deps); return { ...r, capes: c.status, needFabricApi: !!c.needFabricApi };
+  };
   try {
     if (!enabled || !LOADERS.includes(type) || !panelBase) { remove(null); return { status: 'off' }; }
     const jars = studioJars(modsDir);

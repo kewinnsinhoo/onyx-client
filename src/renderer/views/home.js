@@ -472,7 +472,7 @@
           S.progress[id] = { stage: 'files' };
           document.dispatchEvent(new CustomEvent('onyx:progress', { detail: { id } }));
           try { await onyx.instances.update(id); await App.loadInstances(); toast(t('Instancia actualizada'), 'success'); }
-          catch (e) { toast(e.message, 'error', 6000); }
+          catch (e) { toast(e, 'error', 6000); }
           finally { delete S.progress[id]; document.dispatchEvent(new CustomEvent('onyx:progress', { detail: { id } })); }
         });
         on('report', App.reportModal);
@@ -482,12 +482,12 @@
         on('shots', () => App.go('gallery')); // en el launcher: la carpeta de la instancia no se abre (protege los mods)
         on('pack', async () => {
           try { const n = await onyx.instances.importPack(id); if (n != null) toast(t('{n} archivos instalados desde el pack', { n }), 'success'); }
-          catch (e) { toast(e.message, 'error', 6000); }
+          catch (e) { toast(e, 'error', 6000); }
         });
         on('wipe', async () => {
           const ok = await UI.confirmModal({ title: t('¿Borrar los archivos?'), text: t('Se borrarán mundos, capturas, mods y ajustes de esta instancia. Se volverán a descargar al jugar.'), confirm: t('Borrar'), danger: true, ico: 'trash' });
           if (!ok) return;
-          try { await onyx.instances.wipe(id); toast(t('Archivos borrados'), 'success'); } catch (e) { toast(e.message, 'error'); }
+          try { await onyx.instances.wipe(id); toast(t('Archivos borrados'), 'success'); } catch (e) { toast(e, 'error'); }
         });
         on('leave', async () => {
           const ok = await UI.confirmModal({ title: t('¿Salir de {name}?', { name: inst.name }), text: t('La instancia y sus archivos se quitarán de este equipo. Podrás volver con el código.'), confirm: t('Salir'), danger: true, ico: 'logout' });

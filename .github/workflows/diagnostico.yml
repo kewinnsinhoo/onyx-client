@@ -18,3 +18,9 @@ jobs:
         run: |
           for v in 1.21.1 1.21.4 1.21.5 1.21.8 1.21.10; do for l in fabric forge neoforge; do
             n=$(curl -s "https://api.modrinth.com/v2/project/idMHQ4n2/version?loaders=%5B%22$l%22%5D&game_versions=%5B%22$v%22%5D" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))"); echo "$v $l: $n"; done; done
+      - name: Dependencias de CustomSkinLoader (Fabric)
+        run: |
+          for v in 1.20.1 1.20.4 1.21.1 1.21.4 1.21.8 1.21.10; do
+            curl -s "https://api.modrinth.com/v2/project/idMHQ4n2/version?loaders=%5B%22fabric%22%5D&game_versions=%5B%22$v%22%5D" | python3 -c "import json,sys; l=json.load(sys.stdin); x=[v for v in l if v['version_type']=='release'] or l; x=x[0]; print('$v', x['version_number'], 'deps:', [(d['project_id'], d['dependency_type']) for d in x['dependencies']])"
+          done
+          curl -s "https://meta.fabricmc.net/v2/versions/loader/1.21.10" | python3 -c "import json,sys; l=json.load(sys.stdin); print('fabric 1.21.10:', l[0]['loader']['version'] if l else 'NADA')"

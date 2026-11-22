@@ -12,7 +12,12 @@
     const root = $('#toasts');
     const t = document.createElement('div');
     t.className = 'toast ' + type;
-    t.innerHTML = icon(type === 'error' ? 'alert' : type === 'success' ? 'check' : 'info') + `<div>${esc(window.t ? window.t(String(message)) : message)}</div>`;
+    // Un error se puede pasar entero: se traduce con sus datos ({host}, {name}…)
+    let text = message && typeof message === 'object' && 'message' in message
+      ? (window.t ? window.t(message.message, message.vars) : message.message)
+      : (window.t ? window.t(String(message)) : String(message));
+    text = String(text).replace(/\{host\}/g, 'internet'); // por si un dato no llegó
+    t.innerHTML = icon(type === 'error' ? 'alert' : type === 'success' ? 'check' : 'info') + `<div>${esc(text)}</div>`;
     root.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, ms);
   }

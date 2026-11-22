@@ -1369,3 +1369,17 @@ test('Actualización en Mac: lee latest-mac.yml y elige el zip de cada Mac', () 
   globalThis.fetch = saved;
   console.log('  ✓ conexión: primero como Chrome, luego Node; nunca «fetch failed»');
 } catch (e) { console.error('  ✗ conexión\n    ' + (e.stack || e.message)); process.exitCode = 1; } })();
+
+test('Skins en vanilla: Fabric por debajo solo para los no premium', () => {
+  const ins = require('../src/main/instances');
+  const off = { type: 'offline', name: 'Pepe' }, msa = { type: 'msa', name: 'Pro' };
+  const v = (mc, extra = {}) => ({ minecraft: mc, loader: { type: 'vanilla' }, ...extra });
+  assert.deepStrictEqual(ins.skinLayer(v('1.21.1'), off), { type: 'fabric', version: 'latest', skinLayer: true });
+  assert.ok(ins.skinLayer(v('1.20.4'), off) && ins.skinLayer(v('1.14'), off));
+  assert.strictEqual(ins.skinLayer(v('1.21.1'), msa), null, 'los premium siguen en vanilla');
+  assert.strictEqual(ins.skinLayer(v('1.21.1', { kopiSkins: false }), off), null, 'el studio lo apagó');
+  assert.strictEqual(ins.skinLayer(v('1.8.9'), off), null, 'versiones antiguas: sin Fabric');
+  assert.strictEqual(ins.skinLayer(v('24w14a'), off), null, 'snapshots no');
+  assert.strictEqual(ins.skinLayer({ minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' } }, off), null, 'ya tiene loader');
+  assert.strictEqual(ins.skinLayer({ minecraft: '1.21.1' }, off).type, 'fabric', 'sin loader = vanilla');
+});

@@ -64,7 +64,7 @@
     if (link) link.onclick = async () => {
       busy(link, true);
       try { const r = await onyx.discord.link(); S.settings.discord = r; toast(t('Discord vinculado: @{u}', { u: r.username }), 'success'); TABS.accounts(body); }
-      catch (e) { toast(e.message, 'error', 6000); busy(link, false); }
+      catch (e) { toast(e, 'error', 6000); busy(link, false); }
     };
     const un = body.querySelector('#dc-un');
     if (un) un.onclick = async () => { await onyx.discord.unlink(); S.settings.discord = null; TABS.accounts(body); };
@@ -214,7 +214,7 @@
         go.onclick = async () => {
           busy(go, true);
           try { const r = await onyx.referrals.link(top.querySelector('#ref-code').value); S.settings.referral = r; toast(t('¡Ahora apoyas a {s}!', { s: r.name }), 'success'); TABS.referrals(body); }
-          catch (e) { toast(e.message, 'error'); busy(go, false); }
+          catch (e) { toast(e, 'error'); busy(go, false); }
         };
       }
     };

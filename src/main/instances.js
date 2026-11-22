@@ -251,8 +251,8 @@ async function freshen(id, { account, settings, progress = () => {}, onLog = () 
     try {
       await syncFiles(inst, gameDir, 3, progress); // pocas descargas a la vez: que no moleste
       store.replace(d);
-      await kopiMods(inst, m, gameDir);
-      await game.prepare(root, { mc: m.minecraft, loader: m.loader || { type: 'vanilla' }, java: m.java }, { concurrency: 3, progress, javaPath: settings && settings.javaPath, onLog });
+      const sl = await prepKopiMods(inst, m, gameDir, account);
+      await game.prepare(root, { mc: m.minecraft, loader: sl.m.loader || { type: 'vanilla' }, java: m.java }, { concurrency: 3, progress, javaPath: settings && settings.javaPath, onLog });
     } finally { await lockMods(id, gameDir); }
     return true;
   })().finally(() => bgWork.delete(id));
@@ -307,17 +307,49 @@ function lockLeftovers() {
   return leftovers;
 }
 
+// Skins en instancias vanilla. Desde Minecraft 1.20.2 el juego sin cuenta premium no enseña las skins que manda
+// el servidor (ni las de nadie), y en vanilla no se puede poner el mod de skins. Así que a los NO premium se les
+// pone Fabric por debajo, solo con CustomSkinLoader: el servidor ve un cliente normal y ellos ven todas las skins.
+// Los premium siguen en vanilla (ya las ven). El studio lo puede apagar con «Skins de Kopi».
+function skinLayer(m, account) {
+  const type = (m && m.loader && m.loader.type) || 'vanilla';
+  if (type !== 'vanilla' || !m || m.kopiSkins === false || !account || account.type === 'msa') return null;
+  const v = /^1\.(\d+)(?:\.(\d+))?$/.exec(String(m.minecraft || ''));
+  if (!v || Number(v[1]) < 14) return null; // Fabric existe desde la 1.14 (en las antiguas las skins ya se ven)
+  return { type: 'fabric', version: 'latest', skinLayer: true };
+}
+
+// Los mods de Kopi de la partida, con la capa de skins si toca. Si la capa falla (sin Fabric para esa versión,
+// sin el mod…), se juega en vanilla como siempre. → { m (con el loader que se usará), layer }
+async function prepKopiMods(inst, m, gameDir, account) {
+  const layer = skinLayer(m, account);
+  if (layer) {
+    try {
+      await require('./game/versions').ensureLoaderProfile(root, m.minecraft, layer);
+      const mm = { ...m, loader: layer };
+      const r = await kopiMods(inst, mm, gameDir, { skinLayer: true });
+      if (r.skins && (r.skins.status === 'ok' || r.skins.status === 'studio')) {
+        log.info(`[skins] ${inst.id}: vanilla ${m.minecraft} con Fabric por debajo para ver las skins (no premium)`);
+        return { m: mm, layer };
+      }
+      log.info(`[skins] ${inst.id}: sin capa de skins (${r.skins && r.skins.status}), se juega en vanilla`);
+    } catch (e) { log.warn('[skins] Capa de skins para vanilla:', e.message); }
+  }
+  await kopiMods(inst, m, gameDir);
+  return { m, layer: null };
+}
+
 // Mods que pone Kopi: modo rendimiento (si el jugador lo activó) y skins/capas (si el studio no lo desactivó).
 // Fabric API: una sola copia para los dos (la gestiona skinmod).
-async function kopiMods(inst, m, gameDir) {
+async function kopiMods(inst, m, gameDir, { skinLayer: layer = false } = {}) {
   const deps = { fetchJson, downloadFile };
-  const perf = await perfmode.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.perfMode }, deps)
+  const perf = await perfmode.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.perfMode && !layer }, deps)
     .catch(e => { log.warn('[rendimiento]', e.message); return { needsFabricApi: false }; });
   // Jugar con amigos: el mod que abre tu mundo por internet
-  const fr = await friends.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.friendsMode }, deps)
+  const fr = await friends.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: !!inst.friendsMode && !layer }, deps)
     .catch(e => { log.warn('[amigos]', e.message); return { needsFabricApi: false }; });
   const needFabricApi = perf.needsFabricApi || fr.needsFabricApi;
-  const skins = await skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base(), needFabricApi }, deps);
+  const skins = await skinmod.ensure(gameDir, { mc: m.minecraft, loader: m.loader, enabled: m.kopiSkins !== false, panelBase: panel.base(), needFabricApi, capes: !layer }, deps);
   if (needFabricApi && !skins.fabricApi) {
     if (perf.needsFabricApi) await perfmode.dropNeedingFabricApi(gameDir, { mc: m.minecraft, loader: m.loader }, deps).catch(() => {});
     if (fr.needsFabricApi) friends.drop(gameDir);
@@ -359,8 +391,8 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
         try {
           await syncFiles(inst, gameDir, concurrency, progress);
           store.replace(d);
-          await kopiMods(inst, m, gameDir);
-          await game.prepare(root, { mc: gameInfo.minecraft, loader: gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
+          const sl = await prepKopiMods(inst, m, gameDir, account);
+          await game.prepare(root, { mc: gameInfo.minecraft, loader: sl.m.loader || gameInfo.loader, java: gameInfo.java }, { concurrency, progress, javaPath: settings.javaPath, onLog });
         } finally { await lockMods(id, gameDir); }
         const ready = new Error(e.code === 'locked' ? 'Todo descargado. Podrás jugar cuando el studio la abra.' : 'Todo descargado. La instancia abre el {date}');
         ready.code = 'predownloaded'; ready.vars = e.vars;
@@ -379,7 +411,8 @@ async function play(id, { account, settings, launcherVersion, progress, onLog, o
     await unlockMods(id, gameDir, progress);
     await syncFiles(inst, gameDir, concurrency, progress);
     store.replace(d);
-    await kopiMods(inst, m, gameDir);
+    const sl = await prepKopiMods(inst, m, gameDir, account); // vanilla + no premium: Fabric por debajo para ver skins
+    if (sl.layer) gameInfo.loader = sl.layer;
     // KopiGuard: lo que no es del studio se mira antes de esconder los mods
     const guardOn = !!(session && m.guard && m.guard.enabled);
     const guardFirst = guardOn ? guard.foreign(gameDir, inst.managedFiles, { packsOk: !!m.guard.packsOk }) : null;
@@ -574,4 +607,5 @@ async function importPack(id, file) {
   return names.filter(n => !n.endsWith('/') && (!strip || n.startsWith(strip))).length;
 }
 
-module.exports = { init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE, captureNow };
+module.exports = {
+  skinLayer, init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE, captureNow };

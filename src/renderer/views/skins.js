@@ -84,7 +84,7 @@
         const tools = $('.viewer-tools'); tools.style.visibility = 'hidden';
         await new Promise(res => requestAnimationFrame(() => setTimeout(res, 30)));
         try { await onyx.skins.screenshot({ x: r.left + 1, y: r.top + 1, width: r.width - 2, height: r.height - 2 }); toast(t('Captura guardada'), 'success'); }
-        catch (e) { toast(e.message, 'error'); }
+        catch (e) { toast(e, 'error'); }
         tools.style.visibility = '';
       }
     });
@@ -121,7 +121,7 @@
         App.renderTopbar();
         toast(isMsa ? t('¡Skin aplicada! Se verá en tu próxima partida.') : t('Skin guardada en el launcher'), 'success');
         App.go('skins', { tab });
-      } catch (err) { toast(err.message, 'error', 6000); busy(btn, false); }
+      } catch (err) { toast(err, 'error', 6000); busy(btn, false); }
     };
 
     // ---------- pestañas ----------
@@ -170,7 +170,7 @@
     async function library(body) {
       body.innerHTML = `<div class="muted">${t('Cargando...')}</div>`;
       let list = [];
-      try { list = await onyx.skins.library(); } catch (e) { toast(e.message, 'error'); }
+      try { list = await onyx.skins.library(); } catch (e) { toast(e, 'error'); }
       body.innerHTML = html`<div class="row" style="margin-bottom:14px"><div class="t" style="font-weight:700">${t('Biblioteca')} <span class="muted" style="font-weight:500">${list.length}</span></div>
         <div class="grow"></div><button class="btn btn-outline btn-sm" id="lib-new">${icon('brush')}${t('Crear una skin')}</button><button class="btn btn-outline btn-sm" id="lib-save">${icon('plus')}${t('Guardar la actual')}</button></div>
         <div class="skin-grid">${tile({ ...current, sub: t('Actual'), on: preview.skin === current.skin })}
@@ -183,7 +183,7 @@
           const data = current.skin.startsWith('data:') ? current.skin : await onyx.skins.dataUrl(current.skin);
           await onyx.skins.libraryAdd({ name: current.name, data, variant: current.variant });
           toast(t('Guardada en la biblioteca'), 'success'); library(body);
-        } catch (e) { toast(e.message, 'error'); }
+        } catch (e) { toast(e, 'error'); }
       };
     }
 
@@ -200,10 +200,10 @@
           preview = { skin: data, variant, name: name || 'Skin', source: 'upload' };
           drawPreview();
           toast(t('Vista previa lista: pulsa Aplicar'), 'success');
-        } catch (e) { toast(e.message, 'error'); }
+        } catch (e) { toast(e, 'error'); }
       };
       body.querySelector('#dz-pick').onclick = async () => {
-        try { const f = await onyx.skins.pickFile(); if (f) useData(f.name, f.data); } catch (e) { toast(e.message, 'error'); }
+        try { const f = await onyx.skins.pickFile(); if (f) useData(f.name, f.data); } catch (e) { toast(e, 'error'); }
       };
       dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('over'); };
       dz.ondragleave = () => dz.classList.remove('over');
@@ -318,7 +318,7 @@
         const c = list.find(x => x.id === id);
         viewer.setCape(c ? c.url.replace(/^http:/, 'https:') : null);
         try { await onyx.skins.setCape(id); await App.loadAccounts(); toast(id ? t('Capa equipada') : t('Capa quitada'), 'success'); }
-        catch (e) { toast(e.message, 'error'); }
+        catch (e) { toast(e, 'error'); }
       });
       // La primera vez se pregunta al panel qué capas tiene la cuenta
       if (!kopi.loaded) loadKopi().then(() => { if (body.isConnected && body.querySelector('#kc-sec')) capes(body); });

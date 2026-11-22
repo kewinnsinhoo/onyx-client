@@ -252,7 +252,8 @@
             <div class="field" style="max-width:140px"><span class="label">${t('Puerto')}</span><input class="input" id="g-port" type="number" value="${d.server.port}"></div>
             <label class="check" style="height:40px"><input type="checkbox" id="g-auto" ${d.server.autoJoin ? 'checked' : ''}>${t('Entrar al servidor al abrir el juego')}</label></div></div>
         <div class="card"><h3>${icon('user')}${t('Skins de Kopi')}</h3><p class="sub">${t('Con Fabric, Quilt, Forge o NeoForge, el launcher añade solo un mod para que todos vean las skins (premium y las de Kopi), aunque el servidor esté en modo offline. No hay que instalar nada en el servidor.')}</p>
-          <label class="check" style="margin-top:12px"><input type="checkbox" id="g-skins" ${d.kopiSkins !== false ? 'checked' : ''} ${d.loader.type === 'vanilla' ? 'disabled' : ''}>${d.loader.type === 'vanilla' ? t('No disponible en Vanilla (elige un loader)') : t('Activar las skins de Kopi en esta instancia')}</label></div>`;
+          ${d.loader.type === 'vanilla' ? `<p class="help" style="margin-top:8px">${t('En Vanilla: a los jugadores no premium el launcher les pone Fabric por debajo, solo con el mod de skins, para que vean las skins de todos. Los premium siguen en Vanilla.')}</p>` : ''}
+          <label class="check" style="margin-top:12px"><input type="checkbox" id="g-skins" ${d.kopiSkins !== false ? 'checked' : ''}>${t('Activar las skins de Kopi en esta instancia')}</label></div>`;
       const lv = $('#g-lv', el);
       await versionSelect($('#g-mc', el), d.minecraft, false);
       const bindMc = () => { const s = $('#g-mc', el); s.onchange = s.oninput = () => { d.minecraft = s.value; d.loader.version = 'latest'; fillLoaderVersions(lv, d.loader.type, d.minecraft, 'latest'); changed(); }; };
