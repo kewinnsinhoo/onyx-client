@@ -118,7 +118,8 @@ export async function guardMedia(env, P, req, q) {
   const b = { play: q.get('play'), event: q.get('event'), kind: q.get('kind') };
   const len = Number(req.headers.get('content-length') || 0);
   if (len > VIDEO_MAX) fail(413, 'data', 'Archivo demasiado grande');
-  const ev = await env.DB.prepare('SELECT g.id, g.media FROM guard_events g JOIN plays p ON p.id = g.play_id WHERE g.id = ? AND g.play_id = ? AND p.player_key = ?')
+  const ev = await env.DB.prepare(`SELECT g.id, g.media, g.type, g.severity, g.detail, p.player_name, p.instance_id FROM guard_events g JOIN plays p ON p.id = g.play_id
+      WHERE g.id = ? AND g.play_id = ? AND p.player_key = ?`)
     .bind(String(b.event || ''), String(b.play || ''), P.key).first();
   if (!ev) fail(404, 'guard', 'Esa detección no existe');
   if (ev.media == null) fail(403, 'no_media', 'Esta detección no lleva foto ni vídeo');
@@ -132,7 +133,33 @@ export async function guardMedia(env, P, req, q) {
   await env.MEDIA.put(`guard:${ev.id}:${kind}`, bytes, { expirationTtl: MEDIA_TTL / 1000, metadata: { type: kind === 'shot' ? 'image/jpeg' : 'video/webm' } });
   m[kind] = { size: bytes.length, at: now() };
   await env.DB.prepare('UPDATE guard_events SET media = ? WHERE id = ?').bind(JSON.stringify(m), ev.id).run();
+  // También al canal de Discord del studio (si puso webhook): la foto se ve en grande y el vídeo se reproduce allí
+  try {
+    const row = await env.DB.prepare('SELECT data FROM instances WHERE id = ?').bind(ev.instance_id).first();
+    const data = row ? JSON.parse(row.data || '{}') : {};
+    const hook = data.guard && WEBHOOK_RE.test(String(data.guard.webhook || '')) ? data.guard.webhook : '';
+    if (hook) await discordMedia(hook, data.name || ev.instance_id, ev, kind, bytes);
+  } catch { /* Discord no es imprescindible */ }
   return json({ ok: true });
+}
+
+// Foto o vídeo de una detección al canal de Discord (como archivo adjunto)
+async function discordMedia(hook, instance, ev, kind, bytes) {
+  const file = kind === 'shot' ? 'deteccion.jpg' : 'deteccion.webm';
+  const title = `KopiGuard · ${TYPE_NAME[ev.type] || 'Detección'} · ${kind === 'shot' ? 'foto' : 'vídeo'}`;
+  const payload = {
+    username: 'KopiGuard', allowed_mentions: { parse: [] },
+    embeds: [{
+      title, description: clip(ev.detail || '', 200), color: SEV_COLOR[ev.severity] || 0x60a5fa,
+      fields: [{ name: 'Jugador', value: clip(ev.player_name || '?', 40), inline: true }, { name: 'Instancia', value: clip(instance, 60), inline: true }],
+      ...(kind === 'shot' ? { image: { url: `attachment://${file}` } } : {}),
+      timestamp: new Date().toISOString()
+    }]
+  };
+  const form = new FormData();
+  form.append('payload_json', JSON.stringify(payload));
+  form.append('files[0]', new Blob([bytes], { type: kind === 'shot' ? 'image/jpeg' : 'video/webm' }), file);
+  await fetch(hook, { method: 'POST', body: form });
 }
 
 // ---------------------------------------------------------------- cámaras en directo

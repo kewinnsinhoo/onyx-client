@@ -912,7 +912,14 @@ await test('KopiGuard: avisos del launcher, Discord, expulsar y sancionar', asyn
 await test('KopiGuard: foto, vídeo y cámaras en directo', async () => {
   const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Cámaras' } });
   const gid = made.data.id;
-  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, guard: { enabled: true } } } });
+  await call('PATCH', `/api/s/onyx-studios/instances/${gid}`, { cookie: creator, body: { state: 'open', data: { access: { public: true }, guard: { enabled: true, webhook: 'https://discord.com/api/webhooks/123/abc_DEF' } } } });
+  // lo que llega a Discord (texto, foto y vídeo)
+  const toDiscord = [];
+  const realFetch2 = globalThis.fetch;
+  globalThis.fetch = async (url, o) => {
+    if (String(url).startsWith('https://discord.com/api/webhooks/')) { toDiscord.push(o.body instanceof FormData ? { form: o.body } : { json: JSON.parse(o.body) }); return new Response('', { status: 204 }); }
+    return realFetch2(url, o);
+  };
   const p = await player('Mirado', false);
   const play = (await call('POST', '/api/l/play', { headers: p, body: { instance: gid } })).data;
   // detecciones: las importantes llevan foto y vídeo; las leves no
@@ -928,6 +935,16 @@ await test('KopiGuard: foto, vídeo y cámaras en directo', async () => {
   assert.strictEqual((await up('shot', JPEG)).status, 409, 'una sola vez');
   assert.strictEqual((await up('video', WEBM)).status, 200);
   assert.strictEqual((await up('shot', JPEG, r.data.ids[1].id)).status, 403, 'la leve no lleva foto');
+  await new Promise(res => setTimeout(res, 20));
+  const files = toDiscord.filter(x => x.form);
+  assert.strictEqual(files.length, 2, 'foto y vídeo a Discord');
+  const shotMsg = JSON.parse(files[0].form.get('payload_json')), shotFile = files[0].form.get('files[0]');
+  assert.strictEqual(shotFile.name, 'deteccion.jpg'); assert.strictEqual(shotFile.size, JPEG.length);
+  assert.strictEqual(shotMsg.embeds[0].image.url, 'attachment://deteccion.jpg');
+  assert.ok(/foto/.test(shotMsg.embeds[0].title) && shotMsg.embeds[0].fields[0].value === 'Mirado');
+  assert.strictEqual(files[1].form.get('files[0]').name, 'deteccion.webm');
+  assert.ok(toDiscord.some(x => x.json), 'y el aviso de texto de siempre');
+  globalThis.fetch = realFetch2;
   const stranger = await player('Otro', false);
   assert.strictEqual((await up('shot', JPEG, evId, stranger)).status, 404, 'solo el jugador de esa partida');
   const det = (await call('GET', `/api/s/onyx-studios/guard/${evId}`, { cookie: creator })).data.event;

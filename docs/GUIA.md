@@ -403,6 +403,11 @@ Para que se cuenten solos:
 - El 22-11-2026 pasó con ~19 jugadores en ColonizadoSMP S3. Desde ese día el panel escribe mucho menos: el latido como mucho cada 45 s, la cuadrícula de cámaras una imagen cada 12 s y «quién está mirando» cada 8 s.
 - Solución definitiva: **Workers Paid** de Cloudflare (5 $/mes): incluye 10 millones de peticiones y 50 millones de escrituras al mes. **Activado el 22-11-2026.**
 
+## Alertas de KopiGuard en Discord con foto y vídeo (desde el 22-11-2026)
+
+- En **Instancia → Protección**, en «Avisar en un canal de Discord», se pega un webhook de Discord.
+- Cada detección llega al canal: primero el aviso con el jugador y qué se detectó, y unos segundos después **la foto** (se ve en grande) y **el vídeo** del momento (se reproduce en Discord). Solo las detecciones importantes llevan foto y vídeo, igual que en el panel.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

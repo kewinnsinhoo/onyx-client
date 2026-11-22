@@ -328,7 +328,7 @@
           <div class="card ${g.enabled ? '' : 'g-dim'}"><h3>${icon('settings')}${t('Opciones')}</h3>
             <div class="set" style="margin-top:8px"><div class="t"><b>${t('Expulsar al momento a quien use un programa de trampas')}</b><small>${t('Se le cierra el juego al momento. El resto de avisos los revisas tú.')}</small></div>${sw('gd-kick', g.autoKick)}</div>
             <div class="set"><div class="t"><b>${t('Permitir paquetes de texturas y shaders')}</b><small>${t('No avisa si alguien añade uno (por ejemplo, si dejas usar los suyos).')}</small></div>${sw('gd-packs', g.packsOk)}</div>
-            <div class="field" style="margin-top:12px"><span class="label">${t('Avisar en un canal de Discord (opcional)')}</span><span class="help">${t('Pega el enlace de un webhook de Discord: cada detección llegará también allí.')}</span>
+            <div class="field" style="margin-top:12px"><span class="label">${t('Avisar en un canal de Discord (opcional)')}</span><span class="help">${t('Pega el enlace de un webhook de Discord: cada detección llegará también allí, con su foto y su vídeo.')}</span>
               <input class="input mono" id="gd-hook" placeholder="https://discord.com/api/webhooks/…" value="${esc(g.webhook || '')}"></div></div>
           <div class="card ${g.enabled ? '' : 'g-dim'}" id="gd-srv"><div class="skel" style="height:120px"></div></div>
           <p class="help g-note">${icon('info')}${t('Los jugadores lo aceptan en los términos del launcher. De los programas abiertos, el launcher solo avisa de los de trampas, nunca envía la lista completa.')}</p>`;
