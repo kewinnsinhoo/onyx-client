@@ -1383,3 +1383,14 @@ test('Skins en vanilla: Fabric por debajo solo para los no premium', () => {
   assert.strictEqual(ins.skinLayer({ minecraft: '1.21.1', loader: { type: 'fabric', version: '0.16.5' } }, off), null, 'ya tiene loader');
   assert.strictEqual(ins.skinLayer({ minecraft: '1.21.1' }, off).type, 'fabric', 'sin loader = vanilla');
 });
+
+test('Cámaras: el código de la ventana de captura es válido y mejora la calidad del vídeo', () => {
+  const { PAGE } = require('../src/main/capture');
+  new Function(PAGE.replace('window.K =', 'var K =')); // sin errores de sintaxis
+  const src = PAGE.slice(PAGE.indexOf('const HINT'), PAGE.indexOf('await pc.setRemoteDescription'));
+  const fix = new Function('offer', src + '; return sdp;');
+  const out = fix('v=0\r\na=rtpmap:96 VP8/90000\r\na=rtpmap:98 VP9/90000\r\na=fmtp:98 profile-id=0\r\n');
+  assert.ok(/a=fmtp:96 x-google-start-bitrate=2500/.test(out), 'VP8 sin fmtp: se añade');
+  assert.ok(/a=fmtp:98 profile-id=0;x-google-start-bitrate=2500/.test(out), 'VP9 con fmtp: se completa');
+  assert.ok(/K\.rtc|async rtc/.test(PAGE) && /maintain-resolution/.test(PAGE));
+});

@@ -14,12 +14,12 @@ let target = { pid: 0, hint: '' }, hwnd = null; // el proceso del juego (para en
 const PAGE = `
 window.K = {
   pcs: {},
-  // hd: para el vídeo en directo (1080p a 30 imágenes por segundo); si no, 720p a 20 (fotos y vídeos cortos)
+  // hd: para el vídeo en directo (720p a 30 imágenes por segundo); si no, 720p a 20 (fotos y vídeos cortos)
   async open(id, hd) {
     if (K.s && K.id === id && K.s.active && (K.hd || !hd)) return true;
     const old = K.s;
     K.id = id; K.hd = !!hd;
-    const max = hd ? { maxWidth: 1920, maxHeight: 1080, maxFrameRate: 30 } : { maxWidth: 1280, maxHeight: 720, maxFrameRate: 20 };
+    const max = hd ? { maxWidth: 1280, maxHeight: 720, maxFrameRate: 30 } : { maxWidth: 1280, maxHeight: 720, maxFrameRate: 20 };
     K.s = await navigator.mediaDevices.getUserMedia({ audio: false, video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id, ...max } } });
     const tr = K.s.getVideoTracks()[0];
     try { tr.contentHint = 'motion'; } catch (e) { /* nada */ }
@@ -42,7 +42,11 @@ window.K = {
       if (st === 'failed' || st === 'closed') K.rtcClose(id);
       if (st === 'disconnected') setTimeout(() => { if (pc.connectionState !== 'connected') K.rtcClose(id); }, 8000);
     };
-    await pc.setRemoteDescription({ type: 'offer', sdp: offer });
+    // que empiece ya con buena calidad (si no, arranca muy bajo y tarda en subir)
+    const HINT = 'x-google-start-bitrate=2500;x-google-min-bitrate=1200;x-google-max-bitrate=5000';
+    const sdp = String(offer).replace(/^(a=fmtp:\\d+ .*)$/gm, (l) => /x-google-/.test(l) ? l : l + ';' + HINT)
+      .replace(/^(a=rtpmap:(\\d+) (VP8|VP9|H264|AV1)\\/90000)$/gm, (l, a, pt) => new RegExp('^a=fmtp:' + pt + ' ', 'm').test(offer) ? l : l + '\\r\\na=fmtp:' + pt + ' ' + HINT);
+    await pc.setRemoteDescription({ type: 'offer', sdp });
     const tx = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === 'video');
     if (!tx) { K.rtcClose(id); return null; }
     tx.direction = 'sendonly';
@@ -53,11 +57,11 @@ window.K = {
       const to = setTimeout(ok, 2500);
       pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(to); ok(); } });
     });
-    try { // nítido: hasta 6 Mbit/s y 30 imágenes por segundo (si la conexión no da, baja solo)
+    try { // nítido: la imagen no se hace pequeña; si la conexión no da, baja antes las imágenes por segundo
       const p = tx.sender.getParameters();
       if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 6000000; p.encodings[0].maxFramerate = 30;
-      p.degradationPreference = 'balanced';
+      p.encodings[0].maxBitrate = 5000000; p.encodings[0].maxFramerate = 30; p.encodings[0].scaleResolutionDownBy = 1;
+      p.degradationPreference = 'maintain-resolution';
       await tx.sender.setParameters(p);
     } catch (e) { /* nada */ }
     return pc.localDescription.sdp;
