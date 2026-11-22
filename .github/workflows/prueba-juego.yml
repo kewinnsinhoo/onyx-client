@@ -1,0 +1,23 @@
+# Prueba real del juego: vanilla + capa de skins (Fabric por debajo + CustomSkinLoader) con cuenta no premium.
+name: Prueba del juego
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión de Minecraft'
+        default: '1.21.1'
+jobs:
+  juego:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund --ignore-scripts
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1 libglx-mesa0 libgl1-mesa-dri mesa-utils pulseaudio > /dev/null
+      - name: Lanzar Minecraft ${{ inputs.version }}
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s "-screen 0 1280x720x24" node scripts/game-smoke.js "${{ inputs.version }}"
