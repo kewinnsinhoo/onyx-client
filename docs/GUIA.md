@@ -401,7 +401,7 @@ Para que se cuenten solos:
 
 - El panel usa la base de datos de Cloudflare (D1) en el **plan gratis**: unas **100.000 escrituras al día**. Si se pasan, todo lo que guarda algo falla (empezar partida, KopiGuard, cámaras…) hasta las **00:00 UTC (7 p. m. en Colombia)**. El launcher lo explica con un aviso claro.
 - El 22-11-2026 pasó con ~19 jugadores en ColonizadoSMP S3. Desde ese día el panel escribe mucho menos: el latido como mucho cada 45 s, la cuadrícula de cámaras una imagen cada 12 s y «quién está mirando» cada 8 s.
-- Solución definitiva: **Workers Paid** de Cloudflare (5 $/mes): incluye 50 millones de escrituras al mes (unas 1,6 millones al día).
+- Solución definitiva: **Workers Paid** de Cloudflare (5 $/mes): incluye 10 millones de peticiones y 50 millones de escrituras al mes. **Activado el 22-11-2026.**
 
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
