@@ -150,8 +150,16 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       V: ${{ needs.prepare.outputs.version }}
     steps:
+      # Se quitan los de versiones anteriores, PERO nunca los que aún nombra un latest*.yml: si un sistema
+      # (Mac, que a veces no encuentra máquina) no se compiló esta vez, sus usuarios siguen con su versión.
       - name: Quitar instaladores de versiones anteriores
         run: |
-          gh release view "brand-$BRAND" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | while read -r f; do
-            case "$f" in latest*.yml|*"$V"*) ;; *) gh release delete-asset "brand-$BRAND" "$f" -R "$GITHUB_REPOSITORY" -y > /dev/null && echo "Quitado $f" ;; esac
+          mkdir -p yml && cd yml
+          gh release download "brand-$BRAND" -R "$GITHUB_REPOSITORY" -p 'latest*.yml' --clobber || true
+          KEEP=$(cat latest*.yml 2>/dev/null | sed -n -E 's/^[[:space:]-]*(url|path):[[:space:]]*//p' | tr -d "'\"" | sort -u)
+          echo "En uso: $KEEP"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/brand-$BRAND" --jq '.assets[].name' | while read -r f; do
+            case "$f" in latest*.yml|*"$V"*) continue ;; esac
+            if printf '%s\n' "$KEEP" | grep -qxF "$f" || printf '%s\n' "$KEEP" | sed 's/$/.blockmap/' | grep -qxF "$f"; then echo "Se queda $f (aún en uso)"; continue; fi
+            gh release delete-asset "brand-$BRAND" "$f" -R "$GITHUB_REPOSITORY" -y > /dev/null && echo "Quitado $f"
           done
