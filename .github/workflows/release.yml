@@ -105,7 +105,8 @@ jobs:
     if: ${{ inputs.mac || inputs.solo_mac }}
     # A veces GitHub no encuentra un Mac libre: espera 15 min y cancela el trabajo sin empezarlo.
     # Cada intento prueba una cola distinta (ver «reintentar-mac» abajo).
-    runs-on: ${{ fromJSON('{"1":"macos-latest","2":"macos-15","3":"macos-latest","4":"macos-15","5":"macos-latest","6":"macos-15"}')[inputs.intento || '1'] || 'macos-latest' }}
+    # (2, 4 y 6: Mac Intel, que va en otra cola; compila igual para Mac Intel y Mac con chip Apple)
+    runs-on: ${{ fromJSON('{"1":"macos-latest","2":"macos-15-intel","3":"macos-15","4":"macos-15-intel","5":"macos-latest","6":"macos-15-intel"}')[inputs.intento || '1'] || 'macos-latest' }}
     continue-on-error: true
     timeout-minutes: 60
     permissions:
