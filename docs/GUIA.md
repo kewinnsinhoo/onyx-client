@@ -364,6 +364,8 @@ Para que se cuenten solos:
 - Desde la 1.8.2 el launcher descarga la versión nueva, comprueba que está bien, cambia la app por la nueva y se vuelve a abrir solo.
 - Si no puede (por ejemplo, si se abrió desde el instalador .dmg en vez de desde Aplicaciones), lo explica y deja **Descargar a mano** o **Seguir sin actualizar**.
 - Quien tenga una versión anterior a la 1.8.2 en Mac tiene que instalar la nueva a mano **una vez**. Desde ahí, se actualiza sola.
+- **Compilar para Mac (23-11-2026):** GitHub casi no tenía Macs con chip Apple libres («capacity constraints») y cancelaba el Mac tras esperar. Ahora se compila primero en un **Mac Intel** (`macos-15-intel`, otra cola), que saca igual las dos versiones (Intel y chip Apple). Los reintentos alternan Intel y Apple. Las marcas usan Intel por defecto (`mac_runner`).
+- La limpieza de las marcas ya **no borra los instaladores que aún nombra un `latest*.yml`**: si un sistema no se compila, sus jugadores siguen con su versión y su descarga.
 
 ## Errores de conexión (desde la 1.8.2, mejor en la 1.8.3)
 

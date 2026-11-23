@@ -23,7 +23,7 @@ on:
         default: 'windows,linux,macos'
       mac_runner:
         description: 'Mac donde compilar (macos-latest = chip Apple; macos-15-intel = Intel, otra cola cuando no hay Macs Apple libres)'
-        default: 'macos-latest'
+        default: 'macos-15-intel'
 
 permissions:
   contents: read
@@ -90,7 +90,7 @@ jobs:
       - id: matrix
         env:
           P: ${{ inputs.platforms }}
-          MACR: ${{ inputs.mac_runner || 'macos-latest' }}
+          MACR: ${{ inputs.mac_runner || 'macos-15-intel' }}
         run: |
           OS=()
           [[ "$P" == *windows* ]] && OS+=('"windows-latest"')
