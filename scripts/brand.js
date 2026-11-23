@@ -36,6 +36,35 @@ async function download(url, dest, { maxMb = 15 } = {}) {
 }
 
 // Tamaño de un PNG (el icono debe ser cuadrado y de 512 px o más)
+// Agranda y centra un PNG en un cuadrado de N px con fondo transparente, con lo que trae cada sistema
+// (Mac: sips · Linux: ImageMagick · Windows: .NET). Sin dependencias.
+function fixIcon(file, N) {
+  const { execFileSync } = require('child_process');
+  const out = file + '.fixed.png';
+  if (process.platform === 'darwin') {
+    const sz = pngSize(file);
+    const side = Math.max(sz.w, sz.h);
+    execFileSync('sips', ['--padToHeightWidth', String(side), String(side), file, '--out', out], { stdio: 'inherit' });
+    execFileSync('sips', ['-z', String(N), String(N), out, '--out', out], { stdio: 'inherit' });
+  } else if (process.platform === 'win32') {
+    const ps = `Add-Type -AssemblyName System.Drawing;
+      $src = [System.Drawing.Image]::FromFile('${file.replace(/'/g, "''")}');
+      $bmp = New-Object System.Drawing.Bitmap ${N}, ${N}, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb);
+      $g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::Transparent);
+      $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic;
+      $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality; $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality;
+      $k = [Math]::Min(${N} / $src.Width, ${N} / $src.Height); $w = [int]($src.Width * $k); $h = [int]($src.Height * $k);
+      $g.DrawImage($src, [int]((${N} - $w) / 2), [int]((${N} - $h) / 2), $w, $h);
+      $bmp.Save('${out.replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $bmp.Dispose(); $src.Dispose()`;
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', ps], { stdio: 'inherit' });
+  } else {
+    const im = (() => { for (const c of ['magick', 'convert']) { try { execFileSync(c, ['-version'], { stdio: 'ignore' }); return c; } catch { /* siguiente */ } } return null; })();
+    if (!im) throw new Error('Falta ImageMagick para ajustar el icono');
+    execFileSync(im, [file, '-background', 'none', '-filter', 'Lanczos', '-resize', `${N}x${N}`, '-gravity', 'center', '-extent', `${N}x${N}`, out], { stdio: 'inherit' });
+  }
+  fs.renameSync(out, file);
+}
+
 function pngSize(file) {
   const b = fs.readFileSync(file);
   if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) return null;
@@ -60,8 +89,15 @@ async function main() {
   fs.mkdirSync(brandDir, { recursive: true });
   const iconTmp = path.join(brandDir, 'icon.png');
   if (await download(b.icon, iconTmp)) {
-    const sz = pngSize(iconTmp);
-    if (!sz || sz.w !== sz.h || sz.w < 256) throw new Error('El icono tiene que ser un PNG cuadrado de al menos 256 px (mejor 512 o 1024)');
+    let sz = pngSize(iconTmp);
+    if (!sz) throw new Error('El icono tiene que ser una imagen PNG');
+    // Mac exige 512×512 o más y cuadrado: si no lo es, se agranda (con buena calidad) y se centra en 1024×1024
+    if (sz.w !== sz.h || sz.w < 512) {
+      console.log(`Icono de ${sz.w}×${sz.h}: se ajusta a 1024×1024`);
+      fixIcon(iconTmp, 1024);
+      sz = pngSize(iconTmp);
+      if (!sz || sz.w !== sz.h || sz.w < 512) throw new Error(`No se pudo ajustar el icono (${sz ? sz.w + '×' + sz.h : '?'})`);
+    }
     fs.copyFileSync(iconTmp, path.join(ROOT, 'build', 'icon.png'));
     fs.copyFileSync(iconTmp, path.join(ROOT, 'src', 'renderer', 'assets', 'icon.png'));
   } else console.warn('La marca no tiene icono: se usa el de Kopi');
