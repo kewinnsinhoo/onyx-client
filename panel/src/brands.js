@@ -137,7 +137,11 @@ export async function studioBrandApi(c, sub, m) {
     return json({ ok: true, id }, 201);
   }
   if (sub === 'build' && m === 'POST') {
+    if (!allowed) fail(403, 'brand_off', 'Este studio no tiene launcher propio');
     if (!row) fail(400, 'brand', 'Primero guarda tu launcher');
+    // El creador de Kopi puede compilar en cualquier studio: se le activa el launcher propio a ese studio, porque
+    // la fábrica (GitHub) y la página de descargas solo aceptan studios con el launcher propio activado
+    if (!studio.brand_allowed) await env.DB.prepare('UPDATE studios SET brand_allowed = 1 WHERE id = ?').bind(studio.id).run();
     const d = JSON.parse(row.data);
     if (!d.icon) fail(400, 'icon', 'Sube el icono de tu launcher antes de compilar');
     const run = await lastRun(env, row.id);

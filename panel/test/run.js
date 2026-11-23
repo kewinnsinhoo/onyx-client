@@ -576,6 +576,28 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
   delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
 });
 
+await test('Launcher de marca: el creador de Kopi compila en su studio (sin permiso previo) y GitHub puede fabricarlo', async () => {
+  const studios = (await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios;
+  const kopi = studios.find(x => x.name === 'Kopi Studio') || studios.find(x => !x.brandAllowed);
+  await call('PATCH', `/api/onyx/studios/${kopi.id}`, { cookie: creator, body: { brandAllowed: false } });
+  assert.strictEqual((await call('GET', `/api/s/${kopi.id}/brand`, { cookie: creator })).data.allowed, true, 'el creador siempre puede');
+  const sv = await call('PUT', `/api/s/${kopi.id}/brand`, { cookie: creator, body: { name: 'Kopi Prueba Marca' } });
+  assert.ok(sv.status === 201 || sv.status === 200 || sv.status === 400, JSON.stringify(sv.data));
+  let id = sv.data.id;
+  if (sv.status === 400) { const r2 = await call('PUT', `/api/s/${kopi.id}/brand`, { cookie: creator, body: { name: 'Lince Launcher' } }); id = r2.data.id; }
+  const icon = await call('POST', `/api/s/${kopi.id}/media?name=icon.png`, { cookie: creator, raw: new Uint8Array([137, 80, 78, 71, 1, 2, 3]), headers: { 'Content-Type': 'image/png' } });
+  await call('PUT', `/api/s/${kopi.id}/brand`, { cookie: creator, body: { icon: icon.data.url } });
+  assert.strictEqual((await call('GET', `/api/public/brands/${id}/build`)).status, 403, 'antes de compilar: sin permiso');
+  env.GITHUB_TOKEN = 'tok';
+  env.GITHUB_FETCH = async (u) => (u.endsWith('/dispatches') ? new Response(null, { status: 204 }) : u.includes('/runs') ? new Response('{"workflow_runs":[]}', { status: 200 }) : new Response('{}', { status: 404 }));
+  const b = await call('POST', `/api/s/${kopi.id}/brand/build`, { cookie: creator });
+  assert.strictEqual(b.status, 200, JSON.stringify(b.data));
+  const pub = await call('GET', `/api/public/brands/${id}/build`);
+  assert.strictEqual(pub.status, 200, 'GitHub ya puede leer la marca para fabricarla');
+  assert.strictEqual((await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios.find(x => x.id === kopi.id).brandAllowed, true);
+  delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
+});
+
 await test('Kopi Skins: skins en los servidores (premium y no premium)', async () => {
   // opción de la instancia (activada por defecto; las instancias antiguas sin el campo también)
   assert.strictEqual(defaults().kopiSkins, true);
