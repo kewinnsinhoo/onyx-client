@@ -94,9 +94,13 @@ async function main() {
     // Mac exige 512×512 o más y cuadrado: si no lo es, se agranda (con buena calidad) y se centra en 1024×1024
     if (sz.w !== sz.h || sz.w < 512) {
       console.log(`Icono de ${sz.w}×${sz.h}: se ajusta a 1024×1024`);
-      fixIcon(iconTmp, 1024);
+      try { fixIcon(iconTmp, 1024); } catch (e) {
+        // Windows y Linux aceptan iconos cuadrados de 256 px: si aquí no se puede agrandar, vale el original
+        if (process.platform === 'darwin' || sz.w !== sz.h || sz.w < 256) throw e;
+        console.warn('::warning::No se pudo agrandar el icono (' + e.message + '): se usa el original de ' + sz.w + ' px');
+      }
       sz = pngSize(iconTmp);
-      if (!sz || sz.w !== sz.h || sz.w < 512) throw new Error(`No se pudo ajustar el icono (${sz ? sz.w + '×' + sz.h : '?'})`);
+      if (!sz || sz.w !== sz.h || sz.w < (process.platform === 'darwin' ? 512 : 256)) throw new Error(`No se pudo ajustar el icono (${sz ? sz.w + '×' + sz.h : '?'})`);
     }
     fs.copyFileSync(iconTmp, path.join(ROOT, 'build', 'icon.png'));
     fs.copyFileSync(iconTmp, path.join(ROOT, 'src', 'renderer', 'assets', 'icon.png'));
