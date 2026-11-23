@@ -96,12 +96,35 @@
       ${all ? html`<div class="card" style="margin-top:16px"><div class="card-head"><h3>${icon('crown')}${t('Todos los launchers de marca')}</h3><span class="grow"></span>
         <button class="btn sm" id="b-all" ${all.brands.length && all.github ? '' : 'disabled'}>${icon('refresh')}${t('Recompilar todos')}</button></div>
         <p class="sub">${t('Cuando publicas una versión nueva de Kopi, se recompilan solos. Este botón es por si quieres forzarlo.')}</p>
-        ${all.brands.length ? html`<table class="table" style="margin-top:8px"><thead><tr><th>${t('Launcher')}</th><th>${t('Studio')}</th><th>${t('Versión')}</th><th>${t('Estado')}</th></tr></thead><tbody>
-          ${all.brands.map(b => `<tr><td><b>${esc(b.name)}</b> <small class="mono" style="color:var(--faint)">${esc(b.id)}</small></td><td>${esc(b.studioName)}</td><td>${esc(b.builtVersion || '—')}</td><td>${runBadge(b.run)}</td></tr>`).join('')}</tbody></table>`
+        ${all.brands.length ? html`<table class="table" style="margin-top:8px"><thead><tr><th>${t('Launcher')}</th><th>${t('Studio')}</th><th>${t('Versión')}</th><th>${t('Estado')}</th><th></th></tr></thead><tbody>
+          ${all.brands.map(b => `<tr><td><b>${esc(b.name)}</b> <small class="mono" style="color:var(--faint)">${esc(b.id)}</small></td><td>${esc(b.studioName)}</td><td>${esc(b.builtVersion || '—')}</td><td>${runBadge(b.run)}</td>
+            <td class="r"><button class="btn sm" data-move="${esc(b.id)}" data-name="${esc(b.name)}" data-studio="${esc(b.studio)}">${icon('external')}${t('Mover')}</button></td></tr>`).join('')}</tbody></table>`
           : `<p class="help">${t('Ningún studio tiene launcher propio todavía.')}</p>`}</div>` : ''}
     </div>`;
 
     // ------------------------------------------------ eventos
+    // Mover un launcher a otro studio (Creador)
+    $$('[data-move]', view).forEach(btn => btn.onclick = () => modal(async (m, close) => {
+      const id = btn.dataset.move, name = btn.dataset.name;
+      const studios = ((await api('GET', '/onyx/studios')).studios || []).filter(x => x.id !== btn.dataset.studio && !x.suspended);
+      const taken = new Set((all.brands || []).map(b => b.studio));
+      m.innerHTML = html`<div class="mh"><h3>${icon('external')}${t('Mover {name} a otro studio', { name })}</h3></div><div class="mb">
+        <p class="sub" style="margin-top:0">${t('Conserva su nombre, su enlace de descarga y sus instaladores. Se recompila solo (unos 15 minutos) para quedar conectado al studio nuevo.')}</p>
+        ${studios.length ? `<div class="field"><span class="label">${t('Studio nuevo')}</span><select class="input" id="to">
+          ${studios.map(x => `<option value="${esc(x.id)}" ${taken.has(x.id) ? 'disabled' : ''}>${esc(x.name)}${taken.has(x.id) ? ' · ' + esc(t('ya tiene launcher')) : ''}</option>`).join('')}</select></div>`
+          : `<p class="help">${t('No hay otro studio. Créalo primero en Kopi → Studios → Nuevo studio.')}</p>`}</div>
+        <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn primary" id="ok" ${studios.some(x => !taken.has(x.id)) ? '' : 'disabled'}>${icon('check')}${t('Mover')}</button></div>`;
+      const sel = $('#to', m); if (sel && sel.selectedOptions[0] && sel.selectedOptions[0].disabled) { const f = [...sel.options].find(o => !o.disabled); if (f) sel.value = f.value; }
+      $('#no', m).onclick = close;
+      $('#ok', m).onclick = async (e) => {
+        busy(e.currentTarget, true);
+        try {
+          const r = await api('POST', `/onyx/brands/${encodeURIComponent(id)}/move`, { studio: sel.value });
+          toast(r.rebuilt ? t('Movido a {s}. Se está recompilando.', { s: r.studio.name }) : t('Movido a {s}. Pulsa «Compilar launcher» en ese studio.', { s: r.studio.name }));
+          close(); S.me = null; V.launchers(view);
+        } catch (err) { fail(err); busy(e.currentTarget, false); }
+      };
+    }));
     const read = () => ({
       name: $('#b-name', view).value.trim(), accent: $('#b-acc', view).value, accent2: $('#b-acc2', view).dataset.set ? $('#b-acc2', view).value : (d.accent2 || null),
       tagline: $('#b-tag', view).value.trim(), discord: $('#b-dc', view).value.trim(), web: $('#b-web', view).value.trim(), store: $('#b-store', view).value.trim(),

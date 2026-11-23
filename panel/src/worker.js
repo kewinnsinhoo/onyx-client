@@ -233,7 +233,7 @@ async function panelApi(req, env, u, path, m, ctx) {
     if (!isCreator) fail(403, 'forbidden', 'Solo el Creador puede entrar aquí');
     if (parts[1] === 'studios' && !parts[2] && m === 'POST') return createStudio(req, env, user);
     if (parts[1] === 'launcher' && m === 'GET') return launcherStats(env, u.searchParams);
-    if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m);
+    if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m, parts[3]);
     if (parts[1] === 'badges') return creatorBadges(env, user, m, req);
     if (parts[1] === 'capes') return creatorCapes({ env, user, req }, parts[2], parts[3], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);

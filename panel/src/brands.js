@@ -156,13 +156,36 @@ export async function studioBrandApi(c, sub, m) {
 }
 
 // ---------------------------------------------------------------- Creador
-export async function creatorBrandsApi(c, sub, m) {
+export async function creatorBrandsApi(c, sub, m, action) {
   const { env, user } = c;
   if (!sub && m === 'GET') {
     const rows = (await env.DB.prepare('SELECT b.*, s.name AS studio_name FROM brands b JOIN studios s ON s.id = b.studio_id WHERE s.deleted_at IS NULL ORDER BY b.created_at').all()).results;
     const out = [];
     for (const r of rows) out.push({ id: r.id, name: r.name, studio: r.studio_id, studioName: r.studio_name, builtVersion: r.built_version, run: await lastRun(env, r.id) });
     return json({ brands: out, repo: repo(env), github: !!env.GITHUB_TOKEN });
+  }
+  // Mover un launcher a otro studio (solo el Creador): conserva su nombre, su enlace y sus instaladores, y se
+  // recompila solo, porque el studio va dentro del launcher (qué instancias deja usar)
+  if (sub && action === 'move' && m === 'POST') {
+    const row = await env.DB.prepare('SELECT * FROM brands WHERE id = ?').bind(String(sub)).first();
+    if (!row) fail(404, 'brand', 'Launcher no encontrado');
+    const b = await readJson(c.req);
+    const to = await env.DB.prepare('SELECT id, name FROM studios WHERE id = ? AND deleted_at IS NULL').bind(String(b.studio || '')).first();
+    if (!to) fail(404, 'studio', 'Ese studio no existe');
+    if (to.id === row.studio_id) fail(400, 'same', 'El launcher ya es de ese studio');
+    const busyBrand = await env.DB.prepare('SELECT name FROM brands WHERE studio_id = ?').bind(to.id).first();
+    if (busyBrand) fail(409, 'has_brand', `${to.name} ya tiene su launcher (${busyBrand.name}). Un studio solo puede tener uno.`);
+    const from = await env.DB.prepare('SELECT id, name FROM studios WHERE id = ?').bind(row.studio_id).first();
+    await env.DB.batch([
+      env.DB.prepare('UPDATE brands SET studio_id = ?, updated_at = ? WHERE id = ?').bind(to.id, now(), row.id),
+      env.DB.prepare('UPDATE studios SET brand_allowed = 1 WHERE id = ?').bind(to.id)
+    ]);
+    await audit(env, user, to.id, 'brand.move', row.name, { from: from ? from.name : row.studio_id });
+    let rebuilt = false;
+    if (env.GITHUB_TOKEN && JSON.parse(row.data).icon) {
+      try { await dispatch(env, row.id); await env.DB.prepare('UPDATE brands SET build_requested_at = ? WHERE id = ?').bind(now(), row.id).run(); rebuilt = true; } catch { /* se puede recompilar a mano */ }
+    }
+    return json({ ok: true, studio: { id: to.id, name: to.name }, rebuilt });
   }
   if (sub === 'rebuild' && m === 'POST') {
     const rows = (await env.DB.prepare("SELECT b.id, b.data FROM brands b JOIN studios s ON s.id = b.studio_id WHERE s.deleted_at IS NULL AND s.brand_allowed = 1").all()).results;

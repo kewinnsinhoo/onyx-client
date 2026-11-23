@@ -598,6 +598,29 @@ await test('Launcher de marca: el creador de Kopi compila en su studio (sin perm
   delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
 });
 
+await test('Launcher de marca: el Creador lo mueve a otro studio (conserva enlace y se recompila)', async () => {
+  const list = (await call('GET', '/api/onyx/brands', { cookie: creator })).data.brands;
+  const br = list.find(b => b.id === 'nova-launcher');
+  await call('POST', '/api/onyx/studios', { cookie: creator, body: { name: 'Nova Studios Prueba' } });
+  const studios = (await call('GET', '/api/onyx/studios', { cookie: creator })).data.studios;
+  const withBrand = new Set(list.map(b => b.studio));
+  const free = studios.find(x => x.name === 'Nova Studios Prueba');
+  assert.ok(br && free, 'hay un launcher y un studio libre');
+  assert.strictEqual((await call('POST', `/api/onyx/brands/${br.id}/move`, { cookie: other, body: { studio: free.id } })).status, 403, 'solo el Creador');
+  const busyTo = list.find(b => b.id !== br.id);
+  if (busyTo) assert.strictEqual((await call('POST', `/api/onyx/brands/${br.id}/move`, { cookie: creator, body: { studio: busyTo.studio } })).status, 409, 'un studio, un launcher');
+  let dispatched = 0;
+  env.GITHUB_TOKEN = 'tok';
+  env.GITHUB_FETCH = async (u) => (u.endsWith('/dispatches') ? (dispatched++, new Response(null, { status: 204 })) : new Response('{"workflow_runs":[]}', { status: 200 }));
+  const r = await call('POST', `/api/onyx/brands/${br.id}/move`, { cookie: creator, body: { studio: free.id } });
+  assert.strictEqual(r.status, 200, JSON.stringify(r.data));
+  assert.deepStrictEqual([r.data.studio.id, r.data.rebuilt, dispatched], [free.id, true, 1]);
+  const after = (await call('GET', '/api/onyx/brands', { cookie: creator })).data.brands.find(b => b.id === br.id);
+  assert.strictEqual(after.studio, free.id, 'mismo id (mismo enlace), studio nuevo');
+  assert.strictEqual((await call('GET', `/api/public/brands/${br.id}/build`)).status, 200, 'GitHub puede fabricarlo en el studio nuevo');
+  delete env.GITHUB_TOKEN; delete env.GITHUB_FETCH;
+});
+
 await test('Kopi Skins: skins en los servidores (premium y no premium)', async () => {
   // opción de la instancia (activada por defecto; las instancias antiguas sin el campo también)
   assert.strictEqual(defaults().kopiSkins, true);

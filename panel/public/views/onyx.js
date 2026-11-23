@@ -66,6 +66,7 @@
     'brand.create': ['rocket', '{user} creó el launcher {target}'],
     'brand.update': ['rocket', '{user} cambió el launcher {target}'],
     'brand.build': ['rocket', '{user} mandó compilar el launcher {target}'],
+    'brand.move': ['rocket', '{user} trajo el launcher {target} a este studio'],
     'brand.rebuild': ['rocket', '{user} mandó recompilar todos los launchers de marca'],
     'cape.give': ['gift', '{user} regaló la capa {target} a {names}'],
     'badge.create': ['badge', '{user} creó la insignia {target}'],
