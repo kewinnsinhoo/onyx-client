@@ -66,6 +66,16 @@ export default {
 };
 
 // ---------------------------------------------------------------- rutas
+// La página de descarga de un launcher de marca. Ojo: si se pide «/l.html», Cloudflare contesta «vete a /l» y en esa
+// redirección se perdía el nombre del launcher (salía «Este launcher no existe»). Se sirve su contenido aquí mismo,
+// sin redirigir, y la dirección del navegador no cambia.
+async function downloadPage(env, u) {
+  let r = await env.ASSETS.fetch(new Request(new URL('/l', u)));
+  for (let i = 0; i < 3 && r.status >= 300 && r.status < 400 && r.headers.get('Location'); i++) r = await env.ASSETS.fetch(new Request(new URL(r.headers.get('Location'), u)));
+  const h = new Headers(r.headers); h.set('Cache-Control', 'no-cache');
+  return new Response(r.body, { status: r.status === 304 ? 200 : r.status, headers: h });
+}
+
 async function route(req, env, ctx) {
   const u = new URL(req.url);
   const p = u.pathname;
@@ -76,9 +86,9 @@ async function route(req, env, ctx) {
   // Capas de Kopi animadas dentro del juego (mod Cape Provider): /capes/<nombre>.png
   if (p.startsWith('/capes/') && (m === 'GET' || m === 'HEAD')) { await ensureSchema(env.DB); return capesPublic(env, p.slice(7)); }
   // Página pública de descarga de un launcher de marca: panel.onyxclient.site/l/<id>
-  if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
+  if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return downloadPage(env, u);
   // Enlace corto de la página de descarga (algunas apps cortan el enlace al pegarlo): /l?nova-launcher
-  if (p === '/l' && /^[a-z][a-z0-9-]{1,31}$/.test(u.search.slice(1).split('&')[0].replace(/^id=/, '')) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
+  if (p === '/l' && /^[a-z][a-z0-9-]{1,31}$/.test(u.search.slice(1).split('&')[0].replace(/^id=/, '')) && env.ASSETS) return downloadPage(env, u);
   if (p === '/auth/login') return authLogin(req, env, u);
   if (p === '/auth/callback') return authCallback(req, env, u);
   if (p === '/auth/logout' && m === 'POST') return authLogout(req, env);
