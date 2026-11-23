@@ -3,7 +3,7 @@
 // El Creador ve además las especiales de Kopi («Equipo Kopi», «Beta tester») y las da a mano.
 (function () {
   const V = window.Views;
-  const RAR = () => ({ common: t('Común'), rare: t('Rara'), epic: t('Épica'), legendary: t('Legendaria') });
+  const RAR = () => ({ common: t('Común'), rare: t('Rara'), epic: t('Épica'), legendary: t('Legendaria'), mythic: t('Mítica') });
   const ruleText = (b, insts) => {
     const n = (id) => (insts.find(i => i.id === id) || {}).name || id;
     if (b.rule.type === 'hours') return t('Sola: {h} h jugando {inst}', { h: b.rule.hours, inst: n(b.rule.instance) });

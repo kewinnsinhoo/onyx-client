@@ -1102,3 +1102,9 @@ a.g-shot:hover { border-color: var(--accent); }
 
 /* con muchas pestañas: en pantallas estrechas bajan a otra fila en vez de quedar escondidas */
 .tabs { flex-wrap: wrap; overflow-x: visible; }
+
+/* Mítica (insignia «Creador»): oro que brilla */
+.bdg-medal.r-mythic { filter: drop-shadow(0 6px 18px rgba(255, 200, 70, .55)); }
+.bdg-r.r-mythic { background: linear-gradient(90deg, #fff3b0, #ffc23a, #fff3b0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: mythText 3s linear infinite; font-weight: 800; }
+@keyframes mythText { to { background-position: -200% 0; } }
+.bdg-card.r-mythic::before { background: radial-gradient(60% 100% at 50% 0, rgba(255, 210, 80, .28), transparent); }

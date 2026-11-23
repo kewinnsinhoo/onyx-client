@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.9', date: '2026-11-22', items: [
+      ['crown', 'Nueva rareza «Mítica» para las insignias: oro que brilla, estrellas que parpadean y una corona. La primera es la insignia «Creador».',
+        'New “Mythic” badge rarity: shining gold, twinkling stars and a crown. The first one is the “Creator” badge.',
+        'Nova raresa «Mítica» per a les insígnies: or que brilla, estrelles que parpellegen i una corona. La primera és la insígnia «Creador».',
+        'Nouvelle rareté « Mythique » pour les badges : or brillant, étoiles scintillantes et une couronne. Le premier est le badge « Créateur ».']
+    ]
+  },
+  {
     v: '1.8.8', date: '2026-11-22', items: [
       ['sparkles', 'Launchers de los studios con su marca en todo: el nombre en todos los textos, su logo en vez del de Kopi, sus colores en fondos y tarjetas, y botones que se leen bien con cualquier color (también blanco).',
         'Studio launchers fully branded: their name in every text, their logo instead of Kopi’s, their colors on backgrounds and cards, and buttons that stay readable with any color (white too).',

@@ -32,7 +32,9 @@ export const BUILTIN = [
   { id: 'early-bird', cat: 'secret', icon: 'sunrise', rarity: 'rare', name: 'Madrugador', desc: 'Juega entre las 5 y las 7 de la mañana', secret: true },
   { id: 'studio-staff', cat: 'special', icon: 'badge', rarity: 'rare', name: 'Staff de studio', desc: 'Eres staff de una instancia' },
   { id: 'kopi-beta', cat: 'special', icon: 'flask', rarity: 'epic', name: 'Beta tester', desc: 'Ayudaste a probar Kopi antes que nadie', grant: true },
-  { id: 'kopi-team', cat: 'special', icon: 'sparkles', rarity: 'legendary', name: 'Equipo Kopi', desc: 'Forma parte del equipo de Kopi', grant: true }
+  { id: 'kopi-team', cat: 'special', icon: 'sparkles', rarity: 'legendary', name: 'Equipo Kopi', desc: 'Forma parte del equipo de Kopi', grant: true },
+  // Única: la del creador de Kopi (rareza «mítica», con su propio dibujo)
+  { id: 'kopi-creator', cat: 'special', icon: 'crown', rarity: 'mythic', name: 'Creador', desc: 'Creó Kopi Client', grant: true }
 ];
 const BY_ID = Object.fromEntries(BUILTIN.map(b => [b.id, b]));
 
@@ -164,11 +166,13 @@ export async function badgesOf(env, key, { tz = 0 } = {}) {
   const earnedIds = new Set(list.filter(b => b.earned).map(b => b.id));
   showcase = showcase.filter(id => earnedIds.has(id)).slice(0, 3);
   if (!showcase.length) showcase = rarest(list).slice(0, 3).map(b => b.id); // sin elegir: las más raras
+  if (earnedIds.has('kopi-creator')) showcase = ['kopi-creator', ...showcase.filter(id => id !== 'kopi-creator')].slice(0, 3); // la del creador, siempre la primera
   return { badges: list, showcase, facts: { hours: Math.round(facts.hours * 10) / 10, streak: facts.streak, instances: facts.instances } };
 }
 
 function rarest(list) {
-  return list.filter(b => b.earned).sort((a, b) => (RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity)) || (b.at || 0) - (a.at || 0));
+  const ORDER = [...RARITIES, 'mythic']; // la mítica, la primera
+  return list.filter(b => b.earned).sort((a, b) => (ORDER.indexOf(b.rarity) - ORDER.indexOf(a.rarity)) || (b.at || 0) - (a.at || 0));
 }
 
 async function studioNames(env, ids) {

@@ -16,7 +16,7 @@
       ctaT: '¿Quieres tu propio perfil?', ctaP: 'Descarga Kopi Client, juega y actívalo en Mi perfil → Tu perfil en la web.', ctaB: 'Descargar Kopi Client',
       nfT: 'Este perfil no existe o es privado', nfP: 'Cada jugador decide si su perfil se ve en la web. Si es el tuyo, actívalo en el launcher: Mi perfil → Tu perfil en la web.',
       errT: 'No se pudo cargar el perfil', errP: 'Prueba otra vez en un momento.', retry: 'Reintentar',
-      common: 'Común', rare: 'Rara', epic: 'Épica', legendary: 'Legendaria', watching: '{n} viendo'
+      common: 'Común', rare: 'Rara', epic: 'Épica', legendary: 'Legendaria', mythic: 'Mítica', watching: '{n} viendo'
     },
     en: {
       kicker: 'Kopi Client player', premium: 'Premium', online: 'Playing now', live: 'Live on {p}',

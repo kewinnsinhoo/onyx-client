@@ -434,6 +434,9 @@
     ['Si el studio ya trae alguno, se usa el suyo. Se aplica la próxima vez que pulses Jugar.', 'If the studio already includes one, theirs is used. It applies the next time you press Play.', 'Si l’studio ja en porta algun, es fa servir el seu. S’aplica la propera vegada que premis Jugar.', 'Si le studio en inclut déjà un, c’est le sien qui est utilisé. Ça s’applique la prochaine fois que tu cliques sur Jouer.'],
     ['Esta instancia es vanilla: el modo rendimiento necesita Fabric, Forge o NeoForge.', 'This instance is vanilla: performance mode needs Fabric, Forge or NeoForge.', 'Aquesta instància és vanilla: el mode rendiment necessita Fabric, Forge o NeoForge.', 'Cette instance est vanilla : le mode performance nécessite Fabric, Forge ou NeoForge.'],
     ['Modo rendimiento activado', 'Performance mode on', 'Mode rendiment activat', 'Mode performance activé'],
+    ['Mítica', 'Mythic', 'Mítica', 'Mythique'],
+    ['Creador', 'Creator', 'Creador', 'Créateur'],
+    ['Creó Kopi Client', 'Created Kopi Client', 'Va crear Kopi Client', 'A créé Kopi Client'],
     ['El panel de Kopi ha llegado a su límite de hoy. Vuelve a funcionar solo en unas horas (a las 00:00 UTC).', 'The Kopi panel has reached today’s limit. It will work again by itself in a few hours (at 00:00 UTC).', 'El panell de Kopi ha arribat al seu límit d’avui. Tornarà a funcionar sol d’aquí a unes hores (a les 00:00 UTC).', 'Le panel Kopi a atteint sa limite du jour. Il refonctionnera tout seul dans quelques heures (à 00:00 UTC).'],
     ['El panel de Kopi tuvo un problema. Inténtalo de nuevo en un momento.', 'The Kopi panel had a problem. Try again in a moment.', 'El panell de Kopi ha tingut un problema. Torna-ho a provar d’aquí a un moment.', 'Le panel Kopi a eu un problème. Réessaie dans un instant.'],
     ['No se pudo conectar con {host}: tu internet no encuentra esa web. Revisa el WiFi o el cable y vuelve a probar.', 'Couldn’t connect to {host}: your internet can’t find that site. Check your WiFi or cable and try again.', 'No s’ha pogut connectar amb {host}: el teu internet no troba aquesta web. Revisa el WiFi o el cable i torna-ho a provar.', 'Impossible de se connecter à {host} : ta connexion ne trouve pas ce site. Vérifie le WiFi ou le câble et réessaie.'],
@@ -689,7 +692,7 @@
   // Launcher de marca: donde pone «Kopi» se escribe el nombre de la marca («Kopi Client» → «Nova Launcher»,
   // «Kopi» → «Nova», «KopiGuard» → «NovaGuard»). Menos en las frases que hablan de Kopi a propósito.
   let BR = null;
-  const KEEP = new Set(['Launcher de {s} · con la tecnología de Kopi Client', 'Este código es de otro studio. Úsalo en Kopi Client.']);
+  const KEEP = new Set(['Launcher de {s} · con la tecnología de Kopi Client', 'Este código es de otro studio. Úsalo en Kopi Client.', 'Creó Kopi Client']);
   window.I18N.brand = (name) => {
     const full = String(name || '').trim();
     if (!full) { BR = null; return; }

@@ -459,7 +459,9 @@ CREATE INDEX guard_rtc_play ON guard_rtc(play_id, state)`,
   country TEXT,
   isp TEXT
 );
-CREATE INDEX net_errors_at ON net_errors(at)`
+CREATE INDEX net_errors_at ON net_errors(at)`,
+  // La insignia «Creador» (mítica) para el creador de Kopi
+  `INSERT OR IGNORE INTO badge_grants (badge_id, player_key, player_name, granted_by, granted_at) VALUES ('kopi-creator', 'kewinsinho', 'Kewinsinho', 'sistema', 1795400000000)`
 ];
 
 export function statements(sql) {

@@ -105,3 +105,7 @@
   .pf-stat { text-align: left; }
   .pf-cta { flex-direction: column; text-align: center; }
 }
+/* Mítica (insignia «Creador») */
+.bdg-medal.r-mythic { filter: drop-shadow(0 6px 18px rgba(255, 200, 70, .55)); }
+.bdg-r.r-mythic, .pf-badge .r-mythic { background: linear-gradient(90deg, #fff3b0, #ffc23a, #fff3b0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: mythText 3s linear infinite; font-weight: 800; }
+@keyframes mythText { to { background-position: -200% 0; } }

@@ -262,6 +262,8 @@
     "Aplicación de Discord (opcional)": ["Discord app (optional)", "Aplicació de Discord (opcional)", "Application Discord (facultatif)"],
     "Para que Discord ponga «Jugando {name}» en vez de «Jugando Kopi Client». En discord.com/developers crea una aplicación con el nombre de tu launcher, en OAuth2 añade el redirect http://127.0.0.1:53682/discord y pega aquí su Application ID. Después compila.": ["So Discord shows “Playing {name}” instead of “Playing Kopi Client”. At discord.com/developers create an application named like your launcher, in OAuth2 add the redirect http://127.0.0.1:53682/discord and paste its Application ID here. Then build.", "Perquè Discord posi «Jugant a {name}» en lloc de «Jugant a Kopi Client». A discord.com/developers crea una aplicació amb el nom del teu launcher, a OAuth2 afegeix el redirect http://127.0.0.1:53682/discord i enganxa aquí el seu Application ID. Després compila.", "Pour que Discord affiche « Joue à {name} » au lieu de « Joue à Kopi Client ». Sur discord.com/developers crée une application au nom de ton launcher, dans OAuth2 ajoute la redirection http://127.0.0.1:53682/discord et colle ici son Application ID. Puis compile."],
     "tu launcher": ["your launcher", "el teu launcher", "ton launcher"],
+    "Mítica": ["Mythic", "Mítica", "Mythique"],
+    "Creó Kopi Client": ["Created Kopi Client", "Va crear Kopi Client", "A créé Kopi Client"],
     // Uso del launcher
     "Desconocido": ["Unknown", "Desconegut", "Inconnu"],
     "Uso del launcher": ["Launcher usage", "Ús del launcher", "Utilisation du launcher"],

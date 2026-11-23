@@ -1321,6 +1321,19 @@ await test('Insignias: launcher, vitrina, studio (a mano y solas) y especiales d
   assert.ok(!r.data.badges.some(b => b.id === 'sb:' + auto.id));
 });
 
+await test('Insignia «Creador» (mítica) para Kewinsinho', async () => {
+  const { badgesOf, BUILTIN } = await import('../src/badges.js');
+  const def = BUILTIN.find(b => b.id === 'kopi-creator');
+  assert.ok(def && def.rarity === 'mythic' && def.icon === 'crown' && def.grant, 'existe y es especial');
+  await env.DB.prepare("INSERT OR REPLACE INTO player_showcase (player_key, showcase) VALUES ('kewinsinho', '[]')").run().catch(() => {});
+  const k = await badgesOf(env, 'kewinsinho');
+  const cr = k.badges.find(b => b.id === 'kopi-creator');
+  assert.ok(cr && cr.earned, 'Kewinsinho la tiene');
+  assert.strictEqual(k.showcase[0], 'kopi-creator', 'sale la primera en su vitrina');
+  const o = await badgesOf(env, 'otro_jugador');
+  assert.ok(!o.badges.find(b => b.id === 'kopi-creator').earned, 'nadie más la tiene');
+});
+
 await test('Perfil público en la web: solo si el jugador lo activa', async () => {
   const h = await player('PixelPro', false);
   // por defecto, privado

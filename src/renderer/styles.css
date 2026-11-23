@@ -1193,3 +1193,10 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .lg-bg.is-brand { max-height: 72%; object-fit: contain; opacity: .08; }
 .pf-mark.is-brand { width: 300px; max-height: 240px; object-fit: contain; top: auto; bottom: -20px; right: -30px; opacity: .08; }
 .pf-brand.brand-name { height: auto; font-size: 14px; font-weight: 800; letter-spacing: .02em; color: var(--text); }
+
+/* Mítica (insignia «Creador»): oro que brilla */
+.bdg-medal.r-mythic { filter: drop-shadow(0 6px 18px rgba(255, 200, 70, .55)); }
+.bdg-r.r-mythic { background: linear-gradient(90deg, #fff3b0, #ffc23a, #fff3b0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: mythText 3s linear infinite; font-weight: 800; }
+@keyframes mythText { to { background-position: -200% 0; } }
+.pf-bt.on.r-mythic { background: radial-gradient(80% 60% at 50% 0, rgba(255, 210, 80, .16), transparent), rgba(255, 255, 255, .03); border-color: rgba(255, 210, 80, .35); }
+.modal.nb-modal.r-mythic .nb-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 210, 80, .22) 0 8deg, transparent 8deg 22deg); }

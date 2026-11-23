@@ -36,7 +36,8 @@
     common: ['#c3cad8', '#6b7488', '#e8edf6'],
     rare: ['#6cb6ff', '#2b5fd9', '#bfe0ff'],
     epic: ['#d38bff', '#7a2ff0', '#f0d4ff'],
-    legendary: ['#ffd96b', '#ff7a2f', '#fff3c4']
+    legendary: ['#ffd96b', '#ff7a2f', '#fff3c4'],
+    mythic: ['#fff1a8', '#b8860b', '#fffbe6']
   };
   const RARITIES = ['common', 'rare', 'epic', 'legendary'];
   let seq = 0;
@@ -53,9 +54,34 @@
     return R[b.rarity] || R.common;
   }
 
+  // Mítica (solo «Creador»): obsidiana con marco de oro que destella, corona de oro, estrellas que parpadean y un aura
+  function mythic(b, size, id) {
+    const ico = P[b.icon] || P.crown;
+    const star = (x, y, r, d) => `<path d="M${x} ${y - r}l${r * 0.28} ${r * 0.72} ${r * 0.72} ${r * 0.28}-${r * 0.72} ${r * 0.28}-${r * 0.28} ${r * 0.72}-${r * 0.28}-${r * 0.72}-${r * 0.72}-${r * 0.28} ${r * 0.72}-${r * 0.28}z" fill="#fffbe6"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="${d}s" repeatCount="indefinite"/></path>`;
+    return `<svg class="bdg-medal on r-mythic" width="${size}" height="${Math.round(size * 1.125)}" style="width:${size}px;height:${Math.round(size * 1.125)}px;overflow:visible" viewBox="0 0 64 72" aria-hidden="true">
+      <defs>
+        <radialGradient id="${id}h" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd76a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd76a" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff6c2"><animate attributeName="stop-color" values="#fff6c2;#ffc94d;#fff6c2" dur="3s" repeatCount="indefinite"/></stop>
+          <stop offset=".45" stop-color="#e6a817"/><stop offset=".7" stop-color="#fff0a0"><animate attributeName="offset" values=".55;.85;.55" dur="3s" repeatCount="indefinite"/></stop>
+          <stop offset="1" stop-color="#9a6a06"/></linearGradient>
+        <linearGradient id="${id}o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2233"/><stop offset="1" stop-color="#0c0a10"/></linearGradient>
+        <linearGradient id="${id}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".55" stop-color="#ffd24a"/><stop offset="1" stop-color="#c88a0c"/></linearGradient>
+        <clipPath id="${id}k"><path d="M32 3 59 18.5v35L32 69 5 53.5v-35z"/></clipPath></defs>
+      <circle cx="32" cy="36" r="34" fill="url(#${id}h)"><animate attributeName="r" values="30;35;30" dur="3s" repeatCount="indefinite"/></circle>
+      <path d="M32 3 59 18.5v35L32 69 5 53.5v-35z" fill="url(#${id}g)"/>
+      <path d="M32 8.5 54.5 21.5v29L32 63.5 9.5 50.5v-29z" fill="url(#${id}o)" stroke="#ffe48a" stroke-opacity=".7" stroke-width="1"/>
+      <g clip-path="url(#${id}k)"><rect class="bdg-shine" x="-40" y="-10" width="14" height="100" fill="#fff" opacity=".5" transform="rotate(20)"/></g>
+      <g transform="translate(15 20) scale(1.42)"><path d="${(ico.match(/d="([^"]+)"/) || [])[1] || 'm3 8 4.5 4L12 5l4.5 7L21 8l-2 11H5z'}" fill="url(#${id}c)" stroke="#fff3c0" stroke-width=".9" stroke-linejoin="round"/>
+        <circle cx="12" cy="5" r="1.3" fill="#ff5ad1"/><circle cx="3" cy="8" r="1.1" fill="#7cd4ff"/><circle cx="21" cy="8" r="1.1" fill="#7cd4ff"/></g>
+      ${star(12, 14, 3.2, 0)}${star(53, 26, 2.6, 0.8)}${star(50, 58, 2.2, 1.6)}${star(14, 52, 2, 1.2)}
+    </svg>`;
+  }
+
   // La medalla: hexágono con el color de la rareza, un aro interior y el icono en blanco
   function medal(b, size = 56) {
     const id = 'bdg' + (++seq);
+    if (b.earned && b.rarity === 'mythic') return mythic(b, size, id);
     const locked = !b.earned;
     const [a, d, g] = locked ? ['#3a3a4a', '#1c1c26', '#5a5a6e'] : colors(b);
     const ico = P[locked && b.secret ? 'question' : b.icon] || P.star;
@@ -74,6 +100,6 @@
     </svg>`;
   }
 
-  const rarityName = { common: 'Común', rare: 'Rara', epic: 'Épica', legendary: 'Legendaria' };
+  const rarityName = { common: 'Común', rare: 'Rara', epic: 'Épica', legendary: 'Legendaria', mythic: 'Mítica' };
   window.Badge = { medal, path: (i) => P[i] || '', icons: Object.keys(P), RARITIES, rarityName, colors };
 })();
