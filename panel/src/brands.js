@@ -20,6 +20,8 @@ export function cleanBrand(b, cur = {}) {
   if ('discord' in b) d.discord = httpsOnly(b.discord);
   if ('web' in b) d.web = httpsOnly(b.web);
   if ('store' in b) d.store = httpsOnly(b.store);
+  // Aplicación de Discord propia: así Discord pone «Jugando <tu launcher>» en vez de «Jugando Kopi Client»
+  if ('discordClientId' in b) { const v = String(b.discordClientId || '').trim(); d.discordClientId = /^\d{15,22}$/.test(v) ? v : null; }
   if ('onlyStudio' in b) d.onlyStudio = b.onlyStudio !== false;
   return d;
 }
@@ -33,6 +35,7 @@ function publicBrand(row, studio, origin) {
     icon: abs(d.icon), logo: abs(d.logo), background: abs(d.background),
     accent: d.accent || '#f58ee0', accent2: d.accent2 || null, tagline: d.tagline || '',
     discord: d.discord || null, web: d.web || null, store: d.store || null, onlyStudio: d.onlyStudio !== false,
+    discordClientId: d.discordClientId || null,
     version: row.built_version || null
   };
 }

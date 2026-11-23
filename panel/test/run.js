@@ -534,6 +534,11 @@ await test('Launchers de marca: permiso, ficha, compilar y descargas', async () 
   assert.strictEqual(sv.status, 201, JSON.stringify(sv.data));
   const id = sv.data.id;
   assert.strictEqual(id, 'nova-launcher');
+  // aplicación de Discord propia (solo números)
+  await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { discordClientId: '1234567890123456789' } });
+  assert.strictEqual((await call('GET', `/api/public/brands/${id}`)).data.brand.discordClientId, '1234567890123456789');
+  await call('PUT', `/api/s/${nova.id}/brand`, { cookie: other, body: { discordClientId: 'no-vale' } });
+  assert.strictEqual((await call('GET', `/api/public/brands/${id}`)).data.brand.discordClientId, null);
   // compilar: sin icono no; con icono avisa a GitHub
   assert.strictEqual((await call('POST', `/api/s/${nova.id}/brand/build`, { cookie: other })).data.error, 'icon');
   const icon = await call('POST', `/api/s/${nova.id}/media?name=icon.png`, { cookie: other, raw: new Uint8Array([137, 80, 78, 71, 1, 2, 3]), headers: { 'Content-Type': 'image/png' } });

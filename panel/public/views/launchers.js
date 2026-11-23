@@ -68,6 +68,9 @@
           <div class="row"><div class="field"><span class="label">Discord</span><input class="input" id="b-dc" value="${esc(d.discord || '')}" placeholder="https://discord.gg/…" ${editable ? '' : 'disabled'}></div>
             <div class="field"><span class="label">${t('Web')}</span><input class="input" id="b-web" value="${esc(d.web || '')}" placeholder="https://" ${editable ? '' : 'disabled'}></div></div>
           <div class="field"><span class="label">${t('Tienda (opcional)')}</span><input class="input" id="b-store" value="${esc(d.store || '')}" placeholder="https://" ${editable ? '' : 'disabled'}></div>
+          <div class="field"><span class="label">${t('Aplicación de Discord (opcional)')}</span>
+            <span class="help">${t('Para que Discord ponga «Jugando {name}» en vez de «Jugando Kopi Client». En discord.com/developers crea una aplicación con el nombre de tu launcher, en OAuth2 añade el redirect http://127.0.0.1:53682/discord y pega aquí su Application ID. Después compila.', { name: esc(d.name || t('tu launcher')) })}</span>
+            <input class="input mono" id="b-dcid" value="${esc(d.discordClientId || '')}" placeholder="1234567890123456789" inputmode="numeric" maxlength="22" ${editable ? '' : 'disabled'}></div>
           <div class="set"><div class="t"><b>${t('Solo las instancias de {s}', { s: esc(S.studio.name) })}</b><small>${t('Los códigos de otros studios no se pueden usar en tu launcher.')}</small></div>
             <label class="switch"><input type="checkbox" id="b-only" ${d.onlyStudio !== false ? 'checked' : ''} ${editable ? '' : 'disabled'}><span></span></label></div>
           ${editable ? html`<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="b-save">${icon('check')}${t('Guardar')}</button>
@@ -127,7 +130,7 @@
     }));
     const read = () => ({
       name: $('#b-name', view).value.trim(), accent: $('#b-acc', view).value, accent2: $('#b-acc2', view).dataset.set ? $('#b-acc2', view).value : (d.accent2 || null),
-      tagline: $('#b-tag', view).value.trim(), discord: $('#b-dc', view).value.trim(), web: $('#b-web', view).value.trim(), store: $('#b-store', view).value.trim(),
+      tagline: $('#b-tag', view).value.trim(), discord: $('#b-dc', view).value.trim(), web: $('#b-web', view).value.trim(), store: $('#b-store', view).value.trim(), discordClientId: $('#b-dcid', view).value.replace(/\D/g, ''),
       onlyStudio: $('#b-only', view).checked, icon: d.icon || null, logo: d.logo || null, background: d.background || null
     });
     const repaint = () => { const pv = $('#b-pv', view); if (pv) pv.innerHTML = preview({ ...d, ...read() }); };

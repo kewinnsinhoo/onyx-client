@@ -420,6 +420,7 @@ Para que se cuenten solos:
 - En vez del pulpo de Kopi sale el **logo** de la marca (o su icono si no tiene logo): inicio de sesión y tarjeta del perfil.
 - Fondos, tarjetas, bordes y brillos usan el color principal de la marca. Con colores claros (como el blanco) el texto de los botones va oscuro para que se lea.
 - La página del navegador al iniciar sesión con Microsoft dice el nombre del launcher.
+- **Discord («Jugando …»):** ese nombre es el de la aplicación de Discord. Para que ponga el nombre del launcher: en discord.com/developers/applications → **New Application** con el nombre del launcher → en **OAuth2** añadir el redirect `http://127.0.0.1:53682/discord` → copiar el **Application ID** → pegarlo en **Launchers → Aplicación de Discord** → **Guardar** y **Compilar launcher**.
 - Las capas se siguen llamando como en Kopi (p. ej. la capa «Kopi» sale como «Nova»), pero el dibujo es el mismo.
 
 ## Cosas a saber
