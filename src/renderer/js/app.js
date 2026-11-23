@@ -437,7 +437,7 @@
     if (!seen && !S.settings.onboarded) { await saveSettings({ lastSeenVersion: cur }).catch(() => {}); return; }
     if (seen && vcmp(cur, seen) <= 0) return;
     // Venía de una versión sin este aviso: solo lo de esta versión
-    const list = CHANGELOG.filter(e => vcmp(e.v, cur) <= 0 && (seen ? vcmp(e.v, seen) > 0 : vcmp(e.v, cur) === 0)).slice(0, 4);
+    const list = CHANGELOG.filter(e => e.items.length && vcmp(e.v, cur) <= 0 && (seen ? vcmp(e.v, seen) > 0 : vcmp(e.v, cur) === 0)).slice(0, 4);
     await saveSettings({ lastSeenVersion: cur }).catch(() => {});
     if (list.length) setTimeout(() => changesModal(list, { updated: true }), 700);
   }
@@ -481,10 +481,12 @@
     });
   }
 
-  const allChanges = () => changesModal((window.CHANGELOG || []).filter(e => vcmp(e.v, S.info.version) <= 0), { updated: false });
+  const allChanges = () => changesModal((window.CHANGELOG || []).filter(e => e.items.length && vcmp(e.v, S.info.version) <= 0), { updated: false });
 
   // ---------- novedades de la instancia ----------
-  const unseenNews = (i) => (i.news || []).filter(n => n.at > (i.newsSeen || 0)).length;
+  // Solo lo que escribe el studio (las listas automáticas de mods que cambian ya no se enseñan)
+  const newsOf = (i) => (i.news || []).filter(n => n.text && String(n.text).trim());
+  const unseenNews = (i) => newsOf(i).filter(n => n.at > (i.newsSeen || 0)).length;
   // Texto del studio: las líneas con «-» salen como lista; el resto, como párrafos
   function newsText(s) {
     const out = [];
@@ -500,18 +502,16 @@
   }
   function newsModal(id) {
     const inst = S.instances.find(i => i.id === id);
-    if (!inst || !(inst.news || []).length) return;
+    if (!inst || !newsOf(inst).length) return;
     const seen = inst.newsSeen || 0;
-    const chips = (l, cls, sign) => (l || []).map(x => `<span class="nw-chip ${cls}">${sign} ${esc(x)}</span>`).join('');
     modal((m, close) => {
       m.classList.add('news-modal');
       m.innerHTML = html`<div class="m-ico">${icon('megaphone')}</div>
         <h2>${t('Novedades de {name}', { name: esc(inst.name) })}</h2>
         <p class="sub">${inst.studio && inst.studio.name ? t('Lo último de {studio}.', { studio: esc(inst.studio.name) }) : t('Lo último de la instancia.')}</p>
-        <div class="news-list">${inst.news.map(n => html`<div class="news-item ${n.at > seen ? 'new' : ''}">
-          <div class="news-meta">${n.auto ? `<span class="news-tag">${icon('package')}${t('Archivos')}</span>` : ''}<span>${esc(UI.timeAgo(n.at))}</span>${n.at > seen ? `<span class="news-new">${t('Nuevo')}</span>` : ''}</div>
-          ${n.text ? `<div class="news-text">${newsText(n.text)}</div>` : ''}
-          ${n.auto ? html`<div class="nw-chips">${chips(n.auto.added, 'add', '+')}${chips(n.auto.updated, 'up', '↑')}${chips(n.auto.removed, 'del', '−')}${n.auto.config ? `<span class="nw-chip">${t('{n} ajustes cambiados', { n: n.auto.config })}</span>` : ''}</div>` : ''}
+        <div class="news-list">${newsOf(inst).map(n => html`<div class="news-item ${n.at > seen ? 'new' : ''}">
+          <div class="news-meta"><span>${esc(UI.timeAgo(n.at))}</span>${n.at > seen ? `<span class="news-new">${t('Nuevo')}</span>` : ''}</div>
+          <div class="news-text">${newsText(n.text)}</div>
         </div>`).join('')}</div>
         <div class="actions"><button class="btn btn-primary" data-a="ok">${t('Entendido')}</button></div>`;
       m.querySelector('[data-a=ok]').onclick = close;
@@ -816,7 +816,7 @@
   }
 
   window.App = {
-    go, rerender, play, stageText, checkBadges, newBadgeModal, badgeName, badgeDesc, crashModal, newsModal, unseenNews, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
+    go, rerender, play, stageText, checkBadges, newBadgeModal, badgeName, badgeDesc, crashModal, newsModal, unseenNews, newsOf, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
     loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);

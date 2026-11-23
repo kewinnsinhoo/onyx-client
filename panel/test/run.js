@@ -1122,35 +1122,27 @@ await test('KopiGuard: plugin del servidor (clave, avisos, foto del launcher)', 
   assert.strictEqual((await send({ ping: true })).status, 401);
 });
 
-await test('Novedades: lo que escribe el studio y los mods que cambian', async () => {
+await test('Novedades: solo lo que escribe el studio (los cambios de mods no salen solos)', async () => {
   const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Novedades' } });
   const gid = made.data.id;
   const base = `/api/s/onyx-studios/instances/${gid}`;
   const F = (path, sha) => ({ path, url: 'https://cdn.example.com/' + path, sha1: sha.repeat(40) });
-  // la primera subida no es una novedad
   let r = await call('PATCH', base, { cookie: creator, body: { state: 'open', data: { access: { public: true }, files: [F('mods/sodium-0.5.8.jar', 'a'), F('mods/lithium-0.12.jar', 'b'), F('config/x.json', 'c')] } } });
   assert.deepStrictEqual(r.data.data.news, []);
-  // cambian los mods → apunte automático
+  // cambian los mods → ya NO hay apunte automático
   r = await call('PATCH', base, { cookie: creator, body: { data: { files: [F('mods/sodium-0.6.0.jar', 'd'), F('mods/create-0.5.1.jar', 'e'), F('config/x.json', 'f')] } } });
-  let n = r.data.data.news;
-  assert.strictEqual(n.length, 1);
-  assert.deepStrictEqual([n[0].auto.added, n[0].auto.removed, n[0].auto.updated, n[0].auto.config], [['create-0.5.1'], ['lithium-0.12'], ['sodium-0.6.0'], 1]);
-  // otro cambio enseguida: se junta con el anterior
-  r = await call('PATCH', base, { cookie: creator, body: { data: { files: [F('mods/sodium-0.6.0.jar', 'd'), F('mods/create-0.5.1.jar', 'e'), F('mods/iris-1.8.jar', '1'), F('config/x.json', 'f')] } } });
-  n = r.data.data.news;
-  assert.strictEqual(n.length, 1);
-  assert.deepStrictEqual(n[0].auto.added, ['create-0.5.1', 'iris-1.8']);
-  // el studio escribe una novedad
+  assert.deepStrictEqual(r.data.data.news, []);
+  // el studio escribe una novedad (y había un apunte automático viejo guardado de antes)
+  const old = { id: 'viejo12345', at: Date.now() - 5000, text: '', auto: { added: ['iris-1.8'], removed: [], updated: [], config: 0 } };
   const mine = { id: 'abc123def', at: Date.now() + 1000, text: '¡Nueva temporada! Mapa nuevo y Create.' };
-  r = await call('PATCH', base, { cookie: creator, body: { data: { news: [...n, mine] } } });
+  r = await call('PATCH', base, { cookie: creator, body: { data: { news: [old, mine] } } });
   assert.strictEqual(r.data.data.news.length, 2);
-  // el launcher las recibe (la más nueva primero)
+  // al launcher solo le llega la del studio
   const p = await player('Lector', false);
   const list = (await call('GET', '/api/l/instances', { headers: p })).data;
   const inst = (list.instances || list).find(i => i.id === gid);
   assert.ok(inst, 'la instancia pública llega al launcher');
-  assert.strictEqual(inst.news[0].text, mine.text);
-  assert.ok(inst.news[1].auto.added.includes('iris-1.8'));
+  assert.deepStrictEqual(inst.news.map(x => x.text), [mine.text], 'los apuntes automáticos viejos no llegan');
   // borrar una
   r = await call('PATCH', base, { cookie: creator, body: { data: { news: [mine] } } });
   assert.deepStrictEqual(r.data.data.news.map(x => x.id), ['abc123def']);

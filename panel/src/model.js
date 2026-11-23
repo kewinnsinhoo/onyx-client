@@ -32,7 +32,7 @@ export function defaults() {
     server: { address: '', port: 25565, autoJoin: false },
     kopiSkins: true,          // el launcher pone CustomSkinLoader: se ven las skins (premium y de Kopi) en cualquier servidor
     guard: guardDefaults(),   // KopiGuard (anticheat): apagado hasta que el studio lo active
-    news: [],                 // Novedades: lo que escribe el studio + los mods que entran, salen o se actualizan (solo)
+    news: [],                 // Novedades: lo que escribe el studio
     lockedMessage: ''
   };
 }
@@ -80,27 +80,6 @@ function cleanNews(list) {
     text: str(n && n.text, 2000).trim(),
     ...(n && n.auto ? { auto: { added: clipList(n.auto.added), removed: clipList(n.auto.removed), updated: clipList(n.auto.updated), config: int(n.auto.config, 0, 5000, 0) } } : {})
   })).filter(n => n.text || (n.auto && (n.auto.added.length || n.auto.removed.length || n.auto.updated.length || n.auto.config))).sort((x, y) => x.at - y.at).slice(-NEWS_MAX);
-}
-// Apunta los cambios de archivos en las novedades (si hay otro apunte automático de hace menos de 30 min, se juntan)
-function noteFiles(d, before) {
-  const diff = filesDiff(before, d.files);
-  if (!diff.added.length && !diff.removed.length && !diff.updated.length && !diff.config) return;
-  const news = Array.isArray(d.news) ? d.news : [];
-  const last = news[news.length - 1];
-  const now = Date.now();
-  if (last && last.auto && !last.text && now - last.at < 30 * 60e3) {
-    const merge = (x, y) => [...new Set([...x, ...y])].slice(0, 60);
-    // lo que se añadió y luego se quitó en el mismo rato no cuenta
-    const removedNow = new Set(diff.removed);
-    last.auto.added = merge(last.auto.added.filter(n => !removedNow.has(n)), diff.added);
-    last.auto.removed = merge(last.auto.removed, diff.removed.filter(n => !last.auto.added.includes(n)));
-    last.auto.updated = merge(last.auto.updated, diff.updated);
-    last.auto.config += diff.config;
-    last.at = now;
-  } else {
-    news.push({ id: Math.random().toString(36).slice(2, 12), at: now, text: '', auto: diff });
-  }
-  d.news = cleanNews(news);
 }
 
 // Aplica un cambio (patch) sobre los datos actuales y devuelve datos limpios.
@@ -160,7 +139,7 @@ export function sanitize(patch, current = defaults()) {
       size: int(f && f.size, 0, 4e9, null), name: str(f && f.name, 120), at: time(f && f.at),
       ...(f && /^[A-Za-z0-9]{8}$/.test(String(f.mr || '')) ? { mr: String(f.mr) } : {})
     })).filter(f => f.path && f.url && !seen.has(f.path) && seen.add(f.path)).slice(0, 5000);
-    if (before.length) noteFiles(d, before); // la primera subida (instancia nueva) no es una «novedad»
+    // (Ya no se apuntan solos los mods que cambian: a los jugadores solo les llega lo que escribe el studio)
   }
   if (!Array.isArray(d.news)) d.news = [];
   // Carpetas creadas a mano (aunque estén vacías)
@@ -225,7 +204,7 @@ export function toManifest(row, studio, origin, playerKey = null, nextEvent = nu
     server: d.server.address ? d.server : null,
     kopiSkins: d.kopiSkins !== false,
     guard: guardManifest(d.guard),
-    news: (d.news || []).slice(-10).reverse(), // las 10 últimas novedades, la más nueva primero
+    news: (d.news || []).filter(n => n.text).slice(-10).reverse(), // las 10 últimas que escribió el studio, la más nueva primero
     files: d.files.map(f => ({ path: f.path, url: abs(f.url), sha1: f.sha1 || undefined, size: f.size || undefined })),
     dirs: d.dirs || [],
     sync: d.sync,

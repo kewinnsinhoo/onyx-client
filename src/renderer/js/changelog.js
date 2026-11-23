@@ -3,6 +3,9 @@
 // Cada versión publicada TIENE que tener aquí su entrada (lo comprueba test/run-tests.js).
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
+  // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
+  // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
+  { v: '1.8.12', date: '2026-11-23', items: [] },
   {
     v: '1.8.11', date: '2026-11-23', items: [
       ['wrench', 'Los mods ya no cambian de nombre al jugar: los que comprueban su propio nombre de archivo (como Extremo Adapted) funcionan bien.',
@@ -11,18 +14,7 @@ window.CHANGELOG = [
         'Les mods ne sont plus renommés pendant le jeu : ceux qui vérifient leur propre nom de fichier (comme Extremo Adapted) fonctionnent.']
     ]
   },
-  {
-    v: '1.8.10', date: '2026-11-22', items: [
-      ['sparkles', 'Launchers de los studios: tu perfil en la web sale con su nombre, logo y colores; los avisos de bienvenida dicen su nombre, y los menús y avisos usan sus colores.',
-        'Studio launchers: your web profile shows their name, logo and colors; welcome notices say their name, and menus and toasts use their colors.',
-        'Launchers dels studios: el teu perfil a la web surt amb el seu nom, logo i colors; els avisos de benvinguda diuen el seu nom, i els menús i avisos fan servir els seus colors.',
-        'Launchers des studios : ton profil web s’affiche avec leur nom, logo et couleurs ; les messages de bienvenue portent leur nom, et les menus et notifications utilisent leurs couleurs.'],
-      ['layers', 'Si el studio activa «Solo las instancias de su studio», se aplica al momento, sin reinstalar el launcher.',
-        'If the studio turns on “Only its own instances”, it applies right away, without reinstalling the launcher.',
-        'Si el studio activa «Només les instàncies del seu studio», s’aplica a l’instant, sense reinstal·lar el launcher.',
-        'Si le studio active « Seulement ses instances », c’est appliqué tout de suite, sans réinstaller le launcher.']
-    ]
-  },
+
   {
     v: '1.8.9', date: '2026-11-22', items: [
       ['crown', 'Nueva rareza «Mítica» para las insignias: oro que brilla, estrellas que parpadean y una corona. La primera es la insignia «Creador».',
@@ -31,26 +23,8 @@ window.CHANGELOG = [
         'Nouvelle rareté « Mythique » pour les badges : or brillant, étoiles scintillantes et une couronne. Le premier est le badge « Créateur ».']
     ]
   },
-  {
-    v: '1.8.8', date: '2026-11-22', items: [
-      ['sparkles', 'Launchers de los studios con su marca en todo: el nombre en todos los textos, su logo en vez del de Kopi, sus colores en fondos y tarjetas, y botones que se leen bien con cualquier color (también blanco).',
-        'Studio launchers fully branded: their name in every text, their logo instead of Kopi’s, their colors on backgrounds and cards, and buttons that stay readable with any color (white too).',
-        'Launchers dels studios amb la seva marca a tot arreu: el nom a tots els textos, el seu logo en lloc del de Kopi, els seus colors als fons i targetes, i botons que es llegeixen bé amb qualsevol color (també blanc).',
-        'Launchers des studios entièrement à leur image : leur nom dans tous les textes, leur logo au lieu de celui de Kopi, leurs couleurs sur les fonds et cartes, et des boutons lisibles avec n’importe quelle couleur (même le blanc).']
-    ]
-  },
-  {
-    v: '1.8.7', date: '2026-11-22', items: [
-      ['alert', 'Avisos más claros cuando el panel tiene un problema, en vez de «Error interno del servidor».',
-        'Clearer warnings when the panel has a problem, instead of “Internal server error”.',
-        'Avisos més clars quan el panell té un problema, en lloc d’«Error intern del servidor».',
-        'Messages plus clairs quand le panel a un problème, au lieu de « Erreur interne du serveur ».'],
-      ['video', 'KopiGuard gasta menos internet: la cuadrícula de cámaras se actualiza cada 12 segundos (el vídeo en grande sigue en directo).',
-        'KopiGuard uses less internet: the camera grid updates every 12 seconds (the large live video stays real time).',
-        'KopiGuard gasta menys internet: la quadrícula de càmeres s’actualitza cada 12 segons (el vídeo en gran continua en directe).',
-        'KopiGuard consomme moins : la grille des caméras se met à jour toutes les 12 secondes (la grande vidéo reste en direct).']
-    ]
-  },
+
+
   {
     v: '1.8.6', date: '2026-11-22', items: [
       ['globe', 'DNS seguro: si tu compañía de internet o tu red cambian la dirección de una web, el launcher la pregunta de forma segura (Cloudflare/Google). Arregla el error de «conexión segura» aunque tu internet vaya bien.',
@@ -104,11 +78,7 @@ window.CHANGELOG = [
       ['flag', 'Denunciar a un jugador: en la instancia, botón ⋯ → Denunciar a un jugador. Elige a quién, qué ha hecho y, si quieres, una captura (pulsa F2 en el juego). Lo ve el staff del studio.',
         'Report a player: on the instance, ⋯ button → Report a player. Choose who, what they did and, if you want, a screenshot (press F2 in game). The studio staff will see it.',
         'Denunciar un jugador: a la instància, botó ⋯ → Denunciar un jugador. Tria a qui, què ha fet i, si vols, una captura (prem F2 al joc). Ho veu l’staff de l’studio.',
-        'Signaler un joueur : sur l’instance, bouton ⋯ → Signaler un joueur. Choisis qui, ce qu’il a fait et, si tu veux, une capture (appuie sur F2 en jeu). Le staff du studio le verra.'],
-      ['zap', 'El launcher le cuenta al studio cuánto tarda en cargar su instancia y si se cierra, para que la hagan más ligera. No se envía nada tuyo: solo la RAM, el procesador y la gráfica.',
-        'The launcher tells the studio how long its instance takes to load and whether it crashes, so they can make it lighter. Nothing personal is sent: only RAM, processor and graphics card.',
-        'El launcher li explica a l’studio quant triga a carregar la seva instància i si es tanca, perquè la facin més lleugera. No s’envia res teu: només la RAM, el processador i la gràfica.',
-        'Le launcher indique au studio le temps de chargement de son instance et si elle plante, pour qu’il l’allège. Rien de personnel n’est envoyé : seulement la RAM, le processeur et la carte graphique.']
+        'Signaler un joueur : sur l’instance, bouton ⋯ → Signaler un joueur. Choisis qui, ce qu’il a fait et, si tu veux, une capture (appuie sur F2 en jeu). Le staff du studio le verra.']
     ]
   },
   {
@@ -177,10 +147,10 @@ window.CHANGELOG = [
         'If the game closes with an error, the launcher tells you what happened in plain words and gives you a button to fix it (memory, Java, mods, graphics card…).',
         'Si el joc es tanca amb un error, el launcher et diu què ha passat en paraules senzilles i et dona un botó per arreglar-ho (memòria, Java, mods, targeta gràfica…).',
         'Si le jeu se ferme avec une erreur, le launcher t’explique ce qui s’est passé simplement et te propose un bouton pour réparer (mémoire, Java, mods, carte graphique…).'],
-      ['megaphone', 'Novedades de las instancias: mira lo nuevo que prepara cada studio y qué mods han cambiado. Un puntito te avisa cuando hay algo nuevo.',
-        'Instance news: see what each studio has prepared and which mods changed. A little dot tells you when there’s something new.',
-        'Novetats de les instàncies: mira què prepara cada studio i quins mods han canviat. Un puntet t’avisa quan hi ha alguna cosa nova.',
-        'Nouveautés des instances : découvre ce que prépare chaque studio et quels mods ont changé. Un petit point te prévient quand il y a du nouveau.']
+      ['megaphone', 'Novedades de las instancias: mira lo nuevo que prepara cada studio. Un puntito te avisa cuando hay algo nuevo.',
+        'Instance news: see what each studio has prepared. A little dot tells you when there’s something new.',
+        'Novetats de les instàncies: mira què prepara cada studio. Un puntet t’avisa quan hi ha alguna cosa nova.',
+        'Nouveautés des instances : découvre ce que prépare chaque studio. Un petit point te prévient quand il y a du nouveau.']
     ]
   },
   {
@@ -188,21 +158,10 @@ window.CHANGELOG = [
       ['discord', 'Tu estado de Discord muestra también el studio y su logo mientras juegas.',
         'Your Discord status now also shows the studio and its logo while you play.',
         'El teu estat de Discord també mostra el studio i el seu logo mentre jugues.',
-        'Ton statut Discord affiche aussi le studio et son logo pendant que tu joues.'],
-      ['shield', 'KopiGuard también puede vigilar desde el servidor del studio (vuelo, velocidad, alcance…), sin contar empujones, explosiones ni caídas.',
-        'KopiGuard can now also watch from the studio’s server (flying, speed, reach…), ignoring knockback, explosions and falls.',
-        'KopiGuard també pot vigilar des del servidor del studio (vol, velocitat, abast…), sense comptar empentes, explosions ni caigudes.',
-        'KopiGuard peut aussi surveiller depuis le serveur du studio (vol, vitesse, portée…), sans compter les reculs, explosions et chutes.']
+        'Ton statut Discord affiche aussi le studio et son logo pendant que tu joues.']
     ]
   },
-  {
-    v: '1.7.3', date: '2026-11-20', items: [
-      ['wrench', 'Arreglos de KopiGuard en Windows: las cámaras ya funcionan y no sale el borde amarillo alrededor del juego.',
-        'KopiGuard fixes on Windows: cameras now work and there’s no yellow border around the game.',
-        'Arranjaments de KopiGuard a Windows: les càmeres ja funcionen i no surt la vora groga al voltant del joc.',
-        'Corrections de KopiGuard sur Windows : les caméras fonctionnent et il n’y a plus de bordure jaune autour du jeu.']
-    ]
-  },
+
   {
     v: '1.7.0', date: '2026-11-20', items: [
       ['video', 'KopiGuard: en las instancias que lo usan, el studio puede ver una foto y un vídeo corto cuando salta algo, y ver el juego en directo. Solo la ventana del juego, nunca el resto de tu pantalla.',

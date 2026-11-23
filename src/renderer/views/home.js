@@ -2,7 +2,6 @@
 (function () {
   const { esc, html, toast, busy } = UI;
   const V = window.Views = window.Views || {};
-  const shownNews = new Set(); // instancias cuyas novedades ya se enseñaron solas en esta sesión
 
   function loaderLabel(l, withVersion) {
     const type = (l && l.type) || 'vanilla';
@@ -262,7 +261,7 @@
                 ${inst.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Premium y offline')}</span>`}
                 ${inst.server && inst.server.address && !look.hideTech ? `<span class="badge">${icon('globe')}${esc(inst.server.address)}</span>` : ''}
                 ${inst.guard ? `<span class="badge guard" title="${t('Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.')}">${icon('shield')}${t('KopiGuard')}</span>` : ''}
-                ${(inst.news || []).length ? `<button class="badge news-b ${App.unseenNews(inst) ? 'new' : ''}" id="ins-news">${icon('megaphone')}${t('Novedades')}${App.unseenNews(inst) ? `<i>${App.unseenNews(inst)}</i>` : ''}</button>` : ''}
+                ${App.newsOf(inst).length ? `<button class="badge news-b ${App.unseenNews(inst) ? 'new' : ''}" id="ins-news">${icon('megaphone')}${t('Novedades')}${App.unseenNews(inst) ? `<i>${App.unseenNews(inst)}</i>` : ''}</button>` : ''}
                 ${inst.perfMode ? `<span class="badge perf" title="${t('Modo rendimiento')}">${icon('zap')}${t('Rendimiento')}</span>` : ''}
                 ${inst.friendsMode ? `<button class="badge friends" id="ins-friends-b" title="${t('Jugar con amigos')}">${icon('users')}${t('Con amigos')}</button>` : ''}
               </div>
@@ -314,11 +313,7 @@
       if (b('#ins-news')) b('#ins-news').onclick = () => App.newsModal(id);
       if (b('#ins-friends-b')) b('#ins-friends-b').onclick = friendsModal;
       if (b('#fl-copy')) b('#fl-copy').onclick = () => { navigator.clipboard.writeText(S.friends[id]).then(() => toast(t('Dirección copiada'), 'success')).catch(() => {}); };
-      // Novedades sin ver: se enseñan solas una vez al abrir la instancia (no mientras se juega)
-      if (App.unseenNews(inst) && !running && !p && !document.querySelector('.news-modal') && !shownNews.has(id)) {
-        shownNews.add(id);
-        setTimeout(() => { if (S.route && S.route.name === 'instance' && S.route.params.id === id) App.newsModal(id); }, 450);
-      }
+      // (Las novedades ya no salen solas: el jugador las abre con el botón «Novedades» si quiere)
       if (b('#ins-stop')) b('#ins-stop').onclick = () => onyx.instances.stop(id);
       if (b('#ins-music')) b('#ins-music').onclick = () => { setMusicMuted(!musicMuted()); syncMusic(); render(); };
       if (b('#ins-sponsor') && look.sponsor && look.sponsor.url) b('#ins-sponsor').onclick = () => onyx.app.openExternal(look.sponsor.url);

@@ -236,14 +236,15 @@ Para que se cuenten solos:
 ## Novedades de la instancia (desde la 1.7.5)
 
 - Panel → instancia → pestaña **Novedades**: el studio escribe lo nuevo (las líneas con «-» salen como lista). Se guardan las 30 últimas; al launcher le llegan las 10 últimas.
-- **Se apuntan solas** las altas, bajas y actualizaciones de mods, paquetes de texturas y shaders, y cuántos ajustes (`config/`) cambiaron, cada vez que se cambian archivos (los cambios de la misma media hora se juntan). La primera subida de una instancia nueva no cuenta.
-- En el launcher: botón **Novedades** con un contador en la instancia y un puntito en su icono del lateral. Las novedades sin ver se enseñan solas una vez al abrir la instancia. Las de antes de añadir la instancia no cuentan como nuevas.
+- Los cambios de archivos (mods que entran, salen o se actualizan) **ya no se apuntan solos** (desde el 23/11/2026): a los jugadores solo les llega lo que escribe el studio. Los apuntes automáticos viejos ya no se envían al launcher.
+- En el launcher: botón **Novedades** con un contador en la instancia y un puntito en su icono del lateral. Desde la 1.8.12 ya no se abren solas: el jugador las abre con el botón si quiere. Las de antes de añadir la instancia no cuentan como nuevas.
 
 ## Novedades del launcher (desde la 1.7.6)
 
 - La primera vez que se abre el launcher después de actualizarse sale una ventana «¡Kopi Client se ha actualizado!» con lo que trae la versión nueva (y las que se saltó, hasta 4). Recién instalado no sale nada.
 - Se pueden volver a ver en Ajustes → Acerca de → **Novedades del launcher**.
 - Están en `src/renderer/js/changelog.js`, contadas para el jugador y en es, en, ca y fr. **Cada versión nueva tiene que tener su entrada arriba del todo**: si no, la prueba «Novedades del launcher al día» falla y no se puede publicar sin darse cuenta.
+- **Solo lo que de verdad le interesa a un jugador** (cosas nuevas que puede usar o arreglos que notará). Nada de cosas de studios, del panel, de KopiGuard por dentro ni de los launchers de otros studios. Si una versión no trae nada así, su entrada va con `items: []` y no sale ningún aviso al actualizar.
 
 ## Jugar con amigos (desde la 1.7.7)
 
