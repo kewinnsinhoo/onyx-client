@@ -612,7 +612,11 @@
       const remote = await onyx.data.get('notifications.json');
       const list = Array.isArray(remote) ? remote : (remote && remote.items) || [];
       const local = S.notifications.filter(n => n.local);
-      S.notifications = [...local, ...list.map(n => ({ ...n, time: n.date ? Date.parse(n.date) : null }))];
+      // En un launcher de marca, los avisos de Kopi hablan de la marca («¡Bienvenido a Nova Launcher!» · Nova Studios)
+      const b = S.info && S.info.brand;
+      const own = (n) => ({ ...n, title: t(n.title || ''), body: n.body ? t(n.body) : n.body,
+        author: b && /^kopi( studios?| client)?$/i.test(String(n.author || '').trim()) ? (b.studioName || b.name) : n.author });
+      S.notifications = [...local, ...list.map(n => own({ ...n, time: n.date ? Date.parse(n.date) : null }))];
     } catch { /* nada */ }
     updateBell();
   }

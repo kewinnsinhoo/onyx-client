@@ -52,7 +52,7 @@
       libraryAdd: wait, libraryRemove: wait, lookup: (n) => wait({ name: n, skin: ALT, variant: 'classic' }), dataUrl: wait,
       pickFile: wait, validate: wait, apply: wait, setCape: wait, screenshot: wait
     },
-    profile: (() => { let pub = { public: false, url: 'https://onyxclient.site/u/Kewinsinho' }; return { card: () => wait(null, 300), getPublic: () => wait(pub), setPublic: (on) => { pub = { ...pub, public: !!on }; return wait(pub); } }; })(),
+    profile: (() => { let pub = { public: !!q.get('pub'), url: 'https://onyxclient.site/u/Kewinsinho' }; return { card: () => wait(null, 300), getPublic: () => wait(pub), setPublic: (on) => { pub = { ...pub, public: !!on }; return wait(pub); } }; })(),
     badges: (() => {
       const now = Date.now(), D = 864e5;
       const b = (id, cat, icon, rarity, name, desc, earned, extra = {}) => ({ id, cat, icon, rarity, name, desc, earned, at: earned ? now - (extra.ago || 3) * D : undefined, ...extra });
@@ -108,7 +108,7 @@
         { name: 'Kewinsinho', handle: '@kewinn', skin: SK, socials: { instagram: 'https://instagram.com', discord: 'https://discord.com', x: 'https://x.com' } },
         { name: 'Luis Enrique', handle: '@enriqueqq', skin: ALT, socials: { instagram: 'https://instagram.com', discord: 'https://discord.com', tiktok: 'https://tiktok.com' } }
       ] : n === 'notifications.json' ? [
-        { title: 'Bienvenido a Kopi Client', date: '2026-10-26T09:55:00Z' },
+        { title: '¡Bienvenido a Kopi Client!', author: 'Kopi Studio', kind: 'success', date: '2026-10-26T09:55:00Z' },
         { title: 'Nueva instancia de eventos disponible', author: 'Kopi Studio', kind: 'success', date: '2026-10-21T14:58:00Z' }
       ] : null),
       terms: () => fetch('terms/es.md').then(r => r.text()).catch(() => '# Términos')

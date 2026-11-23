@@ -25,6 +25,8 @@
     let ch = { twitch: '', tiktok: '', kick: '' }, chLoaded = false, draft = {};
     let bd = S.badges; // insignias (del panel)
     let pub = null;     // perfil público en la web: { public, url }
+    // En un launcher de marca el enlace lleva la marca (?b=nova-launcher): la página sale con su nombre, logo y colores
+    const withBrand = (r) => { const b = S.info && S.info.brand; return r && r.url && b && b.id && !/[?&]b=/.test(r.url) ? { ...r, url: r.url + '?b=' + encodeURIComponent(b.id) } : r; };
     const CATS = [['time', 'Tiempo jugado'], ['streak', 'Rachas'], ['explore', 'Explorador'], ['fair', 'Juego limpio'], ['seniority', 'Antigüedad'], ['community', 'Comunidad'],
       ['special', 'Especiales'], ['event', 'Eventos'], ['studio', 'De los studios'], ['secret', 'Secretas']];
     const unitTxt = (p) => p.unit === 'h' ? t('{a} / {b} h', { a: p.cur, b: p.max }) : p.unit === 'd' ? t('{a} / {b} días', { a: Math.floor(p.cur), b: p.max }) : t('{a} / {b} instancias', { a: p.cur, b: p.max });
@@ -118,7 +120,7 @@
       if (pt) pt.onclick = async () => {
         pt.disabled = true;
         try {
-          pub = await onyx.profile.setPublic(!pub.public);
+          pub = withBrand(await onyx.profile.setPublic(!pub.public));
           render();
           toast(pub.public ? t('Tu perfil ya está en la web') : t('Tu perfil ya no se ve en la web'), 'success');
         } catch (e) { pt.disabled = false; toast(t(e.message, e.vars), 'error'); }
@@ -196,7 +198,7 @@
       });
     }
     // Perfil público en la web
-    onyx.profile.getPublic().then(r => { if (r && root.isConnected) { pub = r; render(); } }).catch(() => {});
+    onyx.profile.getPublic().then(r => { if (r && root.isConnected) { pub = withBrand(r); render(); } }).catch(() => {});
     // Insignias: se piden al panel (y se avisa de las nuevas)
     App.checkBadges().then(r => { if (r && root.isConnected) { bd = r; render(); } }).catch(() => {});
 

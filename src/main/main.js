@@ -91,6 +91,7 @@ app.whenReady().then(() => {
   skins.init(userData);
   data.init(userData);
   panel.init(userData);
+  if (config.brand) brandInfo().catch(() => {}); // pronto: lo último del panel (studio, «solo sus instancias»...)
   instances.init(ROOT);
   // Mods bajo llave: la llave la protege el sistema (Windows/macOS) para que no sirva en otro ordenador
   try {
@@ -228,13 +229,15 @@ async function brandInfo() {
   }
   const L = brandLive || {};
   const pick = (k) => (L[k] !== undefined && L[k] !== null && L[k] !== '' ? L[k] : b[k]);
+  const studio = L.studio || b.studio || null, onlyStudio = pick('onlyStudio') !== false;
+  instances.setBrand({ studio, onlyStudio });
   return {
-    id: b.id, name: config.appName, studio: b.studio || null, studioName: pick('studioName'),
+    id: b.id, name: config.appName, studio, studioName: pick('studioName'),
     accent: pick('accent'), accent2: pick('accent2'), tagline: pick('tagline') || '',
     logo: (/^https:/.test(L.logo || '') ? L.logo : b.logo) || null,
     background: (/^https:/.test(L.background || '') ? L.background : b.background) || null,
     discord: pick('discord'), web: pick('web'), store: pick('store'),
-    onlyStudio: b.onlyStudio !== false
+    onlyStudio
   };
 }
 

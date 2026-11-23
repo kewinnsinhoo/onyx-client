@@ -30,8 +30,13 @@ function init(gameRoot) {
 const isPanel = (i) => !!(i && i.manifest && i.manifest.source === 'panel');
 // En un launcher de marca solo salen las instancias de su studio
 const { config: CFG } = require('./config');
-const BRAND_STUDIO = CFG.brand && CFG.brand.onlyStudio !== false ? CFG.brand.studio || null : null;
+// (lo que dice el panel manda: si el studio cambia el interruptor o mueve el launcher, vale sin recompilar)
+let BRAND_STUDIO = CFG.brand && CFG.brand.onlyStudio !== false ? CFG.brand.studio || null : null;
 const ofBrand = (m) => !BRAND_STUDIO || !!(m && m.studio && m.studio.id === BRAND_STUDIO);
+function setBrand({ studio, onlyStudio } = {}) {
+  if (!CFG.brand) return;
+  BRAND_STUDIO = onlyStudio !== false ? studio || CFG.brand.studio || null : null;
+}
 
 function view(i) {
   const m = i.manifest || {};
@@ -609,4 +614,4 @@ async function importPack(id, file) {
 }
 
 module.exports = {
-  skinLayer, init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE, captureNow };
+  skinLayer, setBrand, init, list, get, redeem, syncPanel, play, stop, remove, setMemory, seenNews, setPerfMode, setFriendsMode, freshen, staleIds, busyBg, filesFp, lockLeftovers, fabricAddModsOk, dir, screenshots, isRunning, serverStatus, update, wipe, importPack, CODE_RE, captureNow };

@@ -109,3 +109,26 @@
 .bdg-medal.r-mythic { filter: drop-shadow(0 6px 18px rgba(255, 200, 70, .55)); }
 .bdg-r.r-mythic, .pf-badge .r-mythic { background: linear-gradient(90deg, #fff3b0, #ffc23a, #fff3b0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: mythText 3s linear infinite; font-weight: 800; }
 @keyframes mythText { to { background-position: -200% 0; } }
+
+/* Perfil abierto desde un launcher de marca (?b=…): sus colores en vez del rosa de Kopi.
+   --ba/--ba2: sus dos colores · --bk: el primero en «r g b» · --on: el texto encima del color */
+body.brand { --pink: var(--ba); --magenta: var(--ba2); --grad: linear-gradient(135deg, var(--ba) 0%, var(--ba2) 100%);
+  --bg: #0b0b0e; --bg-2: #111115; --card: #15151a; --text: #f5f5f7; --text-2: #d6d6dc; --muted: #9b9ba6;
+  --line: rgb(var(--bk) / .12); --line-2: rgb(var(--bk) / .22); }
+body.brand .top { background: rgba(11, 11, 14, .8); }
+body.brand .top-logo img { height: 38px; max-width: 220px; object-fit: contain; }
+body.brand .btn-min { background: rgb(var(--bk) / .12); color: var(--ba); border-color: rgb(var(--bk) / .3); }
+body.brand .btn-min:hover { background: rgb(var(--bk) / .2); }
+body.brand .btn-pri { color: var(--on); box-shadow: 0 16px 36px -14px rgb(var(--bk) / .55); }
+body.brand .pf-card { --pf: var(--ba); background: radial-gradient(70% 90% at 18% 40%, color-mix(in srgb, var(--pf) 20%, transparent), transparent 70%), linear-gradient(160deg, #1a1a20, #121216 60%, #0d0d10);
+  box-shadow: 0 30px 80px -40px rgb(var(--bk) / .4); }
+body.brand .pf-card.r-legendary { --pf: #ff9a3d; } body.brand .pf-card.r-epic { --pf: #a35cff; } body.brand .pf-card.r-rare { --pf: #4d8dff; }
+body.brand .pf-glow { background: radial-gradient(circle, rgb(var(--bk) / .1), transparent 65%); }
+body.brand .pf-si { background: rgb(var(--bk) / .12); }
+body.brand .pf-brand { height: 30px; max-width: 170px; object-fit: contain; }
+body.brand .pf-cta { background: linear-gradient(90deg, rgb(var(--bk) / .09), rgb(var(--bk) / .03)); }
+body.brand .pf-cta img { object-fit: contain; border-radius: 14px; }
+body.brand .foot { background: #0d0d10; }
+body.brand .foot-brand img { height: 46px; width: auto; max-width: 240px; object-fit: contain; }
+body.brand-wait .top-logo, body.brand-wait .top-nav, body.brand-wait .top-right .btn, body.brand-wait .foot { visibility: hidden; }
+body.brand-wait * { transition: none !important; }

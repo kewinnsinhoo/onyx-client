@@ -4,6 +4,18 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.10', date: '2026-11-22', items: [
+      ['sparkles', 'Launchers de los studios: tu perfil en la web sale con su nombre, logo y colores; los avisos de bienvenida dicen su nombre, y los menús y avisos usan sus colores.',
+        'Studio launchers: your web profile shows their name, logo and colors; welcome notices say their name, and menus and toasts use their colors.',
+        'Launchers dels studios: el teu perfil a la web surt amb el seu nom, logo i colors; els avisos de benvinguda diuen el seu nom, i els menús i avisos fan servir els seus colors.',
+        'Launchers des studios : ton profil web s’affiche avec leur nom, logo et couleurs ; les messages de bienvenue portent leur nom, et les menus et notifications utilisent leurs couleurs.'],
+      ['layers', 'Si el studio activa «Solo las instancias de su studio», se aplica al momento, sin reinstalar el launcher.',
+        'If the studio turns on “Only its own instances”, it applies right away, without reinstalling the launcher.',
+        'Si el studio activa «Només les instàncies del seu studio», s’aplica a l’instant, sense reinstal·lar el launcher.',
+        'Si le studio active « Seulement ses instances », c’est appliqué tout de suite, sans réinstaller le launcher.']
+    ]
+  },
+  {
     v: '1.8.9', date: '2026-11-22', items: [
       ['crown', 'Nueva rareza «Mítica» para las insignias: oro que brilla, estrellas que parpadean y una corona. La primera es la insignia «Creador».',
         'New “Mythic” badge rarity: shining gold, twinkling stars and a crown. The first one is the “Creator” badge.',
