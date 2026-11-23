@@ -18,6 +18,9 @@ const presence = require('./presence');
 const data = require('./data');
 const instances = require('./instances');
 const panel = require('./panel');
+// Launchers de marca: cada recompilación lleva versión propia (Kopi 1.8.8 → 1.8.8037) para que llegue como
+// actualización; al jugador se le enseña la de Kopi («1.8.8»), que es la de las novedades
+const shownVersion = () => { const v = app.getVersion(); const m = /^(\d+)\.(\d+)\.(\d{4,})$/.exec(v); return m ? `${m[1]}.${m[2]}.${Math.floor(Number(m[3]) / 1000)}` : v; };
 const referrals = require('./referrals');
 const report = require('./report');
 
@@ -121,7 +124,7 @@ app.whenReady().then(() => {
   const st = settingsStore.get();
   presence.init({
     clientId: isPlaceholder(config.discordClientId) ? null : config.discordClientId,
-    version: app.getVersion(),
+    version: shownVersion(),
     githubRepo: isPlaceholder(config.githubRepo) ? null : config.githubRepo,
     discordInvite: isPlaceholder(config.discordInvite) ? null : config.discordInvite,
     lang: st.language,
@@ -256,7 +259,7 @@ handle('app:info', async () => ({
   name: config.appName || 'Kopi Client',
   studio: config.studioName || 'Kopi Studio',
   brand: config.brand ? await brandInfo() : null,
-  version: app.getVersion(),
+  version: shownVersion(),
   core: '1.0.0',
   build: new Date().getFullYear(),
   platform: process.platform,

@@ -1,4 +1,6 @@
 // Launchers: Kopi Client oficial + el launcher propio del studio (marca), con vista previa y fabricación.
+// Versión de Kopi de un launcher de marca (1.8.8037 → 1.8.8: cada recompilación lleva su número)
+const kopiVer = (v) => { const m = /^(\d+)\.(\d+)\.(\d{4,})$/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${Math.floor(Number(m[3]) / 1000)}` : v; };
 (function () {
   const V = window.Views;
   const RELEASES = ['kewinnsinhoo/onyx-client'];
@@ -100,7 +102,7 @@
         <button class="btn sm" id="b-all" ${all.brands.length && all.github ? '' : 'disabled'}>${icon('refresh')}${t('Recompilar todos')}</button></div>
         <p class="sub">${t('Cuando publicas una versión nueva de Kopi, se recompilan solos. Este botón es por si quieres forzarlo.')}</p>
         ${all.brands.length ? html`<table class="table" style="margin-top:8px"><thead><tr><th>${t('Launcher')}</th><th>${t('Studio')}</th><th>${t('Versión')}</th><th>${t('Estado')}</th><th></th></tr></thead><tbody>
-          ${all.brands.map(b => `<tr><td><b>${esc(b.name)}</b> <small class="mono" style="color:var(--faint)">${esc(b.id)}</small></td><td>${esc(b.studioName)}</td><td>${esc(b.builtVersion || '—')}</td><td>${runBadge(b.run)}</td>
+          ${all.brands.map(b => `<tr><td><b>${esc(b.name)}</b> <small class="mono" style="color:var(--faint)">${esc(b.id)}</small></td><td>${esc(b.studioName)}</td><td>${esc(kopiVer(b.builtVersion) || '—')}</td><td>${runBadge(b.run)}</td>
             <td class="r"><button class="btn sm" data-move="${esc(b.id)}" data-name="${esc(b.name)}" data-studio="${esc(b.studio)}">${icon('external')}${t('Mover')}</button></td></tr>`).join('')}</tbody></table>`
           : `<p class="help">${t('Ningún studio tiene launcher propio todavía.')}</p>`}</div>` : ''}
     </div>`;

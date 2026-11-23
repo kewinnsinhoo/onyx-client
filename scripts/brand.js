@@ -141,6 +141,8 @@ async function main() {
   const pkgFile = path.join(ROOT, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
   const bl = pkg.build;
+  // versión propia de esta fabricación (la pone el flujo de GitHub): así cada recompilación llega como actualización
+  if (/^\d+\.\d+\.\d+$/.test(process.env.BRAND_VERSION || '')) pkg.version = process.env.BRAND_VERSION;
   bl.appId = `site.onyxclient.brand.${b.id}`;
   bl.productName = name;
   bl.copyright = `© ${b.studioName || name} · con la tecnología de Kopi Client`;

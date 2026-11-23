@@ -75,7 +75,7 @@
     <div class="box">${pick ? `
       <a class="main-btn" href="${esc(pick.url)}"><span>Descargar para ${esc(pick.label)}<small>${esc(size(pick.size))}</small></span></a>
       <div class="others">${files.filter(f => f !== pick).map(f => `<a href="${esc(f.url)}">${esc(f.label)}<span>${esc(size(f.size))}</span></a>`).join('')}</div>
-      ${data.version ? `<p class="ver">Versión ${esc(data.version)} · se actualiza sola</p>` : ''}
+      ${data.version ? `<p class="ver">Versión ${esc(((v) => { const m = /^(\d+)\.(\d+)\.(\d{4,})$/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${Math.floor(Number(m[3]) / 1000)}` : v; })(data.version))} · se actualiza sola</p>` : ''}
       <details><summary>¿Windows dice «Windows protegió su PC»?</summary><p>Es normal en programas nuevos. Pulsa «Más información» y luego «Ejecutar de todas formas».</p></details>
       <details><summary>¿En Mac no se abre?</summary><p>Haz clic derecho en la app, elige «Abrir» y confirma. Solo hace falta la primera vez.</p></details>`
       : '<p class="empty">Todavía se está preparando. Vuelve en unos minutos.</p>'}</div>`;
