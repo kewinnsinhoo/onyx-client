@@ -40,6 +40,7 @@ if (!app.requestSingleInstanceLock()) { app.quit(); }
 
 let win = null;
 let gameLogBuffer = [];
+let lastCrash = null; // el último cierre con error: su informe (crash-reports/) va en «Enviar informe»
 let lastFriendsAddr = null; // dirección de «Jugar con amigos» de esta partida
 let lastPlayed = null; // última instancia lanzada (para los informes)
 
@@ -520,7 +521,7 @@ handle('instances:play', async (id, opts) => {
             memoryMb: info.memoryMb, totalMemMb: Math.round(require('os').totalmem() / 1048576),
             customJava: !!settings.javaPath, jvmArgs: settings.jvmArgs, perfMode: info.perfMode, stopped: info.stopped, kicked: info.kicked
           });
-          if (crash) log.warn(`[cierre] ${id}: ${crash.kind} ${JSON.stringify(crash.vars)}`);
+          if (crash) { log.warn(`[cierre] ${id}: ${crash.kind} ${JSON.stringify(crash.vars)}`); lastCrash = { file: crash.file, at: Date.now() }; }
         } catch (e) { log.warn('[cierre] No se pudo revisar el cierre:', e.message); }
         // Rendimiento: el resumen de la partida, para el panel del studio
         if (info.perf && info.play) {
@@ -615,7 +616,13 @@ handle('report:send', async (message) => {
   const status = report.statusInfo(app, acc, instances.list().length, playing);
   const pacc = panel.enabled() ? panelAccount() : null;
   const toPanel = pacc ? (data) => panel.sendReport(pacc, data) : null;
-  return report.send({ message, screenshot, status, gameLog: gameLogBuffer.join('').slice(-20000), toPanel }, path.join(userData, 'reports'))
+  // El informe de error de Minecraft, si el juego se cerró hace poco (dice la causa de verdad)
+  let crashReport = '';
+  if (lastCrash && lastCrash.file && Date.now() - lastCrash.at < 60 * 60e3) {
+    try { crashReport = fs.readFileSync(lastCrash.file, 'utf8').slice(0, 30000); } catch { /* nada */ }
+  }
+  const gameLog = require('./crash').plainLog(gameLogBuffer.join('')).slice(-20000);
+  return report.send({ message, screenshot, status, gameLog, crashReport, toPanel }, path.join(userData, 'reports'))
     .then((r) => { if (!r.sent && r.dir) shell.openPath(r.dir); return r; });
 });
 

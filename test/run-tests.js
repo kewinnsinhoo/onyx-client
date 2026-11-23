@@ -1074,6 +1074,18 @@ test('panel: errores legibles', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kopi-crash-'));
     const base = { gameDir: tmp, startedAt: Date.now() - 60e3, memoryMb: 4096, totalMemMb: 16384, code: 1 };
     const d = (log, extra) => C.diagnose({ ...base, log, ...extra });
+    // Registro en XML de log4j lleno de «Missing sound»: no salen en los detalles; sí el error del final
+    {
+      const ev = (lvl, msg, thr) => `<log4j:Event logger="x" timestamp="1" level="${lvl}" thread="Render thread"><log4j:Message><![CDATA[${msg}]]></log4j:Message>${thr ? `<log4j:Throwable><![CDATA[${thr}]]></log4j:Throwable>` : ''}</log4j:Event>\n`;
+      const xml = Array.from({ length: 40 }, (_, i) => ev('WARN', `Missing sound for event: minecraft:entity.axolotl.s${i}`)).join('') +
+        ev('ERROR', 'Reported exception thrown!', 'java.lang.NullPointerException: Cannot invoke "Skin.texture()" because "skin" is null\n\tat net.minecraft.PlayerTab.render(PlayerTab.java:10)');
+      const r = d(xml);
+      assert.ok(r && r.kind === 'generic', 'cierre genérico');
+      assert.ok(!r.lines.some(l => /Missing sound|log4j|CDATA/.test(l)), 'sin «Missing sound» ni XML');
+      assert.ok(r.lines.some(l => /NullPointerException/.test(l)), 'sale el error de verdad');
+      assert.strictEqual(r.vars.error, 'NullPointerException');
+      assert.ok(!/log4j/.test(C.plainLog(xml)) && /\[Render thread\/WARN\] Missing sound/.test(C.plainLog(xml)), 'el registro se lee como texto normal');
+    }
     // se cerró bien, lo cerró el jugador o el studio: nada
     assert.strictEqual(C.diagnose({ ...base, code: 0, log: 'Stopping!' }), null);
     assert.strictEqual(d('java.lang.OutOfMemoryError', { stopped: true }), null);

@@ -8,12 +8,13 @@ const os = require('os');
 const { config } = require('./config');
 const log = require('./logger');
 
-async function send({ message, screenshot, status, gameLog, toPanel }, reportsDir) {
+async function send({ message, screenshot, status, gameLog, crashReport, toPanel }, reportsDir) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const logs = [
     '===== ESTADO =====', JSON.stringify(status, null, 2), '',
-    '===== LAUNCHER =====', log.tail(400), '',
-    '===== JUEGO (últimas líneas) =====', gameLog || '(sin registros del juego)'
+    ...(crashReport ? ['===== INFORME DE ERROR DE MINECRAFT =====', crashReport, ''] : []),
+    '===== JUEGO (últimas líneas) =====', gameLog || '(sin registros del juego)', '',
+    '===== LAUNCHER =====', log.tail(400)
   ].join('\n');
 
   if (toPanel) {

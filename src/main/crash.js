@@ -35,12 +35,25 @@ function readHead(p, max = 256 * 1024) {
   } catch { return ''; }
 }
 
+// El registro del juego llega en XML de log4j (<log4j:Event …><log4j:Message><![CDATA[…]]>…): a texto normal
+function plainLog(text) {
+  return String(text || '')
+    .replace(/<log4j:Event\b[^>]*?level="(\w+)"[^>]*?thread="([^"]*)"[^>]*>/g, '[$2/$1] ')
+    .replace(/<log4j:Event\b[^>]*>/g, '')
+    .replace(/<log4j:Message>\s*<!\[CDATA\[/g, '').replace(/\]\]>\s*<\/log4j:Message>/g, '')
+    .replace(/<log4j:Throwable>\s*<!\[CDATA\[/g, '\n').replace(/\]\]>\s*<\/log4j:Throwable>/g, '')
+    .replace(/<\/?log4j:[^>]*>/g, '')
+    .replace(/\n{3,}/g, '\n\n');
+}
+// Avisos normales de Minecraft que no tienen nada que ver con un cierre (no se enseñan)
+const NOISE = /Missing sound for event|Unable to (play|resolve) (unknown )?sound|Missing (texture|model|item model)|Unable to load model|Couldn't load (narrator|tts)|Narrator library|Received passengers for unknown entity|Ignoring unknown attribute|Unknown custom packet identifier|Can't keep up!|Skipping BlockEntity|Unknown resource pack|Not all defined tags|Shader \S+ could not find|Missing file:|realms/i;
+
 // Las líneas que importan (para «Ver detalles»), sin repetir y sin pasarse
 function keyLines(text, patterns, max = 12) {
   const out = [];
-  for (const line of text.split(/\r?\n/)) {
+  for (const line of plainLog(text).split(/\r?\n/)) {
     const l = line.trim();
-    if (!l || l.length > 400) continue;
+    if (!l || l.length > 400 || NOISE.test(l)) continue;
     if (patterns.some(r => r.test(l)) && !out.includes(l)) out.push(l);
     if (out.length >= max) break;
   }
@@ -57,14 +70,16 @@ function diagnose(ctx) {
   const hsFile = ctx.gameDir ? newest(ctx.gameDir, /^hs_err_pid\d+\.log$/i, since) : null;
   const report = reportFile ? readHead(reportFile) : '';
   const hs = hsFile ? readHead(hsFile, 96 * 1024) : '';
-  const log = String(ctx.log || '').slice(-400 * 1024);
+  const log = plainLog(String(ctx.log || '').slice(-400 * 1024));
   const all = `${log}\n${report}\n${hs}`;
   if ((ctx.code === 0 || ctx.code == null) && !report && !hs) return null;
 
   const mem = Number(ctx.memoryMb) || 4096;
   const total = Number(ctx.totalMemMb) || 8192;
   const round = (mb) => Math.max(1024, Math.floor(mb / 512) * 512);
-  const lines = (...extra) => keyLines(all, [/Exception|Error|error:|FATAL|Caused by|requires|missing|Duplicate|Description:|Problematic frame/i, ...extra]);
+  // Primero el informe de error (dice la causa), luego el de Java, y del registro solo el final (donde se cerró)
+  const lines = (...extra) => keyLines(`${report}\n${hs}\n${plainLog(log.slice(-80 * 1024))}`,
+    [/Exception|Error|error:|FATAL|Caused by|requires|which is missing|is missing|\[MISSING\]|Duplicate|Description:|Problematic frame/i, ...extra]);
   const out = (kind, vars, fixes, ...extra) => ({ kind, vars: vars || {}, fixes: fixes || [], lines: lines(...extra), file: reportFile || hsFile || null, code: ctx.code });
 
   // --- Java no arranca
@@ -134,4 +149,4 @@ function diagnose(ctx) {
   return out('generic', { desc: desc.slice(0, 160), error: (exc[1] || '').split('.').pop(), message: (exc[2] || '').trim() }, [{ type: 'report' }]);
 }
 
-module.exports = { diagnose, keyLines, DRIVERS };
+module.exports = { diagnose, keyLines, plainLog, DRIVERS };
