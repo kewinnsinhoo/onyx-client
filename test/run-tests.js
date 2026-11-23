@@ -925,7 +925,7 @@ test('panel: errores legibles', () => {
     vault.init(tmp, { protector: { protect: (k) => k, unprotect: () => { throw new Error('otra máquina'); } } });
     assert.strictEqual(await vault.open('evento', g), 0);
     assert.ok(!exists('mods/nuevo.jar'));
-    // Fabric: mientras se juega, los mods están en una carpeta temporal con nombres al azar (mods/ vacía)
+    // Fabric: mientras se juega, los mods están en una carpeta temporal con nombre al azar (mods/ vacía)
     vault.init(tmp, { protector: prot }); // otra vez la llave buena de este «PC»
     const g2 = path.join(tmp, 'instances', 'fabric');
     const put2 = (rel, buf) => { fs.mkdirSync(path.dirname(path.join(g2, rel)), { recursive: true }); fs.writeFileSync(path.join(g2, rel), buf); };
@@ -936,7 +936,7 @@ test('panel: errores legibles', () => {
     assert.ok(live && live.startsWith(os.tmpdir()) && /[0-9a-f]{16}$/.test(live), 'carpeta temporal con nombre al azar');
     const staged = fs.readdirSync(live);
     assert.strictEqual(staged.length, 2, 'solo los de la raíz de mods/ (Fabric no mira subcarpetas)');
-    assert.ok(staged.every(f => /^[0-9a-f]{16}\.jar$/.test(f)), 'cada mod con nombre al azar');
+    assert.deepStrictEqual(staged.sort(), ['mi-mod-secreto.jar', 'sodium-fabric.jar'], 'cada mod con su nombre original (hay mods que lo comprueban)');
     const contents = staged.map(f => fs.readFileSync(path.join(live, f)));
     assert.ok(contents.some(b => b.equals(big)) && contents.some(b => b.equals(small)), 'idénticos');
     assert.deepStrictEqual(fs.readdirSync(path.join(g2, 'mods')).filter(f => f.endsWith('.jar')), ['kopi-skins-customskinloader-15.jar'], 'en mods/ solo lo público');

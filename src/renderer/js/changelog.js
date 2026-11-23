@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.11', date: '2026-11-23', items: [
+      ['wrench', 'Los mods ya no cambian de nombre al jugar: los que comprueban su propio nombre de archivo (como Extremo Adapted) funcionan bien.',
+        'Mods no longer get renamed while playing: the ones that check their own file name (like Extremo Adapted) now work.',
+        'Els mods ja no canvien de nom en jugar: els que comproven el seu propi nom de fitxer (com Extremo Adapted) funcionen bé.',
+        'Les mods ne sont plus renommés pendant le jeu : ceux qui vérifient leur propre nom de fichier (comme Extremo Adapted) fonctionnent.']
+    ]
+  },
+  {
     v: '1.8.10', date: '2026-11-22', items: [
       ['sparkles', 'Launchers de los studios: tu perfil en la web sale con su nombre, logo y colores; los avisos de bienvenida dicen su nombre, y los menús y avisos usan sus colores.',
         'Studio launchers: your web profile shows their name, logo and colors; welcome notices say their name, and menus and toasts use their colors.',

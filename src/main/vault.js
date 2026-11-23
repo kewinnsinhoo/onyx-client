@@ -9,7 +9,7 @@
 // Los mods que pone Kopi (kopi-skins-*, kopi-perf-*) son públicos y no hace falta guardarlos.
 // Ojo: mientras el juego está abierto los mods tienen que estar sin cifrar (Minecraft los necesita).
 // En Fabric ni siquiera entonces están en mods/: stage() los abre en una carpeta temporal con nombre al azar
-// (y cada mod con nombre al azar), y Fabric los carga desde ahí con -Dfabric.addMods. Al cerrar se borra.
+// (cada mod con su nombre original), y Fabric los carga desde ahí con -Dfabric.addMods. Al cerrar se borra.
 // (No se marca como «oculta» de Windows porque Fabric ignora las carpetas ocultas.)
 const fs = require('fs');
 const os = require('os');
@@ -200,7 +200,7 @@ async function seal(id, gameDir) {
 }
 
 /**
- * Fabric: abre los mods en una carpeta temporal con nombre al azar (y cada mod con nombre al azar) para que
+ * Fabric: abre los mods en una carpeta temporal con nombre al azar (cada mod con su nombre original) para que
  * mods/ siga vacía mientras se juega. Solo los de la raíz de mods/ (Fabric no mira en subcarpetas).
  * → la carpeta (para -Dfabric.addMods) o null si no hay nada que abrir. La borra seal() al cerrar el juego.
  */
@@ -214,7 +214,8 @@ async function stage(id) {
   fs.mkdirSync(dir, { recursive: true });
   writeIndex(id, { ...idx, live: dir }); // para borrarla aunque el launcher se cierre de golpe
   for (const [rel, f] of list) {
-    try { await openFile(path.join(dirOf(id), f.blob), path.join(dir, crypto.randomBytes(8).toString('hex') + '.jar'), key()); }
+    // con su nombre de siempre: hay mods que comprueban su propio nombre de archivo (p. ej. «extremo3-adapted-1.0.jar»)
+    try { await openFile(path.join(dirOf(id), f.blob), path.join(dir, path.basename(rel)), key()); }
     catch (e) {
       // si falta uno, mejor jugar a la manera normal (mods en mods/) que sin ese mod
       log.warn(`[mods bajo llave] No se pudo abrir ${rel}:`, e.message);
