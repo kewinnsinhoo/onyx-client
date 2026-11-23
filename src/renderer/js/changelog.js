@@ -4,6 +4,14 @@
 // Formato: { v, date: 'AAAA-MM-DD', items: [[icono, es, en, ca, fr], ...] } — la más nueva arriba.
 window.CHANGELOG = [
   {
+    v: '1.8.8', date: '2026-11-22', items: [
+      ['sparkles', 'Launchers de los studios con su marca en todo: el nombre en todos los textos, su logo en vez del de Kopi, sus colores en fondos y tarjetas, y botones que se leen bien con cualquier color (también blanco).',
+        'Studio launchers fully branded: their name in every text, their logo instead of Kopi’s, their colors on backgrounds and cards, and buttons that stay readable with any color (white too).',
+        'Launchers dels studios amb la seva marca a tot arreu: el nom a tots els textos, el seu logo en lloc del de Kopi, els seus colors als fons i targetes, i botons que es llegeixen bé amb qualsevol color (també blanc).',
+        'Launchers des studios entièrement à leur image : leur nom dans tous les textes, leur logo au lieu de celui de Kopi, leurs couleurs sur les fonds et cartes, et des boutons lisibles avec n’importe quelle couleur (même le blanc).']
+    ]
+  },
+  {
     v: '1.8.7', date: '2026-11-22', items: [
       ['alert', 'Avisos más claros cuando el panel tiene un problema, en vez de «Error interno del servidor».',
         'Clearer warnings when the panel has a problem, instead of “Internal server error”.',

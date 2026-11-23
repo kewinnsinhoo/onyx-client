@@ -100,28 +100,40 @@ const PAGE_TXT = {
 };
 const escHtml = (s) => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// En un launcher de marca, la página dice su nombre y usa su color
+function brandLook() {
+  let b = null;
+  try { b = require('../config').brand; } catch { /* pruebas */ }
+  const ok = (c) => /^#[0-9a-f]{6}$/i.test(c || '');
+  if (!b) return { name: 'Kopi Client', grad: 'linear-gradient(135deg,#ffa6ea,#e055c9 55%,#9b3fe0)', ink: '#fff', tag: '#ffb0ec' };
+  const a = ok(b.accent) ? b.accent : '#ffffff';
+  const n = parseInt(a.slice(1), 16), lum = (0.2126 * (n >> 16 & 255) + 0.7152 * (n >> 8 & 255) + 0.0722 * (n & 255)) / 255;
+  return { name: b.name || 'Launcher', grad: a, ink: lum > 0.55 ? '#15111b' : '#fff', tag: a };
+}
+
 function resultPage(ok, lang, detail) {
-  const T = PAGE_TXT[lang] || PAGE_TXT.es;
+  const L = brandLook();
+  const T = (PAGE_TXT[lang] || PAGE_TXT.es).map(x => x.replace(/Kopi Client/g, L.name));
   const title = ok ? T[0] : T[2];
   const text = ok ? T[1] : T[3];
   const mark = ok
     ? '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
     : '<path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>';
   return `<!DOCTYPE html><html lang="${escHtml(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escHtml(title)} · Kopi Client</title><style>
+<title>${escHtml(title)} · ${escHtml(L.name)}</title><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fbeefb;
 background-color:#0a0710;background-image:radial-gradient(900px 520px at 20% -10%,rgba(193, 63, 214,.35),transparent 60%),radial-gradient(700px 500px at 110% 110%,rgba(245, 142, 224,.14),transparent 60%);background-repeat:no-repeat;color-scheme:dark}
 .card{width:min(420px,92vw);padding:40px 34px 34px;border-radius:24px;text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(240, 170, 235,.14);
 box-shadow:0 30px 80px -20px rgba(0,0,0,.8);backdrop-filter:blur(14px);animation:in .5s cubic-bezier(.2,.8,.2,1)}
-.brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:#ffb0ec;margin-bottom:26px}
+.brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:${L.tag};margin-bottom:26px;text-transform:uppercase}
 .ico{width:68px;height:68px;margin:0 auto 20px;border-radius:22px;display:flex;align-items:center;justify-content:center;
-color:${ok ? '#fff' : '#ff7a8a'};background:${ok ? 'linear-gradient(135deg,#ffa6ea,#e055c9 55%,#9b3fe0)' : 'rgba(255,122,138,.12)'};
+color:${ok ? L.ink : '#ff7a8a'};background:${ok ? L.grad : 'rgba(255,122,138,.12)'};
 box-shadow:${ok ? '0 14px 34px -10px rgba(193, 63, 214,.8)' : 'none'}}
 .ico svg{width:34px;height:34px}h1{margin:0 0 10px;font-size:24px}p{margin:0;color:#e0c9e0;line-height:1.5;font-size:15px}
 small{display:block;margin-top:16px;color:#a58aa6;font-size:12.5px;word-break:break-word}
 @keyframes in{from{opacity:0;transform:translateY(12px) scale(.98)}}
-</style></head><body><div class="card"><div class="brand">KOPI CLIENT</div>
+</style></head><body><div class="card"><div class="brand">${escHtml(L.name)}</div>
 <div class="ico"><svg viewBox="0 0 24 24">${mark}</svg></div><h1>${escHtml(title)}</h1><p>${escHtml(text)}</p>
 ${!ok && detail ? `<small>${escHtml(detail)}</small>` : ''}</div>
 <script>${ok ? 'setTimeout(function(){try{window.close()}catch(e){}},2500)' : ''}</script></body></html>`;

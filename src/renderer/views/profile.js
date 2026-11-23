@@ -45,7 +45,7 @@
           </div></div>
 
         <div class="pf-card" id="pf-card" style="${worn ? `--pf:${KopiCapes.RARITY[worn.rarity].color}` : ''}">
-          <img class="pf-mark" src="assets/logo-mark.png" alt="">
+          <img class="pf-mark${S.info.brand ? ' is-brand' : ''}" src="${esc(brandArt())}" alt="">
           <div class="pf-viewer" id="pf-viewer"></div>
           <div class="pf-info">
             <span class="pf-kicker">${t('Jugador de Kopi Client')}</span>
@@ -63,7 +63,7 @@
             </div>
             ${last ? `<span class="pf-last">${icon('clock')}${t('Última partida: {when}', { when: UI.timeAgo(last) })}</span>` : ''}
           </div>
-          <img class="pf-brand" src="assets/logo-wordmark.png" alt="Kopi Client">
+          ${brandMark('pf-brand')}
         </div>
 
         <div class="pf-cols">

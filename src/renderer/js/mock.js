@@ -35,8 +35,8 @@
     platform: q.get('platform') || 'win32',
     win: { minimize: wait, maximize: wait, close: wait, onState: () => () => {} },
     app: {
-      info: () => wait({ name: 'Kopi Client', studio: 'Kopi Studio', version: '1.4.1', core: '1.0.0', build: 2026, platform: q.get('platform') || 'win32', totalMemMb: 15 * 1024, discordInvite: 'https://discord.gg/x', githubRepo: 'onyx/onyx-client', gameDir: 'C:\\Users\\Kewin\\AppData\\Roaming\\.onyxclient',
-        brand: q.get('brand') ? { id: 'nova', name: 'Nova Launcher', studio: 'nova-estudios', studioName: 'Nova Estudios', accent: '#f59e0b', accent2: '#ea580c', tagline: 'Los eventos de Nova', logo: null, background: '../../web/img/arte-2.webp', web: 'https://nova.gg', store: null, onlyStudio: true } : null }),
+      info: () => wait({ name: q.get('brand') ? 'Nova Launcher' : 'Kopi Client', studio: 'Kopi Studio', version: '1.4.1', core: '1.0.0', build: 2026, platform: q.get('platform') || 'win32', totalMemMb: 15 * 1024, discordInvite: 'https://discord.gg/x', githubRepo: 'onyx/onyx-client', gameDir: 'C:\\Users\\Kewin\\AppData\\Roaming\\.onyxclient',
+        brand: q.get('brand') ? { id: 'nova', name: 'Nova Launcher', studio: 'nova-estudios', studioName: 'Nova Estudios', accent: q.get('brand') === 'white' ? '#ffffff' : '#f59e0b', accent2: q.get('brand') === 'white' ? '#000000' : '#ea580c', tagline: 'Los eventos de Nova', logo: q.get('blogo') || null, background: '../../web/img/arte-2.webp', web: 'https://nova.gg', store: null, onlyStudio: true } : null }),
       quit: wait, openExternal: wait, openPath: wait, showItem: wait, relaunch: wait, clearCache: wait
     },
     settings: { get: () => wait({ ...settings }), set: (p) => { settings = { ...settings, ...p }; return wait({ ...settings }); } },

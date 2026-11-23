@@ -686,9 +686,22 @@
     locale() { return LOCALES[lang] || 'es-ES'; },
     missing() { return ROWS.length; }
   };
+  // Launcher de marca: donde pone «Kopi» se escribe el nombre de la marca («Kopi Client» → «Nova Launcher»,
+  // «Kopi» → «Nova», «KopiGuard» → «NovaGuard»). Menos en las frases que hablan de Kopi a propósito.
+  let BR = null;
+  const KEEP = new Set(['Launcher de {s} · con la tecnología de Kopi Client', 'Este código es de otro studio. Úsalo en Kopi Client.']);
+  window.I18N.brand = (name) => {
+    const full = String(name || '').trim();
+    if (!full) { BR = null; return; }
+    const short = full.replace(/\s+(launcher|client|cliente|mc|minecraft|studios?)$/i, '').trim() || full;
+    BR = { full, short };
+  };
+  window.I18N.brandName = () => (BR ? BR.short : null);
+  const rebrand = (s) => s.replace(/Kopi Client/g, BR.full).replace(/KopiGuard/g, BR.short + 'Guard').replace(/\bKopi\b/g, BR.short);
   window.t = function (key, vars) {
     const row = map.get(key);
     let s = row ? (row[IDX[lang]] || key) : key;
+    if (BR && !KEEP.has(key)) s = rebrand(s); // antes de poner los datos: el nombre de un studio («Kopi Studios») no se toca
     if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m));
     return s;
   };

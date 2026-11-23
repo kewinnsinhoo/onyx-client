@@ -261,7 +261,7 @@
                 ${inst.category ? `<span class="badge">${esc(inst.category)}</span>` : ''}
                 ${inst.premium ? `<span class="badge premium">${icon('lock')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Premium y offline')}</span>`}
                 ${inst.server && inst.server.address && !look.hideTech ? `<span class="badge">${icon('globe')}${esc(inst.server.address)}</span>` : ''}
-                ${inst.guard ? `<span class="badge guard" title="${t('Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.')}">${icon('shield')}KopiGuard</span>` : ''}
+                ${inst.guard ? `<span class="badge guard" title="${t('Este studio usa KopiGuard: mientras juegas, el launcher comprueba que no haya trampas, y el studio puede ver en directo la ventana del juego.')}">${icon('shield')}${t('KopiGuard')}</span>` : ''}
                 ${(inst.news || []).length ? `<button class="badge news-b ${App.unseenNews(inst) ? 'new' : ''}" id="ins-news">${icon('megaphone')}${t('Novedades')}${App.unseenNews(inst) ? `<i>${App.unseenNews(inst)}</i>` : ''}</button>` : ''}
                 ${inst.perfMode ? `<span class="badge perf" title="${t('Modo rendimiento')}">${icon('zap')}${t('Rendimiento')}</span>` : ''}
                 ${inst.friendsMode ? `<button class="badge friends" id="ins-friends-b" title="${t('Jugar con amigos')}">${icon('users')}${t('Con amigos')}</button>` : ''}

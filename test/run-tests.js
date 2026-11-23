@@ -1417,3 +1417,36 @@ test('KopiGuard en Windows: sin borde amarillo al grabar el juego', () => {
   assert.ok(/appendSwitch\('disable-features', 'AllowWgcWindowCapturer,AllowWgcScreenCapturer'\)/.test(head), 'falta apagar la captura WGC');
   assert.strictEqual((main.match(/appendSwitch\('disable-features'/g) || []).length, 1, 'un segundo disable-features pisaría el primero');
 });
+
+test('Launcher de marca: los textos dicen el nombre de la marca (menos los que hablan de Kopi a propósito)', () => {
+  const vm = require('vm');
+  const ctx = { window: {}, document: { documentElement: {} } };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', 'i18n.js'), 'utf8'), ctx);
+  const w = ctx.window;
+  assert.strictEqual(w.t('Jugador de Kopi Client'), 'Jugador de Kopi Client', 'sin marca no cambia nada');
+  w.I18N.brand('Nova Launcher');
+  assert.strictEqual(w.I18N.brandName(), 'Nova');
+  assert.strictEqual(w.t('Jugador de Kopi Client'), 'Jugador de Nova Launcher');
+  assert.strictEqual(w.t('Tus capas de Kopi'), 'Tus capas de Nova');
+  assert.strictEqual(w.t('KopiGuard'), 'NovaGuard');
+  assert.strictEqual(w.t('Este código es de otro studio. Úsalo en Kopi Client.'), 'Este código es de otro studio. Úsalo en Kopi Client.', 'esta habla de Kopi a propósito');
+  assert.strictEqual(w.t('Launcher de {s} · con la tecnología de Kopi Client', { s: 'Nova' }), 'Launcher de Nova · con la tecnología de Kopi Client');
+  assert.ok(!/Kopi/.test(w.t('Jugando a {name}', { name: 'x' })));
+  // el nombre de un studio que viene en los datos no se toca
+  w.I18N.set('en');
+  assert.ok(w.t('Jugador de Kopi Client').includes('Nova Launcher'));
+});
+
+test('Inicio de sesión de Microsoft: la página dice el nombre del launcher', () => {
+  const ms = require('../src/main/auth/microsoft');
+  assert.ok(/Kopi Client/.test(ms.resultPage(true, 'es')) && !/Nova/.test(ms.resultPage(true, 'es')));
+  const cfg = require('../src/main/config');
+  const saved = cfg.brand;
+  cfg.brand = { name: 'Nova Launcher', accent: '#ffffff' };
+  try {
+    const html = ms.resultPage(true, 'es');
+    assert.ok(/Nova Launcher/.test(html) && !/Kopi/.test(html), 'sin Kopi');
+    assert.ok(/color:#15111b;background:#ffffff/.test(html), 'texto oscuro sobre blanco');
+  } finally { cfg.brand = saved; }
+});

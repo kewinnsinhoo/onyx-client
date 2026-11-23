@@ -13,15 +13,43 @@
     if (!b) return;
     document.body.classList.add('branded');
     document.title = b.name;
+    if (window.I18N && I18N.brand) I18N.brand(b.name); // los textos dicen el nombre de la marca en vez de Kopi
     const ok = (c) => /^#[0-9a-f]{6}$/i.test(c || '');
     if (ok(b.accent)) {
-      const a = b.accent, a2 = ok(b.accent2) ? b.accent2 : mix(a, '#000000', 0.25), [r, g, bl] = hexRgb(a), [r2, g2, b2] = hexRgb(a2);
+      // Luz de un color (0 negro … 1 blanco): con colores claros (p. ej. blanco) el texto de los botones va oscuro
+      const lum = (h) => { const c = hexRgb(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+      const a = b.accent;
+      let a2 = ok(b.accent2) ? b.accent2 : mix(a, '#000000', 0.25);
+      // un degradado de blanco a negro no se puede leer con ningún color de texto: el segundo color se acerca al primero
+      if (Math.abs(lum(a) - lum(a2)) > 0.35) a2 = mix(a, '#000000', 0.22);
+      const [r, g, bl] = hexRgb(a), [r2, g2, b2] = hexRgb(a2);
       const st = document.documentElement.style;
+      st.setProperty('--on-accent', lum(mix(a, a2, 0.5)) > 0.4 ? '#15111b' : '#ffffff');
       st.setProperty('--accent', a);
       st.setProperty('--accent-2', a2);
       st.setProperty('--accent-soft', `rgba(${r},${g},${bl},.14)`);
       st.setProperty('--accent-grad', `linear-gradient(135deg, ${mix(a, '#ffffff', 0.18)} 0%, ${a} 55%, ${a2} 100%)`);
       st.setProperty('--accent-shadow', `0 10px 28px -8px rgba(${r2},${g2},${b2},.65)`);
+      // Fondo, bordes y textos con el tono de la marca (si no, quedaba el morado de Kopi)
+      const tint = (base, k) => mix(base, a, k);
+      const rgb = (h) => hexRgb(h).join(' ');
+      st.setProperty('--k1', rgb(a));
+      st.setProperty('--k2', rgb(a2));
+      st.setProperty('--k3', rgb(mix(a, '#ffffff', 0.2)));
+      st.setProperty('--accent-light', mix(a, '#ffffff', 0.3));
+      st.setProperty('--deep-1', tint('#1e1e23', 0.10));
+      st.setProperty('--deep-2', tint('#121215', 0.06));
+      st.setProperty('--deep-3', tint('#0f0f12', 0.05));
+      st.setProperty('--deep-4', tint('#0b0b0d', 0.04));
+      st.setProperty('--bg', tint('#09090b', 0.035));
+      st.setProperty('--bg-2', tint('#0f0f12', 0.05));
+      st.setProperty('--surface-solid', tint('#151518', 0.05));
+      st.setProperty('--border', `rgba(${r},${g},${bl},.10)`);
+      st.setProperty('--border-strong', `rgba(${r},${g},${bl},.20)`);
+      st.setProperty('--text', tint('#f5f5f7', 0.05));
+      st.setProperty('--text-2', tint('#d6d6db', 0.07));
+      st.setProperty('--muted', tint('#9b9ba4', 0.10));
+      st.setProperty('--faint', tint('#66666e', 0.10));
       st.setProperty('--glow-1', `rgba(${r2},${g2},${b2},.22)`);
       st.setProperty('--glow-2', `rgba(${r},${g},${bl},.12)`);
     }
@@ -35,6 +63,13 @@
     const b = S.info && S.info.brand;
     if (!b) return `<img class="${cls}" src="assets/logo-wordmark.png" alt="Kopi Client">`;
     return b.logo ? `<img class="${cls} brand-logo" src="${esc(b.logo)}" alt="${esc(b.name)}">` : `<b class="${cls} brand-name">${esc(b.name)}</b>`;
+  };
+
+  // Dibujo grande de fondo (inicio de sesión, tarjeta del perfil): el pulpo de Kopi o, en un launcher de marca,
+  // su logo (o su icono si no tiene logo)
+  window.brandArt = () => {
+    const b = S.info && S.info.brand;
+    return b ? (b.logo || 'assets/icon.png') : 'assets/logo-mark.png';
   };
 
   // ---------- utilidades de estado ----------

@@ -414,6 +414,14 @@ Para que se cuenten solos:
 - Conserva su nombre, su enlace de descarga (`panel.onyxclient.site/l/<launcher>`) y sus instaladores, y se recompila solo para quedar conectado al studio nuevo.
 - Un studio solo puede tener un launcher. Si el studio no existe, se crea antes en **Kopi → Studios → Nuevo studio**.
 
+## Launcher de marca: todo con la marca (desde la 1.8.8)
+
+- Los textos dicen el nombre de la marca: «Kopi Client» → nombre completo (p. ej. «Nova Launcher»), «Kopi» → nombre corto («Nova»), «KopiGuard» → «NovaGuard». Solo dos frases siguen hablando de Kopi a propósito: «con la tecnología de Kopi Client» y «Este código es de otro studio. Úsalo en Kopi Client.».
+- En vez del pulpo de Kopi sale el **logo** de la marca (o su icono si no tiene logo): inicio de sesión y tarjeta del perfil.
+- Fondos, tarjetas, bordes y brillos usan el color principal de la marca. Con colores claros (como el blanco) el texto de los botones va oscuro para que se lea.
+- La página del navegador al iniciar sesión con Microsoft dice el nombre del launcher.
+- Las capas se siguen llamando como en Kopi (p. ej. la capa «Kopi» sale como «Nova»), pero el dibujo es el mismo.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

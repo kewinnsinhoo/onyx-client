@@ -19,7 +19,7 @@
         ${mac ? '' : `<div class="winctl"><button data-w="min">${icon('minimize')}</button><button data-w="max">${icon('maximize')}</button><button class="close" data-w="close">${icon('close')}</button></div>`}
       </header>
       <div class="lg-body">
-        <img class="lg-bg" src="assets/logo-mark.png" alt="">
+        <img class="lg-bg${S.info && S.info.brand ? ' is-brand' : ''}" src="${esc(brandArt())}" alt="">
         <div class="lg-box">
           <h1 class="lg-title"><span>${t('Por favor')} <em>${t('inicia sesión')}</em></span><span class="thin">${t('con tu cuenta')}</span></h1>
           <div class="lg-btns">

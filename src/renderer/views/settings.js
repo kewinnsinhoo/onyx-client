@@ -98,9 +98,9 @@
         <div class="dc-preview ${s.discordPresence !== false ? '' : 'off'}" id="dc-preview">
           <div class="dc-k">${t('Jugando')}</div>
           <div class="dc-row"><img src="assets/icon.png" alt=""><div>
-            <div class="dc-n">Kopi Client</div>
+            <div class="dc-n">${esc(S.info.name || 'Kopi Client')}</div>
             <div class="dc-l">${t('En el menú')}</div>
-            <div class="dc-l">Kopi Client · v${esc(S.info.version || '')}</div>
+            <div class="dc-l">${esc(S.info.name || 'Kopi Client')} · v${esc(S.info.version || '')}</div>
             <div class="dc-t">${icon('gamepad')}0:14</div></div></div>
         </div>
       </div>
