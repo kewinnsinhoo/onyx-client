@@ -9,6 +9,7 @@ const P = 'https://panel.onyxclient.site';
   const a = JSON.parse(await show('auth', `${P}/api/l/auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'KopiDiagnostico' }) }) || '{}');
   const H = { Authorization: `Bearer ${a.token}`, 'Content-Type': 'application/json' };
   for (const r of ['instances', 'me', 'public', 'badges', 'streams', 'news', 'notifications', 'friends', 'skins', 'events']) await show('GET ' + r, `${P}/api/l/${r}`, { headers: H });
+  try { const li = JSON.parse(await (await fetch(`${P}/api/l/instances`, { headers: H })).text()); console.log('INSTANCIAS que ve un jugador cualquiera:'); for (const i of li.instances || []) console.log(`  · ${i.name} [${i.id}] studio=${i.studio && i.studio.id} (${i.studio && i.studio.name}) icono=${i.icon ? 'sí' : 'no'}`); } catch (e) { console.log('ERR lista', e.message); }
   await show('POST neterr', `${P}/api/l/neterr`, { method: 'POST', headers: H, body: JSON.stringify({ host: 'diag.example', kind: 'other', os: 'linux' }) });
   for (let i = 0; i < 4; i++) await show('POST neterr sin cuenta ' + i, `${P}/api/l/neterr`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ host: 'diag' + i + '.example', kind: 'cert', chrome: 'x', node: 'y', version: '1.8.6', os: 'win32' }) });
   await show('POST play falso', `${P}/api/l/play`, { method: 'POST', headers: H, body: JSON.stringify({ instance: 'no-existe' }) });
