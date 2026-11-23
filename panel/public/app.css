@@ -1108,3 +1108,10 @@ a.g-shot:hover { border-color: var(--accent); }
 .bdg-r.r-mythic { background: linear-gradient(90deg, #fff3b0, #ffc23a, #fff3b0); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: mythText 3s linear infinite; font-weight: 800; }
 @keyframes mythText { to { background-position: -200% 0; } }
 .bdg-card.r-mythic::before { background: radial-gradient(60% 100% at 50% 0, rgba(255, 210, 80, .28), transparent); }
+/* Descomprimir un .zip: qué carpetas trae */
+.fm-xlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; max-height: 260px; overflow: auto; }
+.fm-x { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: 10px; background: rgba(255, 255, 255, .035); border: 1px solid var(--border); font-size: 13px; min-width: 0; }
+.fm-x svg { width: 15px; height: 15px; color: var(--accent-2); flex: none; }
+.fm-x span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.fm-x b { font-size: 12px; color: var(--muted); font-weight: 700; }
+.fm-x.muted { justify-content: center; color: var(--muted); }

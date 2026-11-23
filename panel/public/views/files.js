@@ -312,6 +312,7 @@
         if (TEXT.test(path)) items.push({ icon: 'edit', label: editable ? t('Editar') : t('Ver'), run: () => openFile(f) });
         items.push({ icon: 'download', label: t('Descargar'), run: () => download(f) });
         items.push({ icon: 'link', label: t('Copiar enlace'), run: () => copy(absUrl(f.url)) });
+        if (editable && /\.zip$/i.test(path)) items.push({ icon: 'box', label: t('Descomprimir aquí'), run: () => extractHere(f) });
       }
       if (editable) {
         items.push('-');
@@ -338,11 +339,11 @@
     }
 
     // Sube archivos (con su ruta relativa) a la carpeta actual
-    async function uploadMany(list, newDirs = [], target = st.cwd) {
+    async function uploadMany(list, newDirs = [], target = st.cwd, { quiet = false } = {}) {
       list = list.filter(x => !JUNK.test(x.rel));
       const big = list.filter(x => x.file.size > MAX);
       const ok = list.filter(x => x.file.size <= MAX && x.file.size > 0);
-      if (!ok.length && !newDirs.length) { if (big.length) tooBig(big); return; }
+      if (!ok.length && !newDirs.length) { if (big.length) tooBig(big); return false; }
       const done = [];
       setProg(0, t('Subiendo {i} de {n}…', { i: 0, n: ok.length }));
       const errs = await pool(ok, 4, async (x) => {
@@ -355,12 +356,13 @@
       const paths = new Set(done.map(f => f.path));
       d.files = [...d.files.filter(f => !paths.has(f.path)), ...done];
       d.dirs = [...new Set([...dirs(), ...newDirs])];
-      try { await save(); } catch (e) { endProg(); return fail(e); }
+      try { await save(); } catch (e) { endProg(); fail(e); return false; }
       endProg(); draw();
-      if (done.length) toast(t('{n} archivos subidos', { n: done.length }));
+      if (done.length && !quiet) toast(t('{n} archivos subidos', { n: done.length }));
       if (errs.length) toast(t('{n} archivos no se pudieron subir: {e}', { n: errs.length, e: errs[0].e.message }), 'err');
       if (big.length) tooBig(big);
       checkModrinth();
+      return true;
     }
     function tooBig(big) {
       modal((m, close) => {
@@ -695,13 +697,119 @@
       try { await save(); toast(t('{n} archivos pasan a descargarse desde Modrinth', { n: map.size })); st.mr = []; draw(); } catch (e) { busy(btn, false); fail(e); }
     }
 
+    // ------------------------------------------------ descomprimir un .zip que ya está en la instancia
+    // Saca todo donde está el .zip, con las carpetas que trae (mods, config…). Si viene todo metido
+    // en una carpeta de más («MiPack/mods/…», «.minecraft/config/…»), esa carpeta se quita.
+    const MC_DIRS = /^(mods|config|resourcepacks|shaderpacks|saves|kubejs|defaultconfigs|scripts|datapacks|global_packs|openloader|schematics|emotes|journeymap|xaero|screenshots|options\.txt|servers\.dat)$/i;
+    function stripWrapper(names) {
+      let cut = '';
+      for (;;) {
+        const rest = names.map(n => n.slice(cut.length));
+        const tops = new Set(rest.map(n => n.split('/')[0]));
+        const top = [...tops][0];
+        if (tops.size !== 1 || rest.some(n => !n.includes('/')) || MC_DIRS.test(top)) return cut;
+        cut += top + '/';
+      }
+    }
+    async function fetchWithProgress(url, label) {
+      const r = await fetch(absUrl(url));
+      if (!r.ok) throw new Error(t('No se pudo descargar el .zip ({s})', { s: r.status }));
+      const total = Number(r.headers.get('Content-Length')) || 0;
+      if (!r.body || !total) return r.blob();
+      const rd = r.body.getReader(), parts = [];
+      let got = 0;
+      for (;;) {
+        const { done, value } = await rd.read();
+        if (done) break;
+        parts.push(value); got += value.length;
+        setProg(Math.round(got / total * 100), t('Descargando {name} · {p}%', { name: label, p: Math.round(got / total * 100) }));
+      }
+      return new Blob(parts);
+    }
+    const sha1Hex = async (u8) => [...new Uint8Array(await crypto.subtle.digest('SHA-1', u8))].map(x => x.toString(16).padStart(2, '0')).join('');
+
+    async function extractHere(f) {
+      if (st.busy) return;
+      const target = dirOf(f.path);
+      let entries;
+      try {
+        setProg(0, t('Descargando {name} · {p}%', { name: base(f.path), p: 0 }));
+        const blob = await fetchWithProgress(f.url, base(f.path));
+        setProg(100, t('Leyendo {name}…', { name: base(f.path) }));
+        entries = await unzip(blob);
+      } catch (e) { endProg(); return fail(e); }
+      endProg();
+      if (!entries.length) return toast(t('El .zip está vacío'), 'err');
+      const cut = stripWrapper(entries.map(e => e.name));
+      const items = entries.map(e => ({ e, rel: e.name.slice(cut.length) })).filter(x => x.rel && !JUNK.test(x.rel));
+      const tops = {};
+      for (const x of items) { const k = x.rel.includes('/') ? x.rel.split('/')[0] + '/' : x.rel; tops[k] = (tops[k] || 0) + 1; }
+      const total = items.reduce((a, x) => a + (x.e.size || 0), 0);
+      const clash = items.filter(x => files().some(y => y.path === join(target, x.rel))).length;
+      const go = await new Promise((resolve) => modal((m, close) => {
+        const list = Object.entries(tops).sort((a, b) => b[1] - a[1]);
+        m.innerHTML = html`<div class="mh"><h3>${icon('box')}${t('Descomprimir {name}', { name: esc(base(f.path)) })}</h3><button class="btn sm icon ghost" id="x">${icon('x')}</button></div>
+          <div class="mb">
+            <p style="margin:0 0 12px">${t('Se sacan {n} archivos ({size}) en {dir}, con sus carpetas tal cual.', { n: items.length, size: fmtSize(total), dir: `<b>${esc(target || t('raíz'))}</b>` })}</p>
+            <div class="fm-xlist">${list.slice(0, 12).map(([k, n]) => `<div class="fm-x">${icon(k.endsWith('/') ? 'folder' : 'file')}<span>${esc(k)}</span><b>${n}</b></div>`).join('')}${list.length > 12 ? `<div class="fm-x muted">${t('y {n} más', { n: list.length - 12 })}</div>` : ''}</div>
+            ${cut ? `<p class="help" style="margin:10px 0 0">${t('Venía todo dentro de «{d}»: esa carpeta se quita.', { d: esc(cut.slice(0, -1)) })}</p>` : ''}
+            ${clash ? `<p class="help" style="margin:8px 0 0">${t('{n} ya existen y se reemplazarán.', { n: clash })}</p>` : ''}
+            <label class="check" style="margin-top:14px"><input type="checkbox" id="rmzip" checked><span>${t('Borrar el .zip al terminar')}</span></label>
+          </div>
+          <div class="mf"><button class="btn" id="no">${t('Cancelar')}</button><button class="btn primary" id="ok">${icon('box')}${t('Descomprimir')}</button></div>`;
+        const no = () => { close(); resolve(null); };
+        $('#x', m).onclick = no; $('#no', m).onclick = no;
+        $('#ok', m).onclick = () => { const rm = $('#rmzip', m).checked; close(); resolve({ rm }); };
+      }, { wide: true }));
+      if (!go) return;
+      try {
+        // 1) Leer cada archivo. Los .jar que están en Modrinth se enlazan (no hace falta subirlos)
+        const read = [];
+        let i = 0;
+        for (const x of items) {
+          setProg(Math.round(++i / items.length * 100), t('Descomprimiendo {i} de {n} · {name}', { i, n: items.length, name: x.rel }));
+          const data = await x.e.read();
+          read.push({ rel: x.rel, data, sha1: /\.jar$/i.test(x.rel) ? await sha1Hex(data) : null });
+        }
+        const hashes = [...new Set(read.map(x => x.sha1).filter(Boolean))];
+        const hit = new Map();
+        try {
+          for (let k = 0; k < hashes.length; k += 500) {
+            const part = hashes.slice(k, k + 500);
+            setProg(100, t('Buscando los mods en Modrinth…'));
+            const r = await mrJson('/version_files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hashes: part, algorithm: 'sha1' }) });
+            for (const h of part) {
+              const v = r[h], file = v && v.files.find(y => y.hashes && y.hashes.sha1 === h);
+              if (file) { hit.set(h, { url: file.url, project: v.project_id }); mrCache.set(h, { url: file.url, project: v.project_id }); }
+            }
+          }
+        } catch { /* sin Modrinth: se suben todos */ }
+        endProg();
+        const d = D();
+        const linked = read.filter(x => x.sha1 && hit.has(x.sha1)).map(x => ({ path: join(target, x.rel), url: hit.get(x.sha1).url, sha1: x.sha1, size: x.data.length, name: base(x.rel), at: Date.now(), mr: hit.get(x.sha1).project }));
+        const lp = new Set(linked.map(y => y.path));
+        d.files = [...d.files.filter(y => !lp.has(y.path)), ...linked];
+        const up = read.filter(x => !(x.sha1 && hit.has(x.sha1))).map(x => ({ file: new File([x.data], base(x.rel)), rel: x.rel }));
+        const newDirs = [...new Set(items.flatMap(x => { const p = x.rel.split('/').slice(0, -1); return p.map((_, k) => join(target, p.slice(0, k + 1).join('/'))); }))];
+        if (go.rm) d.files = d.files.filter(y => y.path !== f.path);
+        const ok = up.length ? await uploadMany(up, newDirs, target, { quiet: true }) : await save().then(() => true, (e) => { fail(e); return false; });
+        if (!ok) return;
+        draw();
+        toast(linked.length
+          ? t('Descomprimido: {n} archivos ({m} mods enlazados desde Modrinth)', { n: items.length, m: linked.length })
+          : t('Descomprimido: {n} archivos', { n: items.length }));
+        checkModrinth();
+      } catch (e) { endProg(); fail(e); }
+    }
+
     // ------------------------------------------------ importar .zip / .mrpack
     async function importZip(file) {
       try {
         setProg(0, t('Leyendo {name}…', { name: file.name }));
         const entries = await unzip(file);
+        const cut = stripWrapper(entries.map(e => e.name)); // sin la carpeta de más que traen algunos .zip
         const list = [];
-        for (const e of entries) list.push({ file: new File([await e.read()], base(e.name)), rel: e.name });
+        for (const e of entries) { const rel = e.name.slice(cut.length); if (rel) list.push({ file: new File([await e.read()], base(rel)), rel }); }
         endProg();
         uploadMany(list, []);
       } catch (e) { endProg(); fail(e); }
