@@ -49,7 +49,8 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const okUrl = (u) => (/^https:\/\//.test(u || '') ? u : null);
   const okColor = (c) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : null);
-  const id = location.pathname.split('/').filter(Boolean)[1] || '';
+  // /l/<id> o el enlace corto /l?<id>
+  const id = location.pathname.split('/').filter(Boolean)[1] || (location.search.slice(1).split('&')[0].replace(/^id=/, '')) || '';
   const m = document.getElementById('m');
   let data;
   try { const r = await fetch(`/api/public/brands/${encodeURIComponent(id)}/downloads`); if (!r.ok) throw 0; data = await r.json(); }

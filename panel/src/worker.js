@@ -77,6 +77,14 @@ async function route(req, env, ctx) {
   if (p.startsWith('/capes/') && (m === 'GET' || m === 'HEAD')) { await ensureSchema(env.DB); return capesPublic(env, p.slice(7)); }
   // Página pública de descarga de un launcher de marca: panel.onyxclient.site/l/<id>
   if (/^\/l\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
+  // Enlaces cortos de la página de descarga (algunas apps cortan el enlace al pegarlo):
+  //   /l?nova-launcher   y   /nova-launcher  (solo si existe un launcher con ese nombre)
+  if (p === '/l' && /^[a-z][a-z0-9-]{1,31}$/.test(u.search.slice(1).split('&')[0].replace(/^id=/, '')) && env.ASSETS) return env.ASSETS.fetch(new Request(new URL('/l.html', u), req));
+  if (/^\/[a-z][a-z0-9-]{1,31}\/?$/.test(p) && env.ASSETS && !['l', 'api', 'auth', 'm', 'csl'].includes(p.replace(/\//g, ''))) {
+    await ensureSchema(env.DB);
+    const b = await env.DB.prepare('SELECT b.id FROM brands b JOIN studios s ON s.id = b.studio_id WHERE b.id = ? AND s.deleted_at IS NULL').bind(p.replace(/\//g, '')).first();
+    if (b) return Response.redirect(new URL('/l/' + b.id, u).toString(), 302);
+  }
   if (p === '/auth/login') return authLogin(req, env, u);
   if (p === '/auth/callback') return authCallback(req, env, u);
   if (p === '/auth/logout' && m === 'POST') return authLogout(req, env);
