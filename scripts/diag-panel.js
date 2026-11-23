@@ -1,6 +1,7 @@
 // Diagnóstico (solo lectura) del panel: qué contesta cada parte que usa el launcher.
 const P = 'https://panel.onyxclient.site';
 (async () => {
+  for (const path of ['/l/nova-launcher', '/l?nova-launcher']) { const r = await fetch('https://panel.onyxclient.site' + path, { redirect: 'manual' }); const t = await r.text(); console.log(`${r.status >= 300 ? 'MAL' : 'ok '} ${r.status} página de descarga ${path} → ${r.headers.get('location') || 'sin redirección'} · ${/<title>/.test(t) ? t.match(/<title>([^<]*)/)[1] : '?'} · ${t.length} bytes`); }
   const show = async (name, url, opts) => { const t = Date.now(); try { const r = await fetch(url, opts); const txt = await r.text(); console.log(`${r.status >= 500 ? 'MAL' : 'ok '} ${r.status} ${name} (${Date.now() - t} ms) ${txt.slice(0, process.env.FULL === name ? 20000 : 220).replace(/\s+/g, ' ')}`); return txt; } catch (e) { console.log(`ERR ${name}: ${e.message}`); } };
   await show('status', `${P}/api/public/status`);
   await show('neterrs', `${P}/api/public/neterrs?h=48`);
