@@ -52,7 +52,11 @@ async function dispatch(env, id) {
   if (r.status !== 204) {
     const t = await r.text().catch(() => '');
     console.error('dispatch', r.status, t);
-    fail(502, 'github', r.status === 404 ? 'GitHub no encuentra la fábrica de launchers (revisa el repo de descargas y el token)' : `GitHub no aceptó la orden (${r.status})`);
+    let why = '';
+    try { why = String(JSON.parse(t).message || '').slice(0, 160); } catch { /* sin detalle */ }
+    // 403 casi siempre = la llave de GitHub del panel no tiene permiso «Actions: escritura»
+    const hint = r.status === 403 || r.status === 401 ? ' La llave de GitHub del panel (GITHUB_TOKEN) no tiene permiso para fabricar: necesita «Actions: Read and write» en el repositorio.' : '';
+    fail(502, 'github', r.status === 404 ? 'GitHub no encuentra la fábrica de launchers (revisa el repo de descargas y el token)' : `GitHub no aceptó la orden (${r.status}${why ? ': ' + why : ''}).${hint}`);
   }
 }
 
