@@ -207,6 +207,317 @@
       }
     },
     {
+      // Galaxia: brazos en espiral que giran alrededor de un núcleo brillante
+      id: 'galaxy', name: 'Galaxia', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const t = f / 20 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = (y - 7.5) * 0.62;
+          const d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+          const arm = Math.max(0, Math.sin(a * 2 - d * 1.25 + t));
+          const fade = Math.max(0, 1 - d / 6.2);
+          let c = mix('#05020f', mix('#7c3aed', '#22d3ee', Math.min(1, d / 4.5)), arm * fade * 1.15);
+          if (d < 1.1) c = '#fff7ed'; else if (d < 1.9) c = mix(c, '#fbcfe8', 0.75);
+          px(x, y, c);
+        }
+        [[0, 1, 0], [9, 3, 7], [1, 14, 3], [8, 13, 11], [0, 8, 15], [9, 9, 5]].forEach(([x, y, p]) => {
+          const k = (f + p) % 20;
+          if (k < 3) px(x, y, k === 1 ? '#ffffff' : '#a5b4fc');
+        });
+      }
+    },
+    {
+      // Tormenta: nubes que pasan, lluvia y un rayo que ilumina todo
+      id: 'storm', name: 'Tormenta', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const flash = f === 12 || f === 14;
+        const bg = vgrad(flash ? '#475569' : '#1e293b', flash ? '#1e293b' : '#070b16');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        // nubes
+        for (let x = 0; x < W; x++) {
+          const h = 2 + Math.round((Math.sin((x + f * 0.5) * 0.9) + Math.sin((x - f * 0.25) * 1.7)) * 0.7);
+          for (let y = 0; y <= h; y++) px(x, y, y === h ? (flash ? '#94a3b8' : '#475569') : y === 0 ? '#1f2937' : (flash ? '#64748b' : '#334155'));
+        }
+        // lluvia en diagonal
+        [[1, 0], [3, 7], [5, 3], [7, 11], [9, 5], [2, 15], [6, 9], [8, 17]].forEach(([x, ph]) => {
+          const y = 4 + ((f * 2 + ph) % 14);
+          const rx = (x - Math.floor((f * 2 + ph) % 14 / 4) + W) % W;
+          if (y < H) px(rx, y, '#7dd3fc');
+          if (y - 1 >= 4) px(rx, y - 1, '#38bdf8');
+        });
+        // el rayo
+        if (f >= 11 && f <= 14 && f !== 13) {
+          [[6, 4], [5, 5], [5, 6], [4, 7], [5, 8], [4, 9], [3, 10], [4, 11], [3, 12], [2, 13], [3, 14], [2, 15]].forEach(([x, y], i) => {
+            px(x, y, i % 3 ? '#fef9c3' : '#ffffff');
+            if (f === 12) px(x + 1, y, '#fde047');
+          });
+        }
+      }
+    },
+    {
+      // Corona real: corona de oro con joyas sobre terciopelo; un brillo la recorre
+      id: 'crown', name: 'Corona real', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#4c0519', '#1c0310');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x === 0 || x === 9) && y > 0 ? '#a16207' : bg(y));
+        for (let x = 0; x < W; x++) { px(x, 0, '#ca8a04'); px(x, 15, '#ca8a04'); }
+        const crown = ['X..XX..X', 'XX.XX.XX', 'XXXXXXXX', 'XRXXBXRX', 'XXXXXXXX', 'DDDDDDDD'];
+        crown.forEach((row, r) => [...row].forEach((c, i) => {
+          if (c === '.') return;
+          const x = 1 + i, y = 4 + r;
+          const shine = (x + y + 20 - f) % 20;
+          const gold = c === 'D' ? '#b45309' : r === 0 ? '#fef08a' : '#fbbf24';
+          px(x, y, c === 'R' ? '#ef4444' : c === 'B' ? '#3b82f6' : shine < 2 ? '#fffbeb' : gold);
+        }));
+        // joyitas en las puntas que brillan
+        [[1, 3, 0], [4, 3, 7], [5, 3, 7], [8, 3, 14]].forEach(([x, y, p]) => { if ((f + p) % 20 < 4) px(x, y, '#fef9c3'); });
+        // destellos sueltos
+        [[2, 12, 3], [7, 13, 10], [5, 11, 16]].forEach(([x, y, p]) => { const k = (f + p) % 20; if (k < 2) px(x, y, k ? '#fde68a' : '#ffffff'); });
+      }
+    },
+    {
+      // Ojo de dragón: escamas al rojo vivo y un ojo que mira, se dilata y parpadea
+      id: 'dragon', name: 'Ojo de dragón', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const t = f / 20 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const scale = (x + (y % 2 ? 1 : 0)) % 2 ? '#450a0a' : '#7f1d1d';
+          const heat = (Math.sin(y * 0.6 - t) + 1) / 2;
+          px(x, y, mix(scale, '#b91c1c', heat * 0.45));
+        }
+        const eye = [[5, 3, 6], [6, 2, 7], [7, 1, 8], [8, 1, 8], [9, 2, 7], [10, 3, 6]];
+        const closed = f === 16 || f === 17;
+        const wide = f >= 6 && f < 11;
+        eye.forEach(([y, a, b]) => {
+          for (let x = a; x <= b; x++) {
+            if (closed) { px(x, y, y === 7 || y === 8 ? '#1c0505' : '#991b1b'); continue; }
+            const edge = x === a || x === b;
+            let c = edge ? '#ea580c' : mix('#fde047', '#f97316', Math.abs(x - 4.5) / 3.5);
+            if (x === 4 || x === 5 || (wide && (x === 3 || x === 6) && y > 5 && y < 10)) c = '#0a0a0a';
+            px(x, y, c);
+          }
+        });
+        if (!closed) px(3, 6, '#fffbeb');
+        // brasas que suben
+        [[1, 0], [8, 9], [6, 14]].forEach(([x, ph]) => { const y = 15 - ((f + ph) % 20); if (y >= 0 && y < 16 && (y < 4 || y > 11)) px(x, y, '#fdba74'); });
+      }
+    },
+    {
+      // Fénix: un pájaro de fuego que bate las alas, con la cola en llamas
+      id: 'phoenix', name: 'Fénix', rarity: 'legendary', frames: 12, fps: 10,
+      draw(px, f) {
+        const t = f / 12 * TAU;
+        const bg = vgrad('#1c0a00', '#450a0a');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const fire = (k) => (k < 0.25 ? '#fef08a' : k < 0.5 ? '#fde047' : k < 0.75 ? '#f97316' : '#dc2626');
+        // alas: triángulos de fuego que suben y bajan
+        const tip = 6 + Math.round(Math.sin(t) * 4);
+        for (let i = 0; i < 4; i++) {
+          const top = Math.round(tip + (i / 3) * (6 - tip));
+          const bottom = top + 1 + Math.round(i * 0.9);
+          for (let y = top; y <= bottom; y++) {
+            const c = fire(1 - i / 3 + (y - top) * 0.08);
+            px(i, y, c); px(9 - i, y, c);
+          }
+        }
+        // cuerpo
+        for (let y = 5; y <= 11; y++) { px(4, y, y < 8 ? '#fde047' : '#f59e0b'); px(5, y, y < 8 ? '#fef08a' : '#fbbf24'); }
+        // cabeza con pico y ojo
+        px(4, 3, '#fde047'); px(5, 3, '#fef08a'); px(4, 4, '#fbbf24'); px(5, 4, '#fde047');
+        px(5, 3, '#1c0a00'); px(6, 4, '#f97316');
+        px(4, 2, f % 4 < 2 ? '#f97316' : '#dc2626'); px(3, 2, f % 4 < 2 ? '#dc2626' : '#f97316');
+        // cola de fuego
+        for (let y = 12; y < H; y++) {
+          const w = y - 11;
+          for (let dx = -w; dx <= w; dx++) {
+            const flick = Math.sin(t * 2 + y + dx) > 0.2;
+            if (Math.abs(dx) === w && !flick) continue;
+            px(Math.max(0, Math.min(9, 4 + dx + (dx > 0 ? 1 : 0))), y, fire(0.25 + Math.abs(dx) / (w + 0.5) * 0.75));
+          }
+        }
+        [[1, 1], [8, 6]].forEach(([x, ph]) => { const y = 3 - ((f + ph) % 6); if (y >= 0) px(x, y, '#fdba74'); });
+      }
+    },
+    {
+      // Diamante: una gema que brilla con destellos alrededor
+      id: 'diamond', name: 'Diamante', rarity: 'epic', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#082f49', '#020617');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const rows = [[3, 3, 6], [4, 2, 7], [5, 1, 8], [6, 1, 8], [7, 2, 7], [8, 2, 7], [9, 3, 6], [10, 3, 6], [11, 4, 5], [12, 4, 5]];
+        const faces = ['#a5f3fc', '#67e8f9', '#22d3ee', '#0891b2'];
+        rows.forEach(([y, a, b]) => {
+          for (let x = a; x <= b; x++) {
+            let c = y < 5 ? faces[(x + 1) % 2] : faces[(x < 5 ? 1 : 2) + (y % 2)];
+            if (y === 5) c = '#ecfeff';
+            const shine = (x - y + 40 - f * 2) % 20;
+            if (shine === 0 || shine === 1) c = '#ffffff';
+            px(x, y, c);
+          }
+        });
+        [[1, 2, 0], [8, 1, 6], [0, 11, 12], [9, 12, 3], [2, 14, 15]].forEach(([x, y, p]) => {
+          const k = (f + p) % 20;
+          if (k < 3) { px(x, y, '#ffffff'); if (k === 1) { px(x - 1, y, '#67e8f9'); px(x + 1, y, '#67e8f9'); px(x, y - 1, '#67e8f9'); px(x, y + 1, '#67e8f9'); } }
+        });
+      }
+    },
+    {
+      // Lava: roca fundida que fluye hacia abajo
+      id: 'lava', name: 'Lava', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const v = Math.sin(x * 0.9 + (y - f) * 0.55) + Math.sin(x * 0.45 - y * 0.8 + t) + 0.35 * Math.sin(x * 2.1 + y * 1.3 - t);
+          px(x, y, v > 1.3 ? '#fef08a' : v > 0.7 ? '#fb923c' : v > 0.1 ? '#ea580c' : v > -0.6 ? '#7c2d12' : '#1c1917');
+        }
+      }
+    },
+    {
+      // Oleaje: olas que van y vienen bajo un sol
+      id: 'ocean', name: 'Oleaje', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, y < 6 ? mix('#fb923c', '#fde68a', y / 5) : mix('#0ea5e9', '#082f49', (y - 6) / 9));
+        px(6, 2, '#fffbeb'); px(7, 2, '#fff7ed'); px(6, 3, '#fff7ed'); px(7, 3, '#fef3c7');
+        for (let x = 0; x < W; x++) {
+          const wy = 6 + Math.round(Math.sin(x * 0.8 + t) * 1.2);
+          px(x, wy, '#f0f9ff'); px(x, wy + 1, '#7dd3fc');
+          for (let y = wy + 2; y < 8; y++) px(x, y, '#38bdf8');
+          const w2 = 11 + Math.round(Math.sin(x * 0.7 - t + 1.5));
+          px(x, w2, '#38bdf8');
+          if ((x + f) % 5 === 0) px(x, w2 - 1, '#bae6fd');
+        }
+      }
+    },
+    {
+      // Código: columnas de letras verdes que caen sin parar
+      id: 'code', name: 'Código', rarity: 'epic', frames: 20, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x * 7 + y * 3) % 11 === 0 ? '#06140b' : '#020a05');
+        [[0, 3, 1], [1, 11, 2], [2, 7, 1], [3, 16, 2], [4, 1, 1], [5, 9, 2], [6, 14, 1], [7, 5, 2], [8, 18, 1], [9, 12, 2]].forEach(([x, ph, sp]) => {
+          const head = ((f * sp + ph) % 20) - 2;
+          const trail = ['#dcfce7', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#14532d'];
+          trail.forEach((c, k) => { const y = head - k; if (y >= 0 && y < H) px(x, y, (x + y + f) % 4 === 0 && k > 1 ? '#0f3d22' : c); });
+        });
+      }
+    },
+    {
+      // Arcoíris: franjas de colores que se deslizan, con destellos
+      id: 'rainbow', name: 'Arcoíris', rarity: 'epic', frames: 20, fps: 10,
+      draw(px, f) {
+        const cols = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7', '#ec4899'];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const k = Math.floor(((x + y) / 2.5 + f * 0.4) % cols.length);
+          px(x, y, cols[k]);
+        }
+        [[2, 3, 0], [7, 6, 7], [4, 11, 13], [8, 14, 4]].forEach(([x, y, p]) => { if ((f + p) % 20 < 3) px(x, y, '#ffffff'); });
+      }
+    },
+    {
+      // Tóxico: baba verde que burbujea y gotea
+      id: 'toxic', name: 'Tóxico', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, mix('#0c1a0c', '#1a2e05', y / 15));
+        for (let x = 0; x < W; x++) {
+          const lvl = 8 + Math.round(Math.sin(x * 0.9 + t) * 1.1);
+          for (let y = lvl; y < H; y++) px(x, y, y === lvl ? '#bef264' : (x + y) % 3 ? '#65a30d' : '#4d7c0f');
+        }
+        // burbujas que suben y explotan
+        [[2, 0], [6, 5], [8, 10], [4, 13]].forEach(([x, ph]) => {
+          const k = (f + ph) % 16;
+          const y = 15 - k;
+          if (y > 8) px(x, y, '#d9f99d'); else if (y === 8) { px(x - 1, 7, '#ecfccb'); px(x + 1, 7, '#ecfccb'); }
+        });
+        // gotas desde arriba
+        for (let x = 0; x < W; x++) px(x, 0, '#84cc16');
+        [[1, 0], [5, 6], [8, 11]].forEach(([x, ph]) => {
+          const y = (f + ph) % 16;
+          const len = Math.min(y, 3);
+          for (let k = 0; k <= len; k++) if (y - k < 7) px(x, y - k, k === 0 ? '#d9f99d' : '#84cc16');
+        });
+      }
+    },
+    {
+      // Sakura: una rama de cerezo en flor y pétalos que caen
+      id: 'sakura', name: 'Sakura', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#fff1f2', '#fbcfe8');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        [[0, 2], [1, 2], [2, 3], [3, 3], [4, 4], [5, 4], [6, 5], [3, 4], [2, 5], [7, 5], [8, 6]].forEach(([x, y]) => px(x, y, '#57352a'));
+        [[1, 1], [3, 2], [5, 3], [7, 4], [2, 6], [9, 5], [4, 5], [0, 3]].forEach(([x, y], i) => {
+          px(x, y, (f + i * 3) % 20 < 15 ? '#f472b6' : '#f9a8d4');
+          if (i % 2 === 0) px(x + 1, y, '#fbcfe8');
+        });
+        [[1, 0], [4, 7], [7, 13], [9, 4], [5, 16]].forEach(([x, ph], i) => {
+          const y = 5 + ((f + ph) % 20) * 11 / 20;
+          const sx = Math.round(x + Math.sin((f + ph) * 0.6) * 1.2);
+          px(Math.max(0, Math.min(9, sx)), Math.round(y), i % 2 ? '#ec4899' : '#f9a8d4');
+        });
+      }
+    },
+    {
+      // Navidad: un árbol con luces de colores, estrella y nieve
+      id: 'xmas', name: 'Navidad', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#0c1a3a', '#1e3a8a');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) { px(x, 15, '#f8fafc'); if (x % 3) px(x, 14, '#e2e8f0'); }
+        const tree = [[3, 4, 5], [4, 4, 5], [5, 3, 6], [6, 3, 6], [7, 2, 7], [8, 2, 7], [9, 1, 8], [10, 1, 8], [11, 2, 7]];
+        tree.forEach(([y, a, b]) => { for (let x = a; x <= b; x++) px(x, y, (x + y) % 3 ? '#15803d' : '#166534'); });
+        px(4, 12, '#78350f'); px(5, 12, '#78350f'); px(4, 13, '#713f12'); px(5, 13, '#713f12');
+        px(4, 2, '#fde047'); px(5, 2, '#fde047'); if (f % 10 < 5) { px(4, 1, '#fef9c3'); px(5, 1, '#fef9c3'); }
+        const lights = [[4, 5], [5, 7], [3, 7], [6, 9], [2, 9], [4, 9], [7, 10], [1, 10], [5, 11], [3, 11]];
+        const cols = ['#ef4444', '#facc15', '#3b82f6', '#ec4899'];
+        lights.forEach(([x, y], i) => px(x, y, cols[(i + Math.floor(f / 5)) % cols.length]));
+        [[0, 0], [2, 9], [7, 4], [9, 14], [8, 18]].forEach(([x, ph]) => {
+          const y = ((f + ph) % 20) * 14 / 20;
+          const ry = Math.round(y);
+          const sx = x + (Math.floor((f + ph) / 4) % 2);
+          if (ry < 14 && !(sx >= 1 && sx <= 8 && ry >= 2 && ry <= 13)) px(Math.min(9, sx), ry, '#ffffff');
+        });
+      }
+    },
+    {
+      // Corazón: late dos veces y descansa
+      id: 'heart', name: 'Corazón', rarity: 'rare', frames: 12, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#4a044e', '#1f0322');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const big = f === 0 || f === 3;
+        const small = ['.XX..XX.', 'XXXXXXXX', 'XXXXXXXX', '.XXXXXX.', '..XXXX..', '...XX...'];
+        const large = ['.XXX..XXX.', 'XXXXXXXXXX', 'XXXXXXXXXX', 'XXXXXXXXXX', '.XXXXXXXX.', '..XXXXXX..', '...XXXX...', '....XX....'];
+        const shape = big ? large : small, ox = big ? 0 : 1, oy = big ? 4 : 5;
+        shape.forEach((row, r) => [...row].forEach((c, i) => { if (c === 'X') px(ox + i, oy + r, r === shape.length - 1 || row[i + 1] !== 'X' ? '#be123c' : '#f43f5e'); }));
+        px(ox + 1, oy + 1, '#fecdd3'); px(ox + 2, oy + 1, '#fda4af');
+        if (big) [[0, 2], [9, 3], [1, 14], [8, 13]].forEach(([x, y]) => px(x, y, '#fb7185'));
+      }
+    },
+    {
+      // Hielo: hielo profundo con grietas que brillan y un copo de nieve que gira
+      id: 'ice', name: 'Hielo', rarity: 'rare', frames: 16, fps: 8,
+      draw(px, f) {
+        const bg = vgrad('#0c4a6e', '#082f49');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          let c = bg(y);
+          if ((x * 2 + y) % 7 === 0 || (x + y * 3) % 11 === 0) c = '#0e7490';
+          const shine = (x + y + 32 - f * 2) % 16;
+          if (shine < 2) c = mix(c, '#a5f3fc', 0.55);
+          px(x, y, c);
+        }
+        const diag = Math.floor(f / 4) % 2;
+        const arms = diag ? [[1, 1], [-1, -1], [1, -1], [-1, 1]] : [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const cx = 4.5, cy = 7.5;
+        px(4, 7, '#ffffff'); px(5, 7, '#ffffff'); px(4, 8, '#ffffff'); px(5, 8, '#ffffff');
+        arms.forEach(([dx, dy]) => {
+          for (let k = 1; k <= 3; k++) {
+            px(Math.round(cx + dx * k - (dx < 0 ? 1 : 0)), Math.round(cy + dy * k - (dy < 0 ? 1 : 0)), k === 3 ? '#67e8f9' : '#ffffff');
+          }
+        });
+        [[1, 1, 0], [8, 2, 5], [1, 14, 10], [8, 13, 3]].forEach(([x, y, p]) => { if ((f + p) % 16 < 3) px(x, y, '#ecfeff'); });
+      }
+    },
+    {
       id: 'pink', name: 'Kopi Rosa', rarity: 'common', frames: 1, fps: 1,
       draw(px) {
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x + y) % 4 < 2 ? '#f472b6' : '#c026d3');

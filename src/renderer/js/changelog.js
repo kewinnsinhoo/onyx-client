@@ -5,6 +5,14 @@
 window.CHANGELOG = [
   // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
   // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
+  {
+    v: '1.8.14', date: '2026-11-25', items: [
+      ['sparkles', '¡15 capas de Kopi nuevas y animadas! Galaxia, Fénix, Ojo de dragón, Tormenta con rayos, Corona real, Navidad y muchas más. Míralas en Skins → Capas.',
+        '15 new animated Kopi capes! Galaxy, Phoenix, Dragon eye, Storm with lightning, Royal crown, Christmas and many more. See them in Skins → Capes.',
+        '15 capes de Kopi noves i animades! Galàxia, Fènix, Ull de drac, Tempesta amb llamps, Corona reial, Nadal i moltes més. Mira-les a Skins → Capes.',
+        '15 nouvelles capes Kopi animées ! Galaxie, Phénix, Œil de dragon, Tempête avec éclairs, Couronne royale, Noël et bien d’autres. Découvre-les dans Skins → Capes.']
+    ]
+  },
   { v: '1.8.13', date: '2026-11-23', items: [] },
   { v: '1.8.12', date: '2026-11-23', items: [] },
   {
