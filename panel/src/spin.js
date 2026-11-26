@@ -1,7 +1,7 @@
 // Ruleta diaria: una tirada al día por jugador. El premio lo decide el servidor.
 //
 // Qué puede tocar: una capa, un marco o un fondo que el jugador aún NO tenga, de la rareza que salga
-// (los exclusivos —TACHAMANIKA, los gratis y los de insignia— nunca salen). Si ya los tiene todos de
+// (los exclusivos —TACHAMANIKA, NickooVXS, los gratis y los de insignia— nunca salen). Si ya los tiene todos de
 // esa rareza, baja a la siguiente; si no le queda nada, «¡Casi!».
 // Una tirada por día del jugador (con su zona horaria) y, como mínimo, 6 horas entre una y otra.
 import '../public/js/cape-art.js';
@@ -12,7 +12,7 @@ import { ownedLooks } from './looks.js';
 
 const CAPES = globalThis.KopiCapeArt, LOOKS = globalThis.KopiCosmetics;
 export const SPIN_ODDS = [['none', 45], ['rare', 42], ['epic', 10], ['legendary', 3]]; // %, suman 100
-const NO_CAPES = new Set(['tachamanika']); // capas de una persona: no salen en la ruleta
+const NO_CAPES = new Set(['tachamanika', 'nickoovxs']); // capas de una persona: no salen en la ruleta
 const MIN_GAP = 6 * 3600e3;
 const TIERS = ['legendary', 'epic', 'rare'];
 const tierOf = (r) => (r === 'common' ? 'rare' : r);

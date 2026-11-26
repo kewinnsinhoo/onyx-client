@@ -921,7 +921,7 @@ await test('Ruleta diaria: una al día, premios que no tienes, nunca exclusivos'
   const { spinPool, SPIN_ODDS } = await import('../src/spin.js');
   assert.strictEqual(SPIN_ODDS.reduce((n, [, p]) => n + p, 0), 100, 'las probabilidades suman 100');
   const pool = spinPool();
-  assert.ok(!pool.some(p => p.id === 'tachamanika' || p.id === 'creator' || p.id === 'throne' || p.id === 'team' || p.id === 'silver' || p.id === 'night'), 'sin exclusivos ni gratis');
+  assert.ok(!pool.some(p => p.id === 'tachamanika' || p.id === 'nickoovxs' || p.id === 'creator' || p.id === 'throne' || p.id === 'team' || p.id === 'silver' || p.id === 'night'), 'sin exclusivos ni gratis');
   assert.ok(pool.every(p => ['rare', 'epic', 'legendary'].includes(p.rarity)));
   const p = await player('Girador', false);
   const key = 'g'.repeat(32), tz = -300;
