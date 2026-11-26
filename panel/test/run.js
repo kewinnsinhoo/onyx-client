@@ -917,6 +917,56 @@ await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () =>
   for (const k of keys) assert.ok(sb.I18N.has(k), 'falta traducir: ' + k);
 });
 
+await test('Ruleta diaria: una al día, premios que no tienes, nunca exclusivos', async () => {
+  const { spinPool, SPIN_ODDS } = await import('../src/spin.js');
+  assert.strictEqual(SPIN_ODDS.reduce((n, [, p]) => n + p, 0), 100, 'las probabilidades suman 100');
+  const pool = spinPool();
+  assert.ok(!pool.some(p => p.id === 'tachamanika' || p.id === 'creator' || p.id === 'throne' || p.id === 'team' || p.id === 'silver' || p.id === 'night'), 'sin exclusivos ni gratis');
+  assert.ok(pool.every(p => ['rare', 'epic', 'legendary'].includes(p.rarity)));
+  const p = await player('Girador', false);
+  const key = 'g'.repeat(32), tz = -300;
+  let st = (await call('GET', '/api/l/spin?tz=-300', { headers: p })).data;
+  assert.strictEqual(st.ready, true);
+  assert.strictEqual(st.left, pool.length);
+  // sale legendaria (roll 0.99 → 99 % cae en el último tramo)
+  env.SPIN_ROLL = 0.995;
+  assert.strictEqual((await call('POST', '/api/l/spin', { headers: p, body: { tz } })).status, 400, 'falta la clave');
+  let r = (await call('POST', '/api/l/spin', { headers: p, body: { key, tz } })).data;
+  assert.strictEqual(r.tier, 'legendary', JSON.stringify(r));
+  assert.ok(r.prize && pool.some(x => x.kind === r.prize.kind && x.id === r.prize.id));
+  assert.ok(r.next > Date.now() + 5 * 3600e3, 'la próxima, como pronto en 6 h');
+  // ya lo tiene
+  if (r.prize.kind === 'cape') assert.ok((await call('GET', '/api/l/capes', { headers: p })).data.owned.includes(r.prize.id));
+  else assert.ok((await call('GET', '/api/l/looks', { headers: p })).data.owned[r.prize.kind].includes(r.prize.id));
+  // otra vez hoy: no
+  const again = await call('POST', '/api/l/spin', { headers: p, body: { key, tz } });
+  assert.deepStrictEqual([again.status, again.data.error], [429, 'spin_wait']);
+  st = (await call('GET', '/api/l/spin?tz=-300', { headers: p })).data;
+  assert.deepStrictEqual([st.ready, st.left, st.recent.length, st.recent[0].id], [false, pool.length - 1, 1, r.prize.id]);
+  // mañana sí (movemos su última tirada 30 h atrás); «¡Casi!» no da nada
+  const back = async () => env.DB.prepare('UPDATE spins SET at = at - ? WHERE player_key = ?').bind(30 * 3600e3, 'girador').run();
+  await back();
+  env.SPIN_ROLL = 0.1;
+  r = (await call('POST', '/api/l/spin', { headers: p, body: { key, tz } })).data;
+  assert.deepStrictEqual([r.tier, r.prize], ['none', null]);
+  // si ya tiene todas las legendarias, baja a épica
+  const legend = pool.filter(x => x.rarity === 'legendary');
+  for (const x of legend) {
+    if (x.kind === 'cape') await env.DB.prepare("INSERT OR IGNORE INTO cape_owned (player_key, cape_id, player_name, source, created_at) VALUES ('girador', ?, 'Girador', 'gift', 1)").bind(x.id).run();
+    else await env.DB.prepare("INSERT OR IGNORE INTO look_owned (player_key, kind, item_id, player_name, source, created_at) VALUES ('girador', ?, ?, 'Girador', 'gift', 1)").bind(x.kind, x.id).run();
+  }
+  await back();
+  env.SPIN_ROLL = 0.995;
+  r = (await call('POST', '/api/l/spin', { headers: p, body: { key, tz } })).data;
+  assert.strictEqual(r.tier, 'epic', 'baja a épica');
+  delete env.SPIN_ROLL;
+  // en el panel sale «por Ruleta»
+  if (r.prize.kind !== 'cape') {
+    const owners = (await call('GET', `/api/onyx/looks/${r.prize.kind}/${r.prize.id}`, { cookie: creator })).data.owners;
+    assert.strictEqual(owners.find(o => o.name === 'Girador').by, 'Ruleta');
+  }
+});
+
 await test('KopiGuard: avisos del launcher, Discord, expulsar y sancionar', async () => {
   // una instancia nueva para no mezclar con las otras pruebas
   const made = await call('POST', '/api/s/onyx-studios/instances', { cookie: creator, body: { name: 'Guardia' } });

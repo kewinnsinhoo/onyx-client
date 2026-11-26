@@ -407,6 +407,18 @@ handle('looks:wear', async (look) => {
   for (const k of ['frame', 'bg']) if (look && k in look) pick[k] = look[k] == null ? null : String(look[k]).slice(0, 40);
   return panel.wearLook(acc, accounts.skinKeyOf(acc.id), pick);
 });
+// Ruleta diaria (tz: minutos respecto a UTC del jugador, para saber cuándo empieza su día)
+const tzNow = () => -new Date().getTimezoneOffset();
+handle('spin:get', async () => {
+  const acc = panelAccount();
+  if (!acc || !panel.enabled()) return null;
+  return panel.spinState(acc, tzNow());
+});
+handle('spin:go', async () => {
+  const acc = panelAccount();
+  if (!acc) throw new Error('Inicia sesión para continuar');
+  return panel.spinGo(acc, accounts.skinKeyOf(acc.id), tzNow());
+});
 // Directos: los canales del jugador (Twitch, TikTok, Kick) y quién está emitiendo una instancia
 const streamAcc = () => { const a = panelAccount(); if (!a || !panel.enabled()) throw new Error('Inicia sesión para continuar'); return a; };
 handle('streams:channels', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.streamChannels(a) : { channels: { twitch: '', tiktok: '', kick: '' }, manual: [] }; });

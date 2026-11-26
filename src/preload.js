@@ -89,6 +89,10 @@ contextBridge.exposeInMainWorld('onyx', {
     get: () => call('looks:get'),
     wear: (look) => call('looks:wear', look)
   },
+  spin: {
+    get: () => call('spin:get'),
+    go: () => call('spin:go')
+  },
   data: {
     get: (name) => call('data:get', name),
     terms: (lang) => call('data:terms', lang)

@@ -6,6 +6,14 @@ window.CHANGELOG = [
   // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
   // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
   {
+    v: '1.8.16', date: '2026-11-25', items: [
+      ['gift', '¡Ruleta diaria! Gírala una vez al día y gana capas, marcos y fondos que aún no tienes. Está en el menú (pulsa tu cara): cuando esté lista verás un puntito dorado.',
+        'Daily wheel! Spin it once a day to win capes, frames and backgrounds you don’t have yet. It’s in the menu (click your face): a golden dot shows when it’s ready.',
+        'Ruleta diària! Gira-la un cop al dia i guanya capes, marcs i fons que encara no tens. És al menú (prem la teva cara): quan estigui llesta veuràs un puntet daurat.',
+        'Roue quotidienne ! Fais-la tourner une fois par jour pour gagner des capes, cadres et fonds que tu n’as pas encore. Elle est dans le menu (clique sur ton visage) : un point doré apparaît quand elle est prête.']
+    ]
+  },
+  {
     v: '1.8.15', date: '2026-11-25', items: [
       ['image', '¡Marcos y fondos de perfil! Ponle a tu cara un marco animado (Llamas, RGB, Corona, Galaxia…) y a tu tarjeta un fondo que se mueve. Se ven en el launcher y en tu perfil de la web. Ve a Mi perfil → Marcos y fondos.',
         'Profile frames and backgrounds! Give your face an animated frame (Flames, RGB, Crown, Galaxy…) and your card a moving background. They show in the launcher and on your web profile. Go to My profile → Frames & backgrounds.',

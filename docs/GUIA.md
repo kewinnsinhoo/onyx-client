@@ -434,6 +434,14 @@ Para que se cuenten solos:
 - El jugador se los pone en **Mi perfil → Marcos y fondos**. Los que no tiene salen con candado y cómo conseguirlos; los de insignia no salen si no los tiene.
 - Panel: tablas `look_owned` y `look_worn`; rutas `/api/l/looks`, `/api/l/look`, `/api/onyx/looks/...`; el perfil público lleva `look: { frame, bg }`.
 
+## Ruleta diaria (desde la 1.8.16)
+
+- En el launcher: menú → **Ruleta diaria** (un puntito dorado en tu cara cuando está lista). Una tirada por día del jugador (según su zona horaria) y como mínimo 6 h entre una y otra.
+- Probabilidades (en `panel/src/spin.js`, `SPIN_ODDS`): 35 % «¡Casi!» (nada), 33 % rara, 22 % épica, 10 % legendaria. Se enseñan en la ruleta.
+- El premio lo decide el panel: una capa, un marco o un fondo **que el jugador no tenga** de esa rareza (si ya los tiene todos, baja de rareza). Nunca salen los exclusivos: TACHAMANIKA, los gratis ni los de insignia (Creador, Trono, Equipo Kopi). Las comunes cuentan como raras.
+- Lo ganado se guarda como si fuera un regalo con «por Ruleta» (se ve en el panel, en Capas de Kopi y en Marcos y fondos). Tabla `spins`; rutas `GET/POST /api/l/spin`.
+- Para cambiar las probabilidades o quitar algo de la ruleta: `SPIN_ODDS` y `NO_CAPES` en `panel/src/spin.js`.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

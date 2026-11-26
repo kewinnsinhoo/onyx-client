@@ -1229,3 +1229,75 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 .lk-lock { position: absolute; inset: 0; display: grid; place-items: center; }
 .lk-lock svg { width: 20px; height: 20px; color: #fff; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .8)); }
 .pf-looks .pf-h b { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------- Ruleta diaria ---------- */
+#sidebar .avatar-btn { position: relative; }
+.sb-spin { position: absolute; top: -3px; right: -3px; width: 13px; height: 13px; border-radius: 50%; background: #fbbf24; border: 2px solid var(--bg); box-shadow: 0 0 10px #fbbf24; animation: spDot 1.6s ease-in-out infinite; z-index: 2; }
+@keyframes spDot { 50% { transform: scale(1.25); box-shadow: 0 0 18px #fbbf24; } }
+.dr-spin em { margin-left: auto; font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px; background: linear-gradient(135deg, #fde68a, #f59e0b); color: #3b2203; }
+.dr-spin.ready svg { color: #fbbf24; }
+.sp-grid { display: grid; grid-template-columns: minmax(340px, 1fr) 360px; gap: 22px; align-items: start; }
+.sp-stage { position: relative; aspect-ratio: 1; max-width: 520px; width: 100%; margin: 0 auto; display: grid; place-items: center; }
+.sp-glow { position: absolute; inset: 6%; border-radius: 50%; background: radial-gradient(circle, rgb(var(--k2) / .35), transparent 65%); filter: blur(30px); }
+.sp-stage.ready .sp-glow { background: radial-gradient(circle, rgba(251, 191, 36, .32), transparent 65%); animation: spGlow 2.4s ease-in-out infinite; }
+@keyframes spGlow { 50% { opacity: .55; } }
+.sp-svg { position: relative; width: 100%; height: 100%; filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .55)); }
+.sp-wheel { transform-origin: 0 0; transform-box: view-box; }
+.sp-bulb { fill: #fde68a; }
+.sp-bulb.b { fill: #b45309; }
+.sp-stage.ready .sp-bulb, .sp-stage.spinning .sp-bulb { animation: spBulb 1s steps(1) infinite; }
+.sp-stage.ready .sp-bulb.b, .sp-stage.spinning .sp-bulb.b { animation-delay: .5s; }
+.sp-stage.spinning .sp-bulb { animation-duration: .3s; }
+@keyframes spBulb { 50% { fill: #fffbeb; filter: drop-shadow(0 0 4px #fde68a); } }
+.sp-pointer { position: absolute; top: 1.5%; left: 50%; width: 34px; transform: translateX(-50%); z-index: 3; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); }
+.sp-pointer svg { width: 100%; display: block; }
+.sp-go { position: absolute; z-index: 3; width: 23%; aspect-ratio: 1; border-radius: 50%; border: 4px solid #fde68a; background: radial-gradient(circle at 35% 30%, #fff7ed, #f59e0b 55%, #b45309); color: #3b2203; font: 900 clamp(13px, 1.6vw, 19px) "Sora", system-ui, sans-serif; letter-spacing: .02em; cursor: pointer; box-shadow: 0 10px 26px rgba(0, 0, 0, .5), inset 0 -4px 0 rgba(0, 0, 0, .2); transition: transform .15s; display: grid; place-items: center; }
+.sp-go:not(:disabled):hover { transform: scale(1.06); }
+.sp-stage.ready .sp-go:not(:disabled) { animation: spPulse 1.6s ease-in-out infinite; }
+@keyframes spPulse { 50% { transform: scale(1.07); } }
+.sp-go:disabled { cursor: default; background: radial-gradient(circle at 35% 30%, #4b4060, #2a2236); border-color: #5b4d70; color: #cbbfe0; }
+.sp-go svg { width: 30%; height: 30%; }
+.sp-side { display: flex; flex-direction: column; gap: 14px; }
+.sp-status { padding: 20px; }
+.sp-status.ready { border-color: rgba(251, 191, 36, .4); background: radial-gradient(80% 80% at 100% 0, rgba(251, 191, 36, .14), transparent), var(--surface); }
+.sp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #fde68a, #f59e0b); color: #3b2203; }
+.sp-chip svg { width: 14px; height: 14px; }
+.sp-chip.off { background: rgba(255, 255, 255, .07); color: var(--muted); }
+.sp-big { font: 800 26px "Sora", system-ui, sans-serif; margin: 12px 0 4px; letter-spacing: -.01em; }
+.sp-status p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.sp-left { margin-top: 16px; font-size: 12.5px; color: var(--muted); display: grid; gap: 7px; }
+.sp-bar { height: 7px; border-radius: 9px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.sp-bar i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, rgb(var(--k1)), #fbbf24); }
+.sp-odds, .sp-recent { padding: 16px 18px; display: grid; gap: 9px; }
+.sp-odds > b, .sp-recent > b { font-size: 13.5px; margin-bottom: 2px; }
+.sp-odd, .sp-rec { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.sp-odd i, .sp-rec i { width: 14px; height: 14px; border-radius: 5px; flex: none; }
+.sp-odd span, .sp-rec span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-odd b { font-variant-numeric: tabular-nums; }
+.sp-rec small { color: var(--faint); font-size: 11.5px; }
+.sp-odds small { color: var(--faint); font-size: 11.5px; line-height: 1.45; margin-top: 2px; }
+/* el premio */
+.modal.sp-prize { position: relative; overflow: hidden; width: min(440px, 92vw); text-align: center; }
+.sp-rays { position: absolute; left: 50%; top: 38%; width: 900px; height: 900px; margin: -450px 0 0 -450px; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--a) 30%, transparent) 0 8deg, transparent 8deg 22deg); border-radius: 50%; animation: spRays 14s linear infinite; -webkit-mask: radial-gradient(circle, #000 10%, transparent 55%); mask: radial-gradient(circle, #000 10%, transparent 55%); pointer-events: none; }
+.sp-prize.r-none .sp-rays { opacity: .35; }
+@keyframes spRays { to { transform: rotate(360deg); } }
+.sp-pbody { position: relative; padding: 28px 26px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sp-tier { padding: 5px 14px; border-radius: 99px; font: 800 12.5px "Sora", system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; background: linear-gradient(135deg, var(--a), var(--b)); color: #140f1c; }
+.sp-prize.r-none .sp-tier { color: #e9e3f3; }
+.sp-pbody h2 { margin: 6px 0 0; font: 800 24px "Sora", system-ui, sans-serif; }
+.sp-pbody p { margin: 0; color: var(--muted); font-size: 14px; }
+.sp-acts { display: flex; gap: 10px; margin-top: 8px; }
+.sp-cape { padding: 16px 28px; border-radius: 16px; background: rgba(0, 0, 0, .25); animation: spPop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.sp-cape canvas { width: 100px; height: 160px; image-rendering: pixelated; display: block; }
+.sp-frame { padding: 34px; animation: spPop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.sp-frame .kc-frame > :first-child { border-radius: 22px; }
+.sp-bgcard { position: relative; isolation: isolate; overflow: hidden; width: 300px; height: 150px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .15); display: flex; align-items: center; gap: 14px; padding: 0 22px; animation: spPop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.sp-bgcard > canvas, .sp-bgcard > img { border-radius: 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .5); }
+.sp-bgcard b { font: 800 19px "Sora", system-ui, sans-serif; text-shadow: 0 2px 10px rgba(0, 0, 0, .6); }
+.sp-none { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .06); color: var(--muted); animation: spPop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.sp-none svg { width: 44px; height: 44px; }
+@keyframes spPop { from { transform: scale(.3) rotate(-8deg); opacity: 0; } }
+.sp-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden; }
+.sp-confetti i { position: absolute; top: -20px; width: 9px; height: 14px; border-radius: 2px; animation: spFall 3s cubic-bezier(.3, .6, .5, 1) forwards; }
+@keyframes spFall { to { top: 105%; transform: translateX(60px) rotate(720deg); opacity: .8; } }
+@media (max-width: 980px) { .sp-grid { grid-template-columns: 1fr; } }

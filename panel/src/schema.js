@@ -483,7 +483,19 @@ CREATE TABLE look_worn (
   bg TEXT,
   owner_hash TEXT,
   updated_at INTEGER NOT NULL
-)`
+)`,
+  `-- Ruleta diaria: cada tirada (kind/item_id NULL = «¡Casi!»)
+CREATE TABLE spins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_key TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  at INTEGER NOT NULL,
+  day INTEGER NOT NULL,              -- día del jugador (con su zona horaria)
+  kind TEXT,                         -- 'cape' | 'frame' | 'bg'
+  item_id TEXT,
+  rarity TEXT
+);
+CREATE INDEX spins_player ON spins(player_key, at)`
 ];
 
 export function statements(sql) {

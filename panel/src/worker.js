@@ -12,6 +12,7 @@ import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
 import { launcherLooks, creatorLooks } from './looks.js';
+import { launcherSpin } from './spin.js';
 import { statsApi } from './studio-stats.js';
 import { hello, launcherStats } from './kopistats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport, rtcPending, guardRtcAnswer } from './guard.js';
@@ -822,6 +823,8 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
   // Marcos y fondos de perfil: los que tiene y los que lleva puestos
   if (parts[0] === 'looks' || parts[0] === 'look') { const r = await launcherLooks(env, P, parts, m, req); if (r) return r; }
+  // Ruleta diaria
+  if (parts[0] === 'spin') { const r = await launcherSpin(env, P, parts, m, req, u); if (r) return r; }
   // Perfil público en la web, insignias y directos
   if (parts[0] === 'public' && !parts[1]) return launcherPublic(env, P, m, req);
   if (parts[0] === 'perf' && m === 'POST') return launcherPerf(env, P, req);

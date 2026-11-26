@@ -95,6 +95,16 @@
     renderChrome();
     document.dispatchEvent(new CustomEvent('onyx:look', { detail: r }));
   }
+  // ---------- ruleta diaria: ¿hay tirada? (un puntito en tu cara y en el menú) ----------
+  S.spin = null;
+  async function checkSpin() {
+    const who = S.account && S.account.id;
+    const r = await onyx.spin.get();
+    if ((S.account && S.account.id) !== who) return;
+    S.spin = r || null;
+    renderChrome();
+  }
+  const spinReady = () => !!(S.spin && (S.spin.ready || (S.spin.next && Date.now() >= S.spin.next)));
   const myFrame = () => (S.look && S.look.worn && S.look.worn.frame) || null;
   const myBg = () => (S.look && S.look.worn && S.look.worn.bg) || null;
   // Una cara con el marco que lleva el jugador (solo la cuenta activa tiene marco)
@@ -105,7 +115,7 @@
   async function loadAccounts() {
     S.accounts = await onyx.accounts.list();
     S.account = S.accounts.accounts.find(a => a.id === S.accounts.active) || S.accounts.accounts[0] || null;
-    if (S.account && S.account.id !== lookFor) { lookFor = S.account.id; S.look = { ...S.look, worn: { frame: null, bg: null } }; loadLooks().catch(() => {}); }
+    if (S.account && S.account.id !== lookFor) { lookFor = S.account.id; S.look = { ...S.look, worn: { frame: null, bg: null } }; S.spin = null; loadLooks().catch(() => {}); checkSpin().catch(() => {}); }
     // Cuentas offline sin skin propia: usar la skin de Minecraft del jugador premium con ese nombre (si existe)
     for (const a of S.accounts.accounts) {
       if (a.type === 'msa' || (a.localSkin && a.localSkin.data)) continue;
@@ -333,7 +343,7 @@
       <div class="dr-me"><div class="dr-skin ${myFrame() ? 'framed' : ''}">${framedHead(acc, 112, 0)}<button class="dr-swap" title="${t('Cambiar de cuenta')}">${icon('refresh')}</button></div>
         <b>${esc(acc ? acc.name : t('Sin cuenta'))}</b><small>${acc ? (acc.type === 'msa' ? 'Microsoft' : t('Sin premium')) : ''}</small></div>
       <nav class="dr-list">
-        ${item('profile', 'idcard', 'Mi perfil')}${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
+        ${item('profile', 'idcard', 'Mi perfil')}<button class="dr-item dr-spin ${spinReady() ? 'ready' : ''}" data-a="spin">${icon('gift')}<span>${t('Ruleta diaria')}</span>${spinReady() ? `<em>${t('¡Lista!')}</em>` : ''}</button>${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
         ${item('help', 'alert', 'Ayuda y comentarios')}${item('about', 'info', 'Acerca de')}
         ${item('accounts', 'refresh', 'Cambiar de cuenta')}${item('logout', 'logout', 'Cerrar sesión')}
       </nav>
@@ -667,7 +677,7 @@
     });
   }
 
-  const SECTION = { home: 'Inicio', instances: 'Instancias', instance: 'Instancias', gallery: 'Galería', creators: 'Creadores', profile: 'Mi perfil', skins: 'Skins', settings: 'Ajustes', console: 'Consola' };
+  const SECTION = { home: 'Inicio', instances: 'Instancias', instance: 'Instancias', gallery: 'Galería', creators: 'Creadores', profile: 'Mi perfil', spin: 'Ruleta diaria', skins: 'Skins', settings: 'Ajustes', console: 'Consola' };
 
   function renderChrome() {
     const tb = $('#titlebar');
@@ -693,7 +703,7 @@
     const sb = $('#sidebar');
     const curInst = r === 'instance' && S.route.params ? S.route.params.id : null;
     const tileBg = (i) => i.icon || i.banner;
-    const inMenu = ['instances', 'profile', 'skins', 'gallery', 'creators', 'settings'].includes(r) || (r === 'instance' && !S.instances.find(i => i.id === curInst));
+    const inMenu = ['instances', 'profile', 'spin', 'skins', 'gallery', 'creators', 'settings'].includes(r) || (r === 'instance' && !S.instances.find(i => i.id === curInst));
     sb.innerHTML = html`
       <button class="sb-home ${r === 'home' ? 'active' : ''}" data-go="home" title="${t('Inicio')}">${icon('home')}</button>
       <span class="nav-sep"></span>
@@ -703,7 +713,7 @@
       </div>
       <div class="bottom">
         <button class="sb-add" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
-        <button class="avatar-btn ${inMenu ? 'active' : ''} ${myFrame() ? 'framed' : ''}" id="sb-me" title="${esc(S.account ? S.account.name : t('Más opciones'))}">${framedHead(S.account, 50, 0)}</button>
+        <button class="avatar-btn ${inMenu ? 'active' : ''} ${myFrame() ? 'framed' : ''}" id="sb-me" title="${esc(S.account ? S.account.name : t('Más opciones'))}">${framedHead(S.account, 50, 0)}${spinReady() ? `<span class="sb-spin" title="${esc(t('¡Tu ruleta diaria está lista!'))}"></span>` : ''}</button>
       </div>`;
     sb.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     sb.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => go('instance', { id: b.dataset.inst }));
@@ -836,7 +846,7 @@
 
   window.App = {
     go, rerender, play, stageText, checkBadges, newBadgeModal, badgeName, badgeDesc, crashModal, newsModal, unseenNews, newsOf, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
-    loadAccounts, loadInstances, loadLooks, myFrame, myBg, framedHead, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
+    loadAccounts, loadInstances, loadLooks, checkSpin, spinReady, myFrame, myBg, framedHead, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);
 })();

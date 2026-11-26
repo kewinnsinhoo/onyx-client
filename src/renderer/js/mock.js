@@ -14,6 +14,7 @@
   const loggedOut = q.get('login') === '1' || q.get('onboard') === '1';
   let kopiWorn = q.get('worn') || null;
   const mockLook = { frame: q.get('frame') || null, bg: q.get('bg') || null };
+  const mockSpin = { next: q.get('spun') ? Date.now() + 5 * 3600e3 : null, recent: q.get('spun') ? [{ at: Date.now() - 864e5, kind: 'frame', id: 'neon', rarity: 'rare' }, { at: Date.now() - 2 * 864e5, kind: null, id: null, rarity: null }, { at: Date.now() - 3 * 864e5, kind: 'cape', id: 'galaxy', rarity: 'legendary' }] : [] };
   const accounts = loggedOut ? [] : [
     { id: 'msa-1', type: 'msa', name: 'Kewinsinho', uuid: 'x', skin: SK, skinVariant: 'classic', capes: [] },
     { id: 'off-2', type: 'offline', name: 'Invitado', uuid: 'y', skin: null }
@@ -100,6 +101,17 @@
         live: (id) => wait(id === 'survival-onyx' ? live : [])
       };
     })(),
+    spin: {
+      get: () => wait({ ready: !mockSpin.next || Date.now() >= mockSpin.next, next: mockSpin.next, now: Date.now(), odds: [['none', 35], ['rare', 33], ['epic', 22], ['legendary', 10]], left: 31, total: 38, recent: mockSpin.recent }),
+      go: () => {
+        const tier = q.get('spin') || 'legendary';
+        const prizes = { legendary: { kind: 'cape', id: 'phoenix', rarity: 'legendary' }, epic: { kind: 'frame', id: 'fire', rarity: 'epic' }, rare: { kind: 'bg', id: 'sakura', rarity: 'rare' }, none: null };
+        const prize = prizes[tier];
+        mockSpin.next = Date.now() + 9 * 3600e3 + 1234e3;
+        mockSpin.recent.unshift({ at: Date.now(), kind: prize && prize.kind, id: prize && prize.id, rarity: prize && prize.rarity });
+        return wait({ ok: true, tier, prize, next: mockSpin.next }, 300);
+      }
+    },
     looks: {
       get: () => wait({ owned: { frame: ['none', 'silver', ...(q.get('frames') || 'neon,fire,creator').split(',').filter(Boolean)], bg: ['none', 'night', ...(q.get('bgs') || 'galaxy,throne').split(',').filter(Boolean)] }, worn: { ...mockLook } }),
       wear: (look) => { Object.assign(mockLook, look); return wait({ ok: true, worn: { ...mockLook } }); }
