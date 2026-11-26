@@ -101,15 +101,15 @@ export async function cslCapeTexture(hash) {
 // ---------------------------------------------------------------- launcher
 // Una cuenta no premium se protege con la misma clave secreta que su skin (solo la conoce su launcher).
 // Un nombre que alguna vez entró como premium solo se puede cambiar desde una sesión premium.
-async function checkOwner(env, P, key) {
+export async function checkOwner(env, P, key, table = 'cape_worn', premMsg = 'Esta cuenta es premium: inicia sesión con Microsoft para cambiar la capa') {
   if (P.verified) return null;
   const prem = await env.DB.prepare('SELECT 1 FROM player_tokens WHERE player_key = ? AND verified = 1 LIMIT 1').bind(P.key).first();
-  if (prem) fail(403, 'premium_cape', 'Esta cuenta es premium: inicia sesión con Microsoft para cambiar la capa');
+  if (prem) fail(403, 'premium_cape', premMsg);
   const secret = String(key || '');
   if (secret.length < 24 || secret.length > 128) fail(400, 'key', 'Falta la clave de la cuenta');
   const owner = await sha256('kopi-skin:' + secret);
   const skin = await env.DB.prepare('SELECT owner_hash FROM skins WHERE name_key = ?').bind(P.key).first();
-  const worn = await env.DB.prepare('SELECT owner_hash FROM cape_worn WHERE player_key = ?').bind(P.key).first();
+  const worn = await env.DB.prepare(`SELECT owner_hash FROM ${table === 'look_worn' ? 'look_worn' : 'cape_worn'} WHERE player_key = ?`).bind(P.key).first();
   if ((skin && skin.owner_hash !== owner) || (worn && worn.owner_hash && worn.owner_hash !== owner)) fail(403, 'taken', 'Este nombre lo usa otro jugador');
   return owner;
 }

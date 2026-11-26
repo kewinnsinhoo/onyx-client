@@ -33,6 +33,40 @@
     const showcased = () => (bd ? bd.showcase.map(id => bd.badges.find(b => b.id === id)).filter(Boolean) : []);
     let viewer = null, capeTimer = 0;
 
+    // ---- Marcos y fondos: los tuyos (pulsa para ponértelo) y los que aún no tienes (con cómo conseguirlos)
+    const LK = window.KopiCosmetics;
+    const LORDER = { mythic: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
+    const howTo = (it) => it.badge ? t('Con la insignia «{b}»', { b: t(it.badge === 'kopi-creator' ? 'Creador' : 'Equipo Kopi') }) : t('Regalo de Kopi');
+    function looksSection() {
+      if (!LK) return '';
+      const L = S.look || { owned: { frame: [], bg: [] }, worn: {} };
+      const tiles = (kind) => {
+        const list = (kind === 'frame' ? LK.FRAMES : LK.BGS).filter(it => it.id !== 'none' && (!it.badge || L.owned[kind].includes(it.id)));
+        const mine = list.filter(it => L.owned[kind].includes(it.id)).sort((a, b) => LORDER[a.rarity] - LORDER[b.rarity]);
+        const rest = list.filter(it => !L.owned[kind].includes(it.id)).sort((a, b) => LORDER[a.rarity] - LORDER[b.rarity]);
+        const on = (id) => (L.worn[kind] || null) === id;
+        const tile = (it, own) => html`<button class="lk-it ${kind} ${own ? '' : 'locked'} ${on(it.id) ? 'on' : ''}" data-lk="${kind}:${esc(it.id)}" style="--rc:${LK.RARITY[it.rarity].color}" title="${esc(own ? (on(it.id) ? t('Pulsa para quitártelo') : t('Pulsa para ponértelo')) : howTo(it))}">
+          <span class="lk-pre">${kind === 'frame' ? LK.wrap(Skin3D.head(App.skinOf(acc), 40, 0), it.id, 40) : LK.bgLayer(it.id)}${own ? '' : `<i class="lk-lock">${icon('lock')}</i>`}</span>
+          <b>${esc(t(it.name))}</b><small>${on(it.id) ? t('Puesto') : own ? t(LK.RARITY[it.rarity].label) : esc(howTo(it))}</small></button>`;
+        return [...mine.map(it => tile(it, true)), ...rest.map(it => tile(it, false))].join('');
+      };
+      return html`<section class="card pf-sec pf-looks">
+        <div class="pf-h"><b>${icon('image')}${t('Marcos y fondos')}</b><span class="pf-hint">${t('Decora tu perfil: se ve en tu tarjeta, en tu cara del menú y en tu perfil de la web.')}</span></div>
+        <span class="pf-bct">${t('Marcos')}</span><div class="lk-items">${tiles('frame')}</div>
+        <span class="pf-bct" style="margin-top:16px">${t('Fondos')}</span><div class="lk-items">${tiles('bg')}</div>
+      </section>`;
+    }
+    async function wearLook(kind, id) {
+      const L = S.look;
+      if (!L.owned[kind].includes(id)) return toast(howTo((kind === 'frame' ? LK.getFrame : LK.getBg)(id)), 'info');
+      const next = (L.worn[kind] || null) === id ? null : id;
+      try {
+        const r = await onyx.looks.wear({ [kind]: next });
+        S.look = { ...L, worn: (r && r.worn) || { ...L.worn, [kind]: next } };
+        App.renderChrome(); render();
+      } catch (e) { toast(t(e.message, e.vars), 'error'); }
+    }
+
     function render() {
       // lo que estabas escribiendo no se pierde si la página se vuelve a pintar
       root.querySelectorAll('[data-ch]').forEach(i => { if (!i.disabled) draft[i.dataset.ch] = i.value; });
@@ -46,12 +80,13 @@
             <button class="btn btn-primary" id="pf-save">${icon('download')}${t('Guardar tarjeta')}</button>
           </div></div>
 
-        <div class="pf-card" id="pf-card" style="${worn ? `--pf:${KopiCapes.RARITY[worn.rarity].color}` : ''}">
+        <div class="pf-card ${App.myBg() ? 'has-bg' : ''}" id="pf-card" style="${worn ? `--pf:${KopiCapes.RARITY[worn.rarity].color}` : ''}">
+          ${App.myBg() ? KopiCosmetics.bgLayer(App.myBg()) : ''}
           <img class="pf-mark${S.info.brand ? ' is-brand' : ''}" src="${esc(brandArt())}" alt="">
           <div class="pf-viewer" id="pf-viewer"></div>
           <div class="pf-info">
             <span class="pf-kicker">${t('Jugador de Kopi Client')}</span>
-            <h2 class="pf-name">${esc(acc ? acc.name : 'Steve')}</h2>
+            ${App.myFrame() ? `<div class="pf-namerow">${App.framedHead(acc, 48, 0)}<h2 class="pf-name">${esc(acc ? acc.name : 'Steve')}</h2></div>` : `<h2 class="pf-name">${esc(acc ? acc.name : 'Steve')}</h2>`}
             <div class="pf-tags">
               ${isMsa ? `<span class="badge premium">${icon('check')}Premium</span>` : `<span class="badge accent">${icon('user')}${t('Sin premium')}</span>`}
               ${worn ? `<span class="badge pf-cape">${icon('cape')}${t('Capa {name}', { name: t(worn.name) })}</span>` : ''}
@@ -86,6 +121,8 @@
             : `<div class="pf-empty">${icon('sparkles')}<span>${t('Aún no tienes capas de Kopi. Pronto podrás ganarlas jugando.')}</span></div>`}
           </section>
         </div>
+
+        ${looksSection()}
 
         ${bd ? html`<section class="card pf-sec pf-badges">
           <div class="pf-h"><b>${icon('award')}${t('Insignias')}<span class="pf-bn">${bd.badges.filter(b => b.earned).length} / ${bd.badges.length}</span></b>
@@ -153,6 +190,7 @@
       root.querySelectorAll('canvas[data-kc]').forEach(cv => KopiCapes.mount(cv, KopiCapes.get(cv.dataset.kc)));
       root.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => App.go('instance', { id: b.dataset.inst }));
       root.querySelector('#pf-capes').onclick = () => App.go('skins', { tab: 'capes' });
+      root.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { const [k, id] = b.dataset.lk.split(':'); wearLook(k, id); });
       const card = (copy) => async (e) => {
         const b = e.currentTarget, r = root.querySelector('#pf-card').getBoundingClientRect();
         busy(b, true);
@@ -206,12 +244,16 @@
       if (!root.isConnected) return;
       ch = (r && r.channels) || ch; chLoaded = true; render();
     }).catch(() => { chLoaded = true; if (root.isConnected) render(); });
+    // Marcos y fondos: si llegan del panel después, se vuelve a pintar
+    const onLook = () => { if (root.isConnected) render(); };
+    document.addEventListener('onyx:look', onLook);
+    App.loadLooks().catch(() => {});
     // Las capas de Kopi vienen del panel: cuando lleguen, se vuelve a pintar
     onyx.capes.kopi().then(r => {
       if (!root.isConnected || !r) return;
       kopi.owned = r.owned || []; kopi.worn = r.worn || null;
       if (kopi.owned.length || kopi.worn) render();
     }).catch(() => { /* sin panel o sin conexión */ });
-    return () => { clearInterval(capeTimer); if (viewer) viewer.destroy(); };
+    return () => { clearInterval(capeTimer); document.removeEventListener('onyx:look', onLook); if (viewer) viewer.destroy(); };
   };
 })();

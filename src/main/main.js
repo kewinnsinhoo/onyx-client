@@ -394,6 +394,19 @@ handle('capes:kopiWear', async (id) => {
   if (!acc) throw new Error('Inicia sesión para continuar');
   return panel.wearKopiCape(acc, accounts.skinKeyOf(acc.id), id);
 });
+// Marcos y fondos de perfil: cuáles tiene la cuenta activa y cuáles lleva puestos
+handle('looks:get', async () => {
+  const acc = panelAccount();
+  if (!acc || !panel.enabled()) return { owned: { frame: ['none', 'silver'], bg: ['none', 'night'] }, worn: { frame: null, bg: null } };
+  return panel.looks(acc);
+});
+handle('looks:wear', async (look) => {
+  const acc = panelAccount();
+  if (!acc) throw new Error('Inicia sesión para continuar');
+  const pick = {};
+  for (const k of ['frame', 'bg']) if (look && k in look) pick[k] = look[k] == null ? null : String(look[k]).slice(0, 40);
+  return panel.wearLook(acc, accounts.skinKeyOf(acc.id), pick);
+});
 // Directos: los canales del jugador (Twitch, TikTok, Kick) y quién está emitiendo una instancia
 const streamAcc = () => { const a = panelAccount(); if (!a || !panel.enabled()) throw new Error('Inicia sesión para continuar'); return a; };
 handle('streams:channels', async () => { const a = panelAccount(); return a && panel.enabled() ? panel.streamChannels(a) : { channels: { twitch: '', tiktok: '', kick: '' }, manual: [] }; });

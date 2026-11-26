@@ -1115,3 +1115,18 @@ a.g-shot:hover { border-color: var(--accent); }
 .fm-x span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .fm-x b { font-size: 12px; color: var(--muted); font-weight: 700; }
 .fm-x.muted { justify-content: center; color: var(--muted); }
+
+/* Marcos y fondos de perfil (Creador) */
+.lk-tabs { margin-bottom: 14px; }
+.lk-tabs small { opacity: .6; font-weight: 700; }
+.lk-wrap { position: relative; }
+.lk-wrap .cape-rarity { position: absolute; left: 10px; bottom: 10px; }
+.lk-stage { position: relative; isolation: isolate; overflow: hidden; height: 150px; border-radius: 13px; display: grid; place-items: center;
+  background: radial-gradient(70% 70% at 50% 30%, color-mix(in srgb, var(--r) 22%, transparent), transparent), var(--card-2); }
+.lk-stage.big { height: 230px; width: 100%; }
+.lk-stage:not(.lk-bgs) { overflow: visible; }
+.lk-face { width: 100%; height: 100%; display: block; border-radius: 18px; image-rendering: pixelated; }
+.lk-face.sm { position: absolute; left: 14px; top: 50%; width: 46px; height: 46px; margin-top: -30px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); }
+.lk-bgs .lk-bar { position: absolute; left: 70px; top: 50%; margin-top: -22px; width: 70px; height: 10px; border-radius: 6px; background: rgba(255, 255, 255, .85); box-shadow: 0 14px 0 -2px rgba(255, 255, 255, .45); }
+.lk-stage.big.lk-bgs .lk-face.sm { width: 64px; height: 64px; margin-top: -40px; left: 22px; }
+.lk-stage.big.lk-bgs .lk-bar { left: 100px; width: 110px; }

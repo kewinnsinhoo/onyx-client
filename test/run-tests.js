@@ -1270,7 +1270,8 @@ try {
 (async () => {
   try {
     const same = [['src/renderer/js/badges-ui.js', 'web/assets/badges-ui.js'], ['src/renderer/js/skin3d.js', 'web/assets/skin3d.js'],
-      ['src/renderer/js/capes.js', 'web/assets/kopi-capes.js'], ['src/renderer/vendor/skinview3d.bundle.js', 'web/assets/skinview3d.bundle.js']];
+      ['src/renderer/js/capes.js', 'web/assets/kopi-capes.js'], ['src/renderer/vendor/skinview3d.bundle.js', 'web/assets/skinview3d.bundle.js'],
+      ['src/renderer/js/cosmetics.js', 'web/assets/kopi-cosmetics.js'], ['src/renderer/js/cosmetics.js', 'panel/public/js/cosmetics.js']];
     for (const [a, b] of same) assert.ok(fs.readFileSync(path.join(__dirname, '..', a)).equals(fs.readFileSync(path.join(__dirname, '..', b))), `${b} debe ser una copia de ${a}`);
     const src = fs.readFileSync(path.join(__dirname, '../web/worker.js'), 'utf8');
     const mod = await import('data:text/javascript;base64,' + Buffer.from(src).toString('base64'));

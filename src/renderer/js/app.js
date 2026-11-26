@@ -84,9 +84,28 @@
     return S.settings;
   }
   const premiumSkins = {};
+  // ---------- marcos y fondos de perfil (del panel) ----------
+  S.look = { owned: { frame: ['none', 'silver'], bg: ['none', 'night'] }, worn: { frame: null, bg: null } };
+  let lookFor = null;
+  async function loadLooks() {
+    const who = S.account && S.account.id;
+    const r = await onyx.looks.get();
+    if (!r || !r.owned || (S.account && S.account.id) !== who) return;
+    S.look = r;
+    renderChrome();
+    document.dispatchEvent(new CustomEvent('onyx:look', { detail: r }));
+  }
+  const myFrame = () => (S.look && S.look.worn && S.look.worn.frame) || null;
+  const myBg = () => (S.look && S.look.worn && S.look.worn.bg) || null;
+  // Una cara con el marco que lleva el jugador (solo la cuenta activa tiene marco)
+  const framedHead = (acc, size, radius = 0) => {
+    const h = Skin3D.head(skinOf(acc), size, radius);
+    return acc && S.account && acc.id === S.account.id && myFrame() && window.KopiCosmetics ? KopiCosmetics.wrap(h, myFrame(), size) : h;
+  };
   async function loadAccounts() {
     S.accounts = await onyx.accounts.list();
     S.account = S.accounts.accounts.find(a => a.id === S.accounts.active) || S.accounts.accounts[0] || null;
+    if (S.account && S.account.id !== lookFor) { lookFor = S.account.id; S.look = { ...S.look, worn: { frame: null, bg: null } }; loadLooks().catch(() => {}); }
     // Cuentas offline sin skin propia: usar la skin de Minecraft del jugador premium con ese nombre (si existe)
     for (const a of S.accounts.accounts) {
       if (a.type === 'msa' || (a.localSkin && a.localSkin.data)) continue;
@@ -311,7 +330,7 @@
     const item = (a, ic, label) => `<button class="dr-item" data-a="${a}">${icon(ic)}<span>${t(label)}</span></button>`;
     d.innerHTML = html`<div class="dr-shade"></div><aside class="dr-panel">
       <button class="dr-back" title="${t('Cerrar')}">${icon('chevronLeft')}</button>
-      <div class="dr-me"><div class="dr-skin">${Skin3D.head(skinOf(acc), 112, 0)}<button class="dr-swap" title="${t('Cambiar de cuenta')}">${icon('refresh')}</button></div>
+      <div class="dr-me"><div class="dr-skin ${myFrame() ? 'framed' : ''}">${framedHead(acc, 112, 0)}<button class="dr-swap" title="${t('Cambiar de cuenta')}">${icon('refresh')}</button></div>
         <b>${esc(acc ? acc.name : t('Sin cuenta'))}</b><small>${acc ? (acc.type === 'msa' ? 'Microsoft' : t('Sin premium')) : ''}</small></div>
       <nav class="dr-list">
         ${item('profile', 'idcard', 'Mi perfil')}${item('skins', 'user', 'Editar skin')}${item('settings', 'settings', 'Ajustes')}${item('gallery', 'image', 'Galería')}${item('creators', 'users', 'Creadores')}
@@ -684,7 +703,7 @@
       </div>
       <div class="bottom">
         <button class="sb-add" id="sb-add" title="${t('Añadir instancia')}">${icon('plus')}</button>
-        <button class="avatar-btn ${inMenu ? 'active' : ''}" id="sb-me" title="${esc(S.account ? S.account.name : t('Más opciones'))}">${Skin3D.head(skinOf(S.account), 50, 0)}</button>
+        <button class="avatar-btn ${inMenu ? 'active' : ''} ${myFrame() ? 'framed' : ''}" id="sb-me" title="${esc(S.account ? S.account.name : t('Más opciones'))}">${framedHead(S.account, 50, 0)}</button>
       </div>`;
     sb.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     sb.querySelectorAll('[data-inst]').forEach(b => b.onclick = () => go('instance', { id: b.dataset.inst }));
@@ -817,7 +836,7 @@
 
   window.App = {
     go, rerender, play, stageText, checkBadges, newBadgeModal, badgeName, badgeDesc, crashModal, newsModal, unseenNews, newsOf, allChanges, whatsNew, addInstanceModal, addAccountModal, accountsModal, logout, openDrawer, closeDrawer, offlineModal, reportModal, showLogin, enterApp, bindWinCtl,
-    loadAccounts, loadInstances, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
+    loadAccounts, loadInstances, loadLooks, myFrame, myBg, framedHead, refreshAccountUi, microsoftLogin, saveSettings, skinOf, variantOf, pushNotification, renderTopbar, renderChrome
   };
   document.addEventListener('DOMContentLoaded', boot);
 })();

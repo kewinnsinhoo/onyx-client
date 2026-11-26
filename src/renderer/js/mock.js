@@ -13,6 +13,7 @@
   };
   const loggedOut = q.get('login') === '1' || q.get('onboard') === '1';
   let kopiWorn = q.get('worn') || null;
+  const mockLook = { frame: q.get('frame') || null, bg: q.get('bg') || null };
   const accounts = loggedOut ? [] : [
     { id: 'msa-1', type: 'msa', name: 'Kewinsinho', uuid: 'x', skin: SK, skinVariant: 'classic', capes: [] },
     { id: 'off-2', type: 'offline', name: 'Invitado', uuid: 'y', skin: null }
@@ -99,6 +100,10 @@
         live: (id) => wait(id === 'survival-onyx' ? live : [])
       };
     })(),
+    looks: {
+      get: () => wait({ owned: { frame: ['none', 'silver', ...(q.get('frames') || 'neon,fire,creator').split(',').filter(Boolean)], bg: ['none', 'night', ...(q.get('bgs') || 'galaxy,throne').split(',').filter(Boolean)] }, worn: { ...mockLook } }),
+      wear: (look) => { Object.assign(mockLook, look); return wait({ ok: true, worn: { ...mockLook } }); }
+    },
     capes: {
       kopi: () => wait({ owned: (q.has('capes') ? q.get('capes') : 'kopi,fire').split(',').filter(Boolean), worn: kopiWorn }),
       kopiWear: (id) => { kopiWorn = id || null; return wait({ ok: true, worn: kopiWorn }); }

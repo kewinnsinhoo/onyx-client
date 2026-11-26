@@ -85,6 +85,10 @@ contextBridge.exposeInMainWorld('onyx', {
     kopi: () => call('capes:kopi'),
     kopiWear: (id) => call('capes:kopiWear', id)
   },
+  looks: {
+    get: () => call('looks:get'),
+    wear: (look) => call('looks:wear', look)
+  },
   data: {
     get: (name) => call('data:get', name),
     terms: (lang) => call('data:terms', lang)

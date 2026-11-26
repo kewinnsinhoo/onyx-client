@@ -6,6 +6,14 @@ window.CHANGELOG = [
   // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
   // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
   {
+    v: '1.8.15', date: '2026-11-25', items: [
+      ['image', '¡Marcos y fondos de perfil! Ponle a tu cara un marco animado (Llamas, RGB, Corona, Galaxia…) y a tu tarjeta un fondo que se mueve. Se ven en el launcher y en tu perfil de la web. Ve a Mi perfil → Marcos y fondos.',
+        'Profile frames and backgrounds! Give your face an animated frame (Flames, RGB, Crown, Galaxy…) and your card a moving background. They show in the launcher and on your web profile. Go to My profile → Frames & backgrounds.',
+        'Marcs i fons de perfil! Posa a la teva cara un marc animat (Flames, RGB, Corona, Galàxia…) i a la teva targeta un fons que es mou. Es veuen al launcher i al teu perfil web. Ves a El meu perfil → Marcs i fons.',
+        'Cadres et fonds de profil ! Donne à ton visage un cadre animé (Flammes, RGB, Couronne, Galaxie…) et à ta carte un fond animé. Visibles dans le launcher et sur ton profil web. Va dans Mon profil → Cadres et fonds.']
+    ]
+  },
+  {
     v: '1.8.14', date: '2026-11-25', items: [
       ['sparkles', '¡15 capas de Kopi nuevas y animadas! Galaxia, Fénix, Ojo de dragón, Tormenta con rayos, Corona real, Navidad y muchas más. Míralas en Skins → Capas.',
         '15 new animated Kopi capes! Galaxy, Phoenix, Dragon eye, Storm with lightning, Royal crown, Christmas and many more. See them in Skins → Capes.',

@@ -5,6 +5,7 @@ import { json, now, readJson, playerKey, NAME_RE } from './util.js';
 import { badgesOf } from './badges.js';
 import { publicSkin } from './skins.js';
 import { cslCapeHash } from './capes.js';
+import { wornLook } from './looks.js';
 import { urlOf } from './streams.js';
 import '../public/js/cape-art.js';
 
@@ -62,9 +63,10 @@ export async function publicPlayer(env, u, parts) {
     env.DB.prepare('SELECT cape_id FROM cape_worn WHERE player_key = ?').bind(key).first(),
     env.DB.prepare('SELECT platform, handle, live, manual_until, title, viewers FROM channels WHERE owner = ?').bind(key).all()
   ]);
+  const look = await wornLook(env, key).catch(() => ({ frame: null, bg: null })); // marco y fondo de perfil
   const cape = worn && ART.get(worn.cape_id);
   const capeHash = cape ? await cslCapeHash(env, key).catch(() => null) : null;
-  const R = ['common', 'rare', 'epic', 'legendary'];
+  const R = ['common', 'rare', 'epic', 'legendary', 'mythic'];
   const earned = b.badges.filter(x => x.earned)
     .map(x => ({ id: x.id, cat: x.cat, icon: x.icon, rarity: x.rarity, color: x.color || null, name: x.name, desc: x.desc, studio: x.studio || null, custom: !!x.custom, at: x.at }))
     .sort((a, c) => (R.indexOf(c.rarity) - R.indexOf(a.rarity)) || (c.at || 0) - (a.at || 0));
@@ -76,6 +78,7 @@ export async function publicPlayer(env, u, parts) {
     premium: !!(s && s.premium),
     skin: s ? { url: `${origin}/api/public/player/${encodeURIComponent(pub.player_name)}/skin.png`, slim: s.slim } : null,
     cape: cape ? { id: cape.id, name: cape.name, rarity: cape.rarity, texture: capeHash ? `${origin}/csl/textures/${capeHash.hash}` : null } : null,
+    look,
     stats: { hours: b.facts.hours, streak: b.facts.streak, instances: b.facts.instances, since: (first && first.first) || null, online: !!playingNow },
     badges: earned,
     total: b.badges.filter(x => !x.secret || x.earned).length,

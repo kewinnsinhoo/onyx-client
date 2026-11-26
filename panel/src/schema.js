@@ -461,7 +461,29 @@ CREATE INDEX guard_rtc_play ON guard_rtc(play_id, state)`,
 );
 CREATE INDEX net_errors_at ON net_errors(at)`,
   // La insignia «Creador» (mítica) para el creador de Kopi
-  `INSERT OR IGNORE INTO badge_grants (badge_id, player_key, player_name, granted_by, granted_at) VALUES ('kopi-creator', 'kewinsinho', 'Kewinsinho', 'sistema', 1795400000000)`
+  `INSERT OR IGNORE INTO badge_grants (badge_id, player_key, player_name, granted_by, granted_at) VALUES ('kopi-creator', 'kewinsinho', 'Kewinsinho', 'sistema', 1795400000000)`,
+  `-- Marcos y fondos de perfil: cuáles tiene cada jugador (regalados o ganados) y cuáles lleva puestos.
+-- Los gratis y los de insignia no se guardan aquí: se calculan (ver src/looks.js).
+CREATE TABLE look_owned (
+  player_key TEXT NOT NULL,
+  kind TEXT NOT NULL,                -- 'frame' (marco) | 'bg' (fondo)
+  item_id TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  source TEXT NOT NULL,              -- 'gift' (regalo desde el panel) | 'spin' (ruleta)
+  granted_by TEXT,
+  granted_by_name TEXT,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (player_key, kind, item_id)
+);
+CREATE INDEX look_owned_item ON look_owned(kind, item_id);
+CREATE TABLE look_worn (
+  player_key TEXT PRIMARY KEY,
+  player_name TEXT NOT NULL,
+  frame TEXT,
+  bg TEXT,
+  owner_hash TEXT,
+  updated_at INTEGER NOT NULL
+)`
 ];
 
 export function statements(sql) {

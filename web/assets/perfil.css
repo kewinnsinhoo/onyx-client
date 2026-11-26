@@ -132,3 +132,11 @@ body.brand .foot { background: #0d0d10; }
 body.brand .foot-brand img { height: 46px; width: auto; max-width: 240px; object-fit: contain; }
 body.brand-wait .top-logo, body.brand-wait .top-nav, body.brand-wait .top-right .btn, body.brand-wait .foot { visibility: hidden; }
 body.brand-wait * { transition: none !important; }
+/* Marco y fondo de perfil */
+.pf-card { isolation: isolate; }
+.pf-card.has-bg { background: #0d0812; }
+.pf-card.has-bg::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .34)); }
+.pf-card.has-bg .pf-glow { opacity: .35; }
+.pf-card.has-bg .pf-info { text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
+.pf-namerow { display: flex; align-items: center; gap: 22px; min-width: 0; margin: 8px 0 2px 10px; }
+.pf-face { width: 58px; height: 58px; display: block; border-radius: 14px; image-rendering: pixelated; background: #2a1e33; }

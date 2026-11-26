@@ -426,6 +426,14 @@ Para que se cuenten solos:
 - **Discord («Jugando …»):** ese nombre es el de la aplicación de Discord. Para que ponga el nombre del launcher: en discord.com/developers/applications → **New Application** con el nombre del launcher → en **OAuth2** añadir el redirect `http://127.0.0.1:53682/discord` → copiar el **Application ID** → pegarlo en **Launchers → Aplicación de Discord** → **Guardar** y **Compilar launcher**.
 - Las capas se siguen llamando como en Kopi (p. ej. la capa «Kopi» sale como «Nova»), pero el dibujo es el mismo.
 
+## Marcos y fondos de perfil (desde la 1.8.15)
+
+- **Marco:** va alrededor de la cara del jugador (avatar de la barra lateral, menú, tarjeta de «Mi perfil» y su perfil de la web). **Fondo:** detrás de su tarjeta (launcher y web). Todos son SVG animados.
+- El dibujo está en `src/renderer/js/cosmetics.js`, con **dos copias iguales**: `panel/public/js/cosmetics.js` y `web/assets/kopi-cosmetics.js`. Si cambias uno, cópialo a los otros (hay prueba).
+- Quién tiene qué: los **gratis** (Plata, Noche estrellada) todo el mundo; los **de insignia** (marco Creador y fondo Trono → insignia «Creador»; marco Equipo Kopi → «Equipo Kopi») quien la tenga; el resto **se regala** desde el panel → **Marcos y fondos** (solo el Creador). Más adelante también la ruleta.
+- El jugador se los pone en **Mi perfil → Marcos y fondos**. Los que no tiene salen con candado y cómo conseguirlos; los de insignia no salen si no los tiene.
+- Panel: tablas `look_owned` y `look_worn`; rutas `/api/l/looks`, `/api/l/look`, `/api/onyx/looks/...`; el perfil público lleva `look: { frame, bg }`.
+
 ## Cosas a saber
 - **Windows** mostrará "Windows protegió su PC" porque el .exe no está firmado (la firma cuesta dinero). Hay que pulsar **Más información → Ejecutar de todas formas**.
 - **Mac**: la primera vez, clic derecho sobre la app → **Abrir**. Si no deja, ve a **Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente**. Si sale «Kopi Client está dañado» (versiones hasta la 1.4.8 sin la firma ad-hoc, o si macOS se pone pesado), abre **Terminal** y escribe `xattr -cr "/Applications/Kopi Client.app"` y pulsa Enter; después ya abre. Desde la 1.4.8 la app de Mac lleva una firma «ad-hoc» gratuita para que no salga ese aviso de «dañado». Sin firma de Apple, en Mac las actualizaciones automáticas no se instalan solas: hay que descargar la nueva versión desde Releases.

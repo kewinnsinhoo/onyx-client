@@ -11,6 +11,7 @@ import { eventsApi, history, referrals, addReferral, publicApi, runChecks } from
 import { studioBrandApi, creatorBrandsApi } from './brands.js';
 import { uploadSkin, deleteSkin, cslApi } from './skins.js';
 import { capesPublic, launcherCapes, creatorCapes } from './capes.js';
+import { launcherLooks, creatorLooks } from './looks.js';
 import { statsApi } from './studio-stats.js';
 import { hello, launcherStats } from './kopistats.js';
 import { guardReport, guardApi, guardMedia, guardFrame, camWanted, serverReport, rtcPending, guardRtcAnswer } from './guard.js';
@@ -236,6 +237,7 @@ async function panelApi(req, env, u, path, m, ctx) {
     if (parts[1] === 'brands') return creatorBrandsApi({ env, user, isCreator, req, u }, parts[2], m, parts[3]);
     if (parts[1] === 'badges') return creatorBadges(env, user, m, req);
     if (parts[1] === 'capes') return creatorCapes({ env, user, req }, parts[2], parts[3], m);
+    if (parts[1] === 'looks') return creatorLooks({ env, user, req }, parts[2], parts[3], parts[4], m);
     return creatorApi({ env, user, isCreator, req, u }, parts.slice(1), m);
   }
 
@@ -818,6 +820,8 @@ async function launcherApi(req, env, u, path, m, ctx) {
   if (parts[0] === 'skin' && m === 'DELETE') return deleteSkin(env, P, await readJson(req));
   // Capas de Kopi: las que tiene el jugador y cuál lleva puesta
   if (parts[0] === 'capes' || parts[0] === 'cape') { const r = await launcherCapes(env, P, parts, m, req); if (r) return r; }
+  // Marcos y fondos de perfil: los que tiene y los que lleva puestos
+  if (parts[0] === 'looks' || parts[0] === 'look') { const r = await launcherLooks(env, P, parts, m, req); if (r) return r; }
   // Perfil público en la web, insignias y directos
   if (parts[0] === 'public' && !parts[1]) return launcherPublic(env, P, m, req);
   if (parts[0] === 'perf' && m === 'POST') return launcherPerf(env, P, req);

@@ -1200,3 +1200,32 @@ body.has-brand-bg::before { /* el fondo del studio, oscurecido para que se lea t
 @keyframes mythText { to { background-position: -200% 0; } }
 .pf-bt.on.r-mythic { background: radial-gradient(80% 60% at 50% 0, rgba(255, 210, 80, .16), transparent), rgba(255, 255, 255, .03); border-color: rgba(255, 210, 80, .35); }
 .modal.nb-modal.r-mythic .nb-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 210, 80, .22) 0 8deg, transparent 8deg 22deg); }
+
+/* Marcos de perfil: la cara con su marco (el marco sobresale, no se recorta) */
+#sidebar .avatar-btn.framed { overflow: visible; border-color: transparent; background: none; box-shadow: none; }
+#sidebar .avatar-btn.framed .kc-frame > :first-child { border-radius: 11px; }
+.dr-skin.framed { border-color: transparent; box-shadow: none; }
+.dr-skin.framed .kc-frame > :first-child { border-radius: 18px; }
+.kc-frame > canvas, .kc-frame > img { display: block; }
+/* Mi perfil: fondo y marco puestos */
+.pf-card.has-bg .pf-info { text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
+.pf-card.has-bg::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .38)); }
+.pf-namerow { display: flex; align-items: center; gap: 18px; min-width: 0; margin: 6px 0 2px 8px; }
+.pf-namerow .kc-frame > :first-child { border-radius: 12px; }
+.pf-namerow .pf-name { min-width: 0; }
+/* Mi perfil: elegir marco y fondo */
+.lk-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.lk-it { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 8px 9px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255, 255, 255, .025); color: var(--text); cursor: pointer; transition: border-color .15s, transform .15s, background .15s; min-width: 0; }
+.lk-it:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--rc) 50%, var(--border-strong)); }
+.lk-it.on { border-color: var(--rc); background: color-mix(in srgb, var(--rc) 10%, transparent); box-shadow: 0 0 0 1px var(--rc) inset; }
+.lk-it b { font-size: 12.5px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 6px; }
+.lk-it small { font-size: 11px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-it.on small { color: var(--rc); font-weight: 700; }
+.lk-pre { position: relative; display: grid; place-items: center; width: 100%; height: 62px; }
+.lk-it.frame .lk-pre .kc-frame > :first-child { border-radius: 10px; }
+.lk-it.bg .lk-pre { isolation: isolate; overflow: hidden; border-radius: 10px; background: var(--deep-2, #1a1022); }
+.lk-it.locked .lk-pre > :not(.lk-lock) { filter: grayscale(.75) brightness(.55); }
+.lk-it.locked b { color: var(--muted); }
+.lk-lock { position: absolute; inset: 0; display: grid; place-items: center; }
+.lk-lock svg { width: 20px; height: 20px; color: #fff; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .8)); }
+.pf-looks .pf-h b { display: inline-flex; align-items: center; gap: 8px; }

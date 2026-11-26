@@ -775,6 +775,54 @@ await test('Capas de Kopi: el dibujo del panel es el mismo que el del launcher',
   assert.deepStrictEqual([0, 1, 2, 3, 4, 5].map(i => spriteFrameAt(A.get('kopi'), i)), [0, 0, 1, 1, 2, 3]);
 });
 
+await test('Marcos y fondos de perfil: gratis, de insignia, regalados y puestos', async () => {
+  const K = globalThis.KopiCosmetics || (await import('../public/js/cosmetics.js'), globalThis.KopiCosmetics);
+  // el dibujo es el mismo en el launcher, el panel y la web
+  const same = ['src/renderer/js/cosmetics.js', 'web/assets/kopi-cosmetics.js'].map(f => fs.readFileSync(path.join(here, '..', '..', f), 'utf8'));
+  const mine = fs.readFileSync(path.join(here, '..', 'public', 'js', 'cosmetics.js'), 'utf8');
+  assert.ok(same.every(x => x === mine), 'las tres copias de cosmetics.js son iguales');
+  for (const f of K.FRAMES) assert.ok(f.id === 'none' || /<svg/.test(K.frameSvg(f.id)), f.id);
+  for (const b of K.BGS) assert.ok(b.id === 'none' || /<svg/.test(K.bgLayer(b.id)), b.id);
+  // solo el Creador ve y regala
+  assert.strictEqual((await call('GET', '/api/onyx/looks', { cookie: other })).status, 403);
+  const list = (await call('GET', '/api/onyx/looks', { cookie: creator })).data;
+  assert.deepStrictEqual(list.frame.map(x => x.id), K.FRAME_IDS);
+  assert.strictEqual((await call('POST', '/api/onyx/looks/frame/silver', { cookie: creator, body: { name: 'Marquito' } })).status, 400, 'los gratis no se regalan');
+  assert.strictEqual((await call('POST', '/api/onyx/looks/frame/creator', { cookie: creator, body: { name: 'Marquito' } })).status, 400, 'los de insignia tampoco');
+  assert.strictEqual((await call('POST', '/api/onyx/looks/frame/nada', { cookie: creator, body: { name: 'Marquito' } })).status, 404);
+  assert.strictEqual((await call('POST', '/api/onyx/looks/cosa/gold', { cookie: creator, body: { name: 'Marquito' } })).status, 404);
+  // el jugador: lo gratis desde el principio
+  const p = await player('Marquito', false);
+  const key = 'm'.repeat(32);
+  let r = (await call('GET', '/api/l/looks', { headers: p })).data;
+  assert.deepStrictEqual([r.owned.frame, r.owned.bg], [['none', 'silver'], ['none', 'night']]);
+  assert.deepStrictEqual(r.worn, { frame: null, bg: null });
+  assert.strictEqual((await call('POST', '/api/l/look', { headers: p, body: { frame: 'gold', key } })).status, 403, 'aún no lo tiene');
+  // regalo → lo tiene y se lo pone (marco y fondo a la vez o por separado)
+  const g = await call('POST', '/api/onyx/looks/frame/gold', { cookie: creator, body: { name: 'Marquito, Otro_1' } });
+  assert.deepStrictEqual([g.status, g.data.added], [200, 2]);
+  await call('POST', '/api/onyx/looks/bg/galaxy', { cookie: creator, body: { name: 'Marquito' } });
+  assert.ok(JSON.stringify((await call('GET', '/api/onyx/audit?q=look', { cookie: creator })).data).includes('look.give'));
+  assert.strictEqual((await call('POST', '/api/l/look', { headers: p, body: { frame: 'gold' } })).status, 400, 'falta la clave');
+  r = (await call('POST', '/api/l/look', { headers: p, body: { frame: 'gold', bg: 'galaxy', key } })).data;
+  assert.deepStrictEqual(r.worn, { frame: 'gold', bg: 'galaxy' });
+  r = (await call('POST', '/api/l/look', { headers: p, body: { bg: 'night', key } })).data;
+  assert.deepStrictEqual(r.worn, { frame: 'gold', bg: 'night' }, 'cambiar solo el fondo deja el marco');
+  // otro launcher con el mismo nombre no puede cambiarlo
+  const thief = await player('Marquito', false);
+  assert.strictEqual((await call('POST', '/api/l/look', { headers: thief, body: { frame: 'none', key: 'z'.repeat(32) } })).status, 403);
+  // quién lo tiene, y quitarlo (deja de llevarlo)
+  const owners = (await call('GET', '/api/onyx/looks/frame/gold', { cookie: creator })).data.owners;
+  assert.deepStrictEqual(owners.map(o => [o.name, o.wearing]).sort(), [['Marquito', true], ['Otro_1', false]]);
+  assert.strictEqual((await call('DELETE', '/api/onyx/looks/frame/gold/Marquito', { cookie: creator })).status, 200);
+  assert.deepStrictEqual((await call('GET', '/api/l/looks', { headers: p })).data.worn, { frame: null, bg: 'night' });
+  // los de insignia: Kewinsinho (insignia «Creador») tiene el marco Creador y el fondo Trono
+  const kew = await player('Kewinsinho', false);
+  const kr = (await call('GET', '/api/l/looks', { headers: kew })).data;
+  assert.ok(kr.owned.frame.includes('creator') && kr.owned.bg.includes('throne'), JSON.stringify(kr.owned));
+  assert.ok(!r.worn || !(await call('GET', '/api/l/looks', { headers: p })).data.owned.frame.includes('creator'), 'los demás no');
+});
+
 await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () => {
   const A = globalThis.KopiCapeArt;
   // solo el Creador
@@ -863,6 +911,8 @@ await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () =>
   const server = fs.readFileSync(path.join(here, '..', 'src', 'capes.js'), 'utf8').split('// ---------------------------------------------------------------- Creador')[1];
   const keys = [...view.matchAll(/(?<![\w.$])t\('((?:[^'\\]|\\.)+)'/g), ...server.matchAll(/fail\(\d+, '\w+', '((?:[^'\\]|\\.)+)'\)/g)].map(x => x[1]);
   keys.push(...A.CAPES.map(c => c.name).filter(n => n !== 'Kopi'), ...Object.values(A.RARITY).map(r => r.label), 'Capas de Kopi');
+  const LK = globalThis.KopiCosmetics || (await import('../public/js/cosmetics.js'), globalThis.KopiCosmetics);
+  keys.push(...LK.FRAMES.map(x => x.name), ...LK.BGS.map(x => x.name), ...Object.values(LK.RARITY).map(r => r.label), 'Marcos y fondos', 'Marcos', 'Fondos');
   assert.ok(keys.length > 30, 'textos: ' + keys.length);
   for (const k of keys) assert.ok(sb.I18N.has(k), 'falta traducir: ' + k);
 });

@@ -78,13 +78,16 @@
     const live = p.channels.find(c => c.live);
     const since = p.stats.since ? new Date(p.stats.since).toLocaleDateString(lang(), { month: 'short', year: 'numeric' }) : '—';
     const capeName = p.cape ? (lang() === 'en' ? CAPE_EN[p.cape.name] || p.cape.name : p.cape.name) : '';
+    // Marco y fondo de perfil (solo si los dibujos cargaron)
+    const LOOK = window.KopiCosmetics && p.look ? { frame: window.KopiCosmetics.getFrame(p.look.frame) ? p.look.frame : null, bg: window.KopiCosmetics.getBg(p.look.bg) ? p.look.bg : null } : {};
     root.innerHTML = `
-      <section class="pf-card ${p.cape ? 'r-' + esc(p.cape.rarity) : ''}">
+      <section class="pf-card ${p.cape ? 'r-' + esc(p.cape.rarity) : ''} ${LOOK.bg ? 'has-bg' : ''}">
+        ${LOOK.bg ? window.KopiCosmetics.bgLayer(LOOK.bg) : ''}
         <div class="pf-glow"></div>
         <div class="pf-3d" id="pf-3d"></div>
         <div class="pf-info">
           <span class="pf-kicker">${esc(t('kicker'))}</span>
-          <h1 class="pf-name">${esc(p.name)}</h1>
+          ${LOOK.frame ? `<div class="pf-namerow">${window.KopiCosmetics.wrap(`<img class="pf-face" id="pf-face" src="${esc(faceFallback(p.name))}" alt="">`, LOOK.frame, 58)}<h1 class="pf-name">${esc(p.name)}</h1></div>` : `<h1 class="pf-name">${esc(p.name)}</h1>`}
           <div class="pf-tags">
             ${p.premium ? `<span class="pf-tag prem"><svg><use href="#i-ok"/></svg>${esc(t('premium'))}</span>` : ''}
             ${p.stats.online ? `<span class="pf-tag on"><i></i>${esc(t('online'))}</span>` : ''}
@@ -129,9 +132,28 @@
       }).catch(() => {});
     };
     mountViewer();
+    paintFace(p.skin && p.skin.url);
   }
 
   // La skin en 3D, andando, con la capa de Kopi animada (o la oficial si no lleva de Kopi)
+  const faceFallback = (n) => `https://mc-heads.net/avatar/${encodeURIComponent(n)}/64`;
+  // La cara (8×8 + la capa de encima) sacada de su skin, para el marco
+  function paintFace(url) {
+    const el = document.getElementById('pf-face');
+    if (!el || !url) return;
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => {
+      try {
+        const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+        const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+        c.drawImage(im, 8, 8, 8, 8, 0, 0, 64, 64);
+        c.drawImage(im, 40, 8, 8, 8, 0, 0, 64, 64);
+        el.src = cv.toDataURL();
+      } catch { /* se queda la de mc-heads */ }
+    };
+    im.src = url;
+  }
   function mountViewer() {
     const box = document.getElementById('pf-3d');
     if (viewer) { clearInterval(capeTimer); try { viewer.destroy(); } catch { /* nada */ } }

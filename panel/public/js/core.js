@@ -289,6 +289,7 @@
     { id: 'users', i: 'shield', t: 'Usuarios', creator: true },
     { id: 'players', i: 'user', t: 'Jugadores', creator: true },
     { id: 'capes', i: 'sparkles', t: 'Capas de Kopi', creator: true },
+    { id: 'looks', i: 'image', t: 'Marcos y fondos', creator: true },
     { id: 'broadcast', i: 'megaphone', t: 'Avisos del launcher', creator: true },
     { id: 'moderation', i: 'ban', t: 'Moderación', creator: true },
     { id: 'audit', i: 'history', t: 'Actividad de Kopi', creator: true },

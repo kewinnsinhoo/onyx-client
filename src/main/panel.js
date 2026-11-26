@@ -196,6 +196,9 @@ async function syncSkin(account, key, skin) {
 // Las cuentas no premium se protegen con la misma clave secreta que su skin.
 const kopiCapes = (account) => call(account, 'GET', 'capes');
 const wearKopiCape = (account, key, id) => call(account, 'POST', 'cape', { key, id: id || null });
+// Marcos y fondos de perfil: los que tiene ({ owned: { frame: [], bg: [] }, worn: { frame, bg } }) y ponérselos
+const looks = (account) => call(account, 'GET', 'looks');
+const wearLook = (account, key, look) => call(account, 'POST', 'look', { key, ...look });
 
 // Directos: tus canales ({ twitch, tiktok, kick }), «estoy en directo» a mano y quién emite una instancia
 const streamChannels = (account) => call(account, 'GET', 'channels');
@@ -251,4 +254,4 @@ function heartbeat(account, play, everySec, onKick, onBeat) {
   };
 }
 
-module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, sendPerf, referral, syncSkin, kopiCapes, wearKopiCape, hello, sendReport, guardReport, guardMedia, guardFrame, guardRtc, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
+module.exports = { init, enabled, base, onlineIn, preport, preportShot, publicProfile, setPublicProfile, badges, setShowcase, streamChannels, saveChannels, markLive, liveOf, redeem, listInstances, getInstance, startPlay, beat, endPlay, sendPerf, referral, syncSkin, kopiCapes, wearKopiCape, looks, wearLook, hello, sendReport, guardReport, guardMedia, guardFrame, guardRtc, heartbeat, publicGet, token, PanelError, MESSAGES, toError };
