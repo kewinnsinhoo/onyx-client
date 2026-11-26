@@ -489,6 +489,7 @@
     ['Esta cuenta es premium: inicia sesión con Microsoft para girar la ruleta', 'This account is premium: sign in with Microsoft to spin the wheel', 'Aquest compte és prèmium: inicia sessió amb Microsoft per girar la ruleta', 'Ce compte est premium : connecte-toi avec Microsoft pour tourner la roue'],
     ['Esta cuenta es premium: inicia sesión con Microsoft para cambiar tu perfil', 'This account is premium: sign in with Microsoft to change your profile', 'Aquest compte és prèmium: inicia sessió amb Microsoft per canviar el teu perfil', 'Ce compte est premium : connecte-toi avec Microsoft pour modifier ton profil'],
     ['Todavía no lo tienes', 'You don’t have it yet', 'Encara no el tens', 'Tu ne l’as pas encore'],
+    ['Tachanaki v2', 'Tachanaki v2', 'Tachanaki v2', 'Tachanaki v2'],
     ['NickooVXS', 'NickooVXS', 'NickooVXS', 'NickooVXS'],
     ['Noche estrellada', 'Starry night', 'Nit estelada', 'Nuit étoilée'],
     ['Neón', 'Neon', 'Neó', 'Néon'],

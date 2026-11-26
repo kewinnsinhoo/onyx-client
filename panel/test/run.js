@@ -917,11 +917,23 @@ await test('Capas de Kopi: regalar, ponérsela y verla en el juego', async () =>
   for (const k of keys) assert.ok(sb.I18N.has(k), 'falta traducir: ' + k);
 });
 
+await test('Capas HD (Tachanaki v2): en el juego, su textura de verdad', async () => {
+  const { capeImages } = await import('../src/capes.js');
+  const b = await capeImages('tachanaki2');
+  const png = (u8) => [u8[0], u8[1], u8[2], u8[3]].join() === '137,80,78,71';
+  const size = (u8) => { const v = new DataView(u8.buffer, u8.byteOffset); return [v.getUint32(16), v.getUint32(20)]; };
+  assert.ok(png(b.sprite) && png(b.still), 'son PNG');
+  assert.deepStrictEqual(size(b.sprite), [512, 256 * 30], 'animada: 30 fotogramas de 512×256');
+  assert.deepStrictEqual(size(b.still), [1024, 512], 'quieta: 1024×512');
+  assert.strictEqual(b.frames, 30);
+  assert.ok(/^[0-9a-f]{64}$/.test(b.stillHash));
+});
+
 await test('Ruleta diaria: una al día, premios que no tienes, nunca exclusivos', async () => {
   const { spinPool, SPIN_ODDS } = await import('../src/spin.js');
   assert.strictEqual(SPIN_ODDS.reduce((n, [, p]) => n + p, 0), 100, 'las probabilidades suman 100');
   const pool = spinPool();
-  assert.ok(!pool.some(p => p.id === 'tachamanika' || p.id === 'nickoovxs' || p.id === 'creator' || p.id === 'throne' || p.id === 'team' || p.id === 'silver' || p.id === 'night'), 'sin exclusivos ni gratis');
+  assert.ok(!pool.some(p => p.id === 'tachamanika' || p.id === 'tachanaki2' || p.id === 'nickoovxs' || p.id === 'creator' || p.id === 'throne' || p.id === 'team' || p.id === 'silver' || p.id === 'night'), 'sin exclusivos ni gratis');
   assert.ok(pool.every(p => ['rare', 'epic', 'legendary'].includes(p.rarity)));
   const p = await player('Girador', false);
   const key = 'g'.repeat(32), tz = -300;

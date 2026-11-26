@@ -598,6 +598,7 @@
     "Navidad": ["Christmas", "Nadal", "Noël"],
     "Corazón": ["Heart", "Cor", "Cœur"],
     "Hielo": ["Ice", "Gel", "Glace"],
+    "Tachanaki v2": ["Tachanaki v2", "Tachanaki v2", "Tachanaki v2"],
     "NickooVXS": ["NickooVXS", "NickooVXS", "NickooVXS"],
     "Noche estrellada": ["Starry night", "Nit estelada", "Nuit étoilée"],
     "Neón": ["Neon", "Neó", "Néon"],

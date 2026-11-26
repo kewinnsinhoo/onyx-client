@@ -12,9 +12,24 @@
   const live = new Set();
   let timer = 0, tick = 0;
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Capas HD: su imagen de verdad cuando ha cargado (si no, la versión pequeña de 10×16)
+  const hdImgs = {};
+  const hdReady = (cape) => {
+    if (!cape.hd) return null;
+    let im = hdImgs[cape.id];
+    if (!im) { im = hdImgs[cape.id] = new Image(); im.src = cape.hd.sheet; }
+    return im.complete && im.naturalWidth ? im : null;
+  };
   function paint(ctx, cape, f) {
+    const im = hdReady(cape), k = cape.hd ? cape.hd.scale : 1;
+    if (im) {
+      const fr = ((f % cape.frames) + cape.frames) % cape.frames;
+      ctx.clearRect(0, 0, ART.W * k, ART.H * k);
+      ctx.drawImage(im, k, fr * 32 * k + k, ART.W * k, ART.H * k, 0, 0, ART.W * k, ART.H * k);
+      return;
+    }
     const grid = ART.pixels(cape, f);
-    for (let y = 0; y < ART.H; y++) for (let x = 0; x < ART.W; x++) { ctx.fillStyle = grid[y][x]; ctx.fillRect(x, y, 1, 1); }
+    for (let y = 0; y < ART.H; y++) for (let x = 0; x < ART.W; x++) { ctx.fillStyle = grid[y][x]; ctx.fillRect(x * k, y * k, k, k); }
   }
   function loop() {
     tick++;
@@ -26,9 +41,11 @@
     if (!live.size) { clearInterval(timer); timer = 0; }
   }
   function mount(cv, cape) {
-    cv.width = ART.W; cv.height = ART.H;
+    const k = cape.hd ? cape.hd.scale : 1;
+    cv.width = ART.W * k; cv.height = ART.H * k;
     const it = { cv, cape, ctx: cv.getContext('2d'), last: -1 };
     paint(it.ctx, cape, 0);
+    if (cape.hd && !hdReady(cape)) hdImgs[cape.id].addEventListener('load', () => paint(it.ctx, cape, Math.max(0, it.last)), { once: true });
     if (cape.frames > 1 && !reduced()) { live.add(it); if (!timer) timer = setInterval(loop, 1000 / 24); }
   }
   const mountAll = (root) => $$('canvas[data-cape]', root).forEach(cv => mount(cv, ART.get(cv.dataset.cape)));

@@ -434,6 +434,13 @@ Para que se cuenten solos:
 - El jugador se los pone en **Mi perfil → Marcos y fondos**. Los que no tiene salen con candado y cómo conseguirlos; los de insignia no salen si no los tiene.
 - Panel: tablas `look_owned` y `look_worn`; rutas `/api/l/looks`, `/api/l/look`, `/api/onyx/looks/...`; el perfil público lleva `look: { frame, bg }`.
 
+## Capas personales y capas HD (desde la 1.8.17)
+
+- **NickooVXS** (1.8.17): sacada de un paquete de texturas de CreateTextures (los 32 fotogramas estaban dentro del shader). Se guarda como pixel art 10×16 («pal» + «px», un carácter por píxel).
+- **Tachanaki v2** (1.8.18): capa **HD** (8 veces más detalle). Una capa con `hd: { scale, sheet, still }` trae su textura de Minecraft de verdad (imágenes en data URL): `sheet` = animada, fotogramas de 64·k × 32·k uno debajo de otro a 100 ms (lo que pide Cape Provider); `still` = la quieta (para CustomSkinLoader). El launcher, el panel y la web la dibujan con todo el detalle; mientras carga, la versión pequeña (`pal`/`px`).
+- Las dos son **exclusivas**: están en `NO_CAPES` de `panel/src/spin.js` (no salen en la ruleta). Se regalan en el panel → Capas de Kopi.
+- Para añadir otra HD: usar el PNG animado (fotogramas apilados) y el quieto del zip, y copiar el bloque de `tachanaki2` en las tres copias de las capas.
+
 ## Ruleta diaria (desde la 1.8.16)
 
 - En el launcher: menú → **Ruleta diaria** (un puntito dorado en tu cara cuando está lista). Una tirada por día del jugador (según su zona horaria) y como mínimo 6 h entre una y otra.

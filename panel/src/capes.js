@@ -57,8 +57,17 @@ export function spriteFrameCount(cape) {
 export const spriteFrameAt = (cape, i) => Math.floor(i * cape.fps / SPRITE_FPS) % cape.frames;
 
 const built = new Map(); // id → { sprite, still, stillHash }
+const fromDataUrl = (u) => Uint8Array.from(atob(String(u).split(',')[1] || ''), ch => ch.charCodeAt(0));
 async function build(cape) {
   if (built.has(cape.id)) return built.get(cape.id);
+  // Capas HD: ya traen su textura animada (fotogramas de 100 ms, uno debajo de otro) y la quieta
+  if (cape.hd) {
+    const sprite = fromDataUrl(cape.hd.sheet), still = fromDataUrl(cape.hd.still);
+    const hex = [...new Uint8Array(await crypto.subtle.digest('SHA-256', still))].map(b => b.toString(16).padStart(2, '0')).join('');
+    const out = { sprite, still, stillHash: hex, frames: cape.frames };
+    built.set(cape.id, out);
+    return out;
+  }
   const n = spriteFrameCount(cape);
   const sheet = new Uint8Array(TEX_W * TEX_H * 4 * n);
   for (let i = 0; i < n; i++) sheet.set(textureRGBA(cape, spriteFrameAt(cape, i)), i * TEX_W * TEX_H * 4);

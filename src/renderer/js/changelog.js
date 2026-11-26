@@ -5,6 +5,7 @@
 window.CHANGELOG = [
   // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
   // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
+  { v: '1.8.18', date: '2026-11-25', items: [] },
   { v: '1.8.17', date: '2026-11-25', items: [] },
   {
     v: '1.8.16', date: '2026-11-25', items: [
