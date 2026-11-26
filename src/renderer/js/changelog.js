@@ -5,6 +5,14 @@
 window.CHANGELOG = [
   // Solo lo que a un jugador le haría decir «¡qué bueno!»: nada de cosas de studios, del panel ni de otros
   // launchers. Una versión sin nada así lleva items: [] (no sale ningún aviso al actualizar).
+  {
+    v: '1.8.19', date: '2026-11-26', items: [
+      ['sparkles', '¡44 capas nuevas, todas animadas! Agujero negro, Alas de ángel, Demonio, Katana, Supernova, Synthwave, Calavera, Gato, Calabaza, Hierba, Ladrillos… Ya hay más de 70. Consíguelas en la ruleta diaria.',
+        '44 new capes, all animated! Black hole, Angel wings, Demon, Katana, Supernova, Synthwave, Skull, Cat, Pumpkin, Grass, Bricks… There are now over 70. Win them on the daily wheel.',
+        '44 capes noves, totes animades! Forat negre, Ales d’àngel, Dimoni, Katana, Supernova, Synthwave, Calavera, Gat, Carbassa, Herba, Maons… Ja n’hi ha més de 70. Aconsegueix-les a la ruleta diària.',
+        '44 nouvelles capes, toutes animées ! Trou noir, Ailes d’ange, Démon, Katana, Supernova, Synthwave, Crâne, Chat, Citrouille, Herbe, Briques… Il y en a maintenant plus de 70. Gagne-les sur la roue quotidienne.']
+    ]
+  },
   { v: '1.8.18', date: '2026-11-25', items: [] },
   { v: '1.8.17', date: '2026-11-25', items: [] },
   {

@@ -573,6 +573,577 @@
         [[1, 1, 0], [8, 2, 5], [1, 14, 10], [8, 13, 3]].forEach(([x, y, p]) => { if ((f + p) % 16 < 3) px(x, y, '#ecfeff'); });
       }
     },
+    // ---------------------------------------------------------------- legendarias
+    {
+      // Agujero negro: un disco de materia al rojo que gira alrededor de la nada
+      id: 'blackhole', name: 'Agujero negro', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const t = f / 20 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = y - 7.5;
+          let c = (x * 7 + y * 11) % 19 === 0 ? '#cbd5e1' : '#020208';
+          const ring = Math.hypot(dx, dy);
+          // el anillo de luz doblada alrededor del agujero
+          if (ring > 2.3 && ring < 3.4) c = mix('#c2410c', '#fef3c7', (Math.sin(Math.atan2(dy, dx) * 2 + t) + 1) / 2 * (dy < 0 ? 1 : 0.55));
+          if (ring <= 2.3) c = '#000000';
+          // el disco: una elipse gruesa que pasa por delante (abajo) y por detrás (arriba)
+          const disk = Math.hypot(dx, dy * 2.3), a = Math.atan2(dy * 2.3, dx);
+          const hot = (Math.sin(a * 2 - t) + 1) / 2;
+          if (disk > 2.0 && disk < 5.8 && (dy > -0.6 || ring > 2.3)) c = mix(mix('#7c2d12', '#f97316', hot), '#fffbeb', Math.max(0, 1 - (disk - 2) / 1.8) * hot);
+          px(x, y, c);
+        }
+      }
+    },
+    {
+      // Alas de ángel: alas blancas que se abren y cierran bajo una aureola dorada
+      id: 'angel', name: 'Alas de ángel', rarity: 'legendary', frames: 12, fps: 10,
+      draw(px, f) {
+        const t = f / 12 * TAU;
+        const bg = vgrad('#0c1a4a', '#2563eb');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x * 5 + y * 3) % 17 === 0 ? '#93c5fd' : bg(y));
+        // aureola
+        for (let x = 3; x <= 6; x++) { px(x, 1, '#fde047'); px(x, 3, '#facc15'); }
+        px(2, 2, '#fbbf24'); px(7, 2, '#fbbf24'); if (f % 6 < 2) { px(1, 1, '#fffbeb'); px(8, 3, '#fffbeb'); }
+        const lift = Math.round(Math.sin(t) * 2);
+        for (let i = 0; i < 4; i++) {
+          const top = 5 + i - lift + (i === 3 ? 1 : 0), len = 7 - i;
+          for (let k = 0; k < len; k++) {
+            const y = top + k, c = k === len - 1 ? '#cbd5e1' : (k + i) % 3 === 0 ? '#e2e8f0' : '#ffffff';
+            if (y >= 0 && y < H) { px(3 - i, y, c); px(6 + i, y, c); }
+          }
+        }
+        for (let y = 5; y <= 13; y++) { px(4, y, '#fde68a'); px(5, y, '#fef3c7'); }
+        [[1, 14, 0], [8, 15, 5], [4, 4, 9]].forEach(([x, y, p]) => { if ((f + p) % 12 < 3) px(x, y, '#fef9c3'); });
+      }
+    },
+    {
+      // Demonio: cuernos, ojos que arden y fuego que sube desde abajo
+      id: 'demon', name: 'Demonio', rarity: 'legendary', frames: 12, fps: 10,
+      draw(px, f) {
+        const t = f / 12 * TAU;
+        const bg = vgrad('#1c0505', '#450a0a');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) {
+          const h = 4 + Math.round((Math.sin(x * 1.4 + t * 2) + Math.sin(x * 0.7 - t)) * 1.2);
+          for (let k = 0; k < h; k++) px(x, 15 - k, k > h - 2 ? '#7f1d1d' : k > h - 3 ? '#dc2626' : k > 1 ? '#f97316' : '#fde047');
+        }
+        [[1, 1], [1, 2], [2, 3], [2, 4], [8, 1], [8, 2], [7, 3], [7, 4]].forEach(([x, y], i) => px(x, y, i % 4 < 2 ? '#e7e5e4' : '#a8a29e'));
+        for (let y = 4; y <= 9; y++) for (let x = 2; x <= 7; x++) if (!((y === 9) && (x === 2 || x === 7))) px(x, y, '#7f1d1d');
+        const eye = f % 6 < 3 ? '#fde047' : '#f97316';
+        px(3, 6, eye); px(6, 6, eye); px(3, 5, '#450a0a'); px(6, 5, '#450a0a');
+        [3, 4, 5, 6].forEach(x => px(x, 8, x % 2 ? '#fafaf9' : '#1c0505'));
+      }
+    },
+    {
+      // Supernova: una estrella que estalla en anillos de colores, una y otra vez
+      id: 'supernova', name: 'Supernova', rarity: 'legendary', frames: 24, fps: 12,
+      draw(px, f) {
+        const cols = ['#ffffff', '#fef08a', '#fb923c', '#ef4444', '#a855f7', '#3b0764'];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const d = Math.hypot(x - 4.5, (y - 7.5) * 0.75);
+          let c = (x * 5 + y * 7) % 17 === 0 ? '#a5b4fc' : '#030014';
+          for (let w = 0; w < 2; w++) {
+            const r = ((f + w * 12) % 24) / 24 * 8;
+            const k = r - d;
+            if (k >= 0 && k < 1.6) c = cols[Math.min(5, Math.floor((r / 8) * 5 + k))];
+          }
+          if (d < 1.1) c = f % 12 < 2 ? '#ffffff' : '#fde68a';
+          px(x, y, c);
+        }
+      }
+    },
+    {
+      // Katana: una espada con un brillo que la recorre, sobre un sol rojo y pétalos que caen
+      id: 'katana', name: 'Katana', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const sun = Math.hypot(x - 5, y - 5) < 3.6;
+          px(x, y, sun ? '#dc2626' : mix('#1c0a0a', '#3f0a0a', y / 15));
+        }
+        // la hoja en diagonal (de abajo a la izquierda arriba a la derecha) y la empuñadura
+        const blade = [[8, 1], [8, 2], [7, 3], [7, 4], [6, 5], [6, 6], [5, 7], [5, 8], [4, 9], [4, 10]];
+        blade.forEach(([x, y], i) => { const shine = (i - (f % 20) + 20) % 20; px(x, y, shine < 2 ? '#ffffff' : '#cbd5e1'); px(x - 1, y, '#64748b'); });
+        px(9, 0, '#f1f5f9');
+        px(2, 11, '#fbbf24'); px(3, 11, '#fbbf24'); px(4, 11, '#fbbf24'); px(5, 11, '#fbbf24');
+        [[3, 12], [3, 13], [2, 14], [2, 15]].forEach(([x, y], i) => px(x, y, i % 2 ? '#7f1d1d' : '#111827'));
+        [[1, 0], [7, 7], [9, 13]].forEach(([x, ph]) => {
+          const y = ((f + ph) % 20) * 15 / 20, ry = Math.round(y), sx = x - Math.floor(((f + ph) % 20) / 6);
+          if (sx >= 0) px(sx, ry, '#f9a8d4');
+        });
+      }
+    },
+    {
+      // Hechicero: un círculo mágico con runas que gira y una estrella que late
+      id: 'wizard', name: 'Hechicero', rarity: 'legendary', frames: 20, fps: 10,
+      draw(px, f) {
+        const t = f / 20 * TAU;
+        const bg = vgrad('#2e1065', '#0f0520');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = y - 7.5, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+          let c = bg(y);
+          if (Math.abs(d - 4) < 0.5) c = (Math.floor((a - t) / TAU * 12 + 12) % 2) ? '#c084fc' : '#7c3aed';
+          if (Math.abs(d - 2.6) < 0.4) c = (Math.floor((a + t * 1.5) / TAU * 8 + 8) % 2) ? '#a78bfa' : '#4c1d95';
+          px(x, y, c);
+        }
+        const big = f % 10 < 5;
+        px(4, 7, '#fdf4ff'); px(5, 8, '#fdf4ff'); px(4, 8, '#f0abfc'); px(5, 7, '#f0abfc');
+        if (big) { px(4, 6, '#e9d5ff'); px(5, 9, '#e9d5ff'); px(3, 8, '#e9d5ff'); px(6, 7, '#e9d5ff'); }
+        [[1, 1, 0], [8, 2, 7], [0, 14, 13], [9, 13, 4]].forEach(([x, y, p]) => { if ((f + p) % 20 < 4) px(x, y, '#f5d0fe'); });
+      }
+    },
+    {
+      // Cristal arcano: un cristal que flota, gira de color y suelta chispas
+      id: 'crystal', name: 'Cristal arcano', rarity: 'legendary', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU, bob = Math.round(Math.sin(t));
+        const bg = vgrad('#042f2e', '#020617');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const glow = Math.max(0, 1 - Math.hypot(x - 4.5, y - 7.5 - bob) / 6);
+          px(x, y, mix(bg(y), '#0e7490', glow * 0.6));
+        }
+        const rows = [[2, 4, 5], [3, 3, 6], [4, 3, 6], [5, 2, 7], [6, 2, 7], [7, 2, 7], [8, 2, 7], [9, 3, 6], [10, 3, 6], [11, 4, 5], [12, 4, 5]];
+        const c1 = mix('#22d3ee', '#e879f9', (Math.sin(t) + 1) / 2), c2 = mix('#0891b2', '#a21caf', (Math.sin(t) + 1) / 2);
+        rows.forEach(([y, a, b]) => { for (let x = a; x <= b; x++) px(x, y + bob, x < 5 ? (y < 7 ? '#ecfeff' : c1) : (y < 7 ? c1 : c2)); });
+        px(4, 4 + bob, '#ffffff');
+        for (let k = 0; k < 3; k++) {
+          const a = t + k * TAU / 3;
+          const x = Math.round(4.5 + Math.cos(a) * 4.2), y = Math.round(7.5 + bob + Math.sin(a) * 1.4);
+          if (x >= 0 && x < W) px(x, y, Math.sin(a) > 0 ? '#f0abfc' : '#a5f3fc');
+        }
+        [[1, 14], [8, 15]].forEach(([x, y]) => px(x, y, '#134e4a'));
+      }
+    },
+    {
+      // Reactor: un núcleo verde que late, anillos de energía y rayas de peligro que se mueven
+      id: 'reactor', name: 'Reactor', rarity: 'legendary', frames: 16, fps: 10,
+      draw(px, f) {
+        const t = f / 16 * TAU, pulse = (Math.sin(t * 2) + 1) / 2;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          let c = (x === 0 || x === 9) ? '#3f3f46' : ((x + y) % 4 === 0 ? '#27272a' : '#18181b');
+          const d = Math.hypot(x - 4.5, y - 6.5);
+          const wave = (f % 8) / 8 * 5;
+          if (Math.abs(d - wave - 1.5) < 0.5) c = mix(c, '#4ade80', 0.6 * (1 - wave / 5));
+          if (d < 2.2) c = mix('#16a34a', '#bbf7d0', pulse * (1 - d / 2.2));
+          if (d < 0.9) c = '#f0fdf4';
+          px(x, y, c);
+        }
+        for (let y = 12; y < H; y++) for (let x = 0; x < W; x++) px(x, y, ((x + y + Math.floor(f / 2)) % 4) < 2 ? '#facc15' : '#18181b');
+        px(1, 1, f % 8 < 4 ? '#ef4444' : '#450a0a'); px(8, 1, f % 8 < 4 ? '#450a0a' : '#ef4444');
+      }
+    },
+    // ---------------------------------------------------------------- épicas
+    {
+      // Synthwave: un sol a rayas sobre una rejilla de neón que avanza
+      id: 'synthwave', name: 'Synthwave', rarity: 'epic', frames: 16, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < 8; y++) for (let x = 0; x < W; x++) px(x, y, mix('#1e0b3b', '#be185d', y / 7));
+        for (let y = 2; y <= 7; y++) for (let x = 0; x < W; x++) {
+          if (Math.hypot(x - 4.5, y - 7) > 4.2 || (y >= 5 && y % 2 === 0)) continue;
+          px(x, y, mix('#fde047', '#f97316', (y - 2) / 5));
+        }
+        for (let x = 0; x < W; x++) px(x, 8, '#f0abfc');
+        for (let y = 9; y < H; y++) for (let x = 0; x < W; x++) px(x, y, '#1a0533');
+        // líneas horizontales que vienen hacia ti (cada vez más separadas)
+        // líneas que salen del horizonte
+        for (let y = 9; y < H; y++) [-9, -3, 3, 9].forEach(s => { const x = Math.round(4.5 + s * (y - 8) / 9 - 0.5); if (x >= 0 && x < W) px(x, y, '#86198f'); });
+        [0, 1, 2].forEach(k => { const p = ((k * 16 / 3 + f) % 16) / 16; const y = 9 + Math.round(p * p * 7); if (y < H) for (let x = 0; x < W; x++) px(x, y, '#e879f9'); });
+      }
+    },
+    {
+      // Circuito: pistas de una placa por las que corren chispas de luz
+      id: 'circuit', name: 'Circuito', rarity: 'epic', frames: 20, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x + y * 3) % 7 === 0 ? '#065f46' : '#064e3b');
+        const paths = [
+          [[1, 0], [1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [2, 7], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], [2, 11], [3, 11], [3, 12], [3, 13], [3, 14], [3, 15]],
+          [[8, 0], [8, 1], [7, 1], [6, 1], [6, 2], [6, 3], [6, 4], [7, 4], [8, 4], [8, 5], [8, 6], [8, 7], [8, 8], [7, 8], [6, 8], [6, 9], [6, 10], [6, 11], [6, 12], [7, 12], [8, 12], [8, 13], [8, 14], [8, 15]],
+          [[0, 5], [1, 5], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10], [4, 10], [4, 11], [4, 12], [5, 13], [6, 14], [6, 15]]
+        ];
+        paths.forEach(p => p.forEach(([x, y]) => px(x, y, '#10b981')));
+        [[3, 5], [6, 4], [5, 10], [1, 9], [8, 13]].forEach(([x, y]) => px(x, y, '#d1fae5'));
+        paths.forEach((p, i) => {
+          const head = (f * 2 + i * 7) % (p.length + 6);
+          for (let k = 0; k < 3; k++) { const q = p[head - k]; if (q) px(q[0], q[1], k ? '#6ee7b7' : '#ecfdf5'); }
+        });
+      }
+    },
+    {
+      // Eclipse: el sol tapado, con una corona de luz que gira y llamaradas
+      id: 'eclipse', name: 'Eclipse', rarity: 'epic', frames: 20, fps: 10,
+      draw(px, f) {
+        const t = f / 20 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = (y - 7.5) * 0.85, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+          let c = (x * 5 + y * 3) % 23 === 0 ? '#57534e' : '#0c0a09';
+          if (d < 2.6) c = '#000000';
+          else {
+            const flare = Math.max(0, Math.sin(a * 3 + t)) * 1.6 + Math.max(0, Math.sin(a * 5 - t * 2)) * 0.8;
+            const k = (flare + 1.4) - (d - 2.6);
+            if (k > 1.9) c = '#fffbeb'; else if (k > 1.2) c = '#fde047'; else if (k > 0.5) c = '#f97316'; else if (k > -0.2) c = '#7c2d12';
+          }
+          px(x, y, c);
+        }
+      }
+    },
+    {
+      // Remolino: anillos de color que giran hacia dentro, hipnóticos
+      id: 'vortex', name: 'Remolino', rarity: 'epic', frames: 16, fps: 10,
+      draw(px, f) {
+        const cols = ['#c026d3', '#7e22ce', '#4338ca', '#0e7490', '#4338ca', '#7e22ce'];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = (y - 7.5) * 0.7, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+          const band = Math.floor(((d * 1.3 + a / TAU * 6 - f * 6 / 16) % 6 + 6) % 6);
+          px(x, y, d < 0.9 ? '#f5d0fe' : cols[band]);
+        }
+      }
+    },
+    {
+      // Medusa: una medusa que brilla y late en el fondo del mar
+      id: 'jelly', name: 'Medusa', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU;
+        const bg = vgrad('#083344', '#020617');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const pulse = Math.sin(t) > 0 ? 1 : 0, top = 3 - pulse;
+        const bell = pulse ? [[2, 7], [1, 8], [1, 8], [2, 7]] : [[3, 6], [2, 7], [1, 8], [1, 8]];
+        bell.forEach(([a, b], r) => { for (let x = a; x <= b; x++) px(x, top + r, r === 0 ? '#f0abfc' : (x + r) % 3 === 0 ? '#e879f9' : '#c084fc'); });
+        px(3, top + 1, '#fdf4ff'); px(4, top + 1, '#fae8ff');
+        [2, 4, 5, 7].forEach((x, i) => {
+          for (let k = 0; k < 6 + (i % 2) * 2; k++) {
+            const y = top + 4 + k, xx = x + Math.round(Math.sin(t + k * 0.8 + i) * 0.7);
+            if (y < H) px(Math.max(0, Math.min(9, xx)), y, k % 2 ? '#a5f3fc' : '#67e8f9');
+          }
+        });
+        [[0, 3], [9, 9], [1, 13]].forEach(([x, ph]) => { const y = 15 - ((f + ph) % 16); px(x, y, '#155e75'); });
+      }
+    },
+    {
+      // Reloj de arena: la arena cae de arriba abajo y vuelve a empezar
+      id: 'hourglass', name: 'Reloj de arena', rarity: 'epic', frames: 24, fps: 8,
+      draw(px, f) {
+        const bg = vgrad('#3b0764', '#1e1b4b');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 1; x <= 8; x++) { px(x, 1, '#fbbf24'); px(x, 14, '#fbbf24'); }
+        const glass = [[2, 1, 8], [3, 1, 8], [4, 2, 7], [5, 3, 6], [6, 3, 6], [7, 4, 5], [8, 4, 5], [9, 3, 6], [10, 3, 6], [11, 2, 7], [12, 1, 8], [13, 1, 8]];
+        const k = Math.min(1, f / 21);
+        glass.forEach(([y, a, b]) => {
+          for (let x = a; x <= b; x++) {
+            let c = (x === a || x === b) ? '#e0f2fe' : '#1e293b';
+            const topLvl = 2 + Math.round(k * 5), botLvl = 13 - Math.round(k * 5);
+            if (y < 7 && y >= topLvl && x > a && x < b) c = '#fcd34d';
+            if (y > 8 && y >= botLvl && x > a && x < b) c = '#f59e0b';
+            px(x, y, c);
+          }
+        });
+        if (f < 22) for (let y = 7; y <= 12; y++) if ((y + f) % 2 === 0) px(4 + (y % 2), y, '#fde68a');
+        if (f >= 22) { px(4, 8, '#fef3c7'); px(5, 7, '#fef3c7'); }
+      }
+    },
+    {
+      // Calavera: una calavera con los ojos encendidos y humo
+      id: 'skull', name: 'Calavera', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const bg = vgrad('#1c1917', '#000000');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const skull = ['..XXXXXX..', '.XXXXXXXX.', 'XXXXXXXXXX', 'XXEEXXEEXX', 'XXEEXXEEXX', 'XXXXNNXXXX', '.XXXXXXXX.', '..XTXTXT..', '..XXXXXX..'];
+        const eye = ['#22c55e', '#4ade80', '#a855f7', '#c084fc'][Math.floor(f / 4) % 4];
+        skull.forEach((row, r) => [...row].forEach((c, x) => {
+          const y = 3 + r;
+          if (c === 'X') px(x, y, r < 2 || x < 2 ? '#f5f5f4' : '#e7e5e4');
+          if (c === 'E') px(x, y, f % 8 === 7 ? '#14532d' : eye);
+          if (c === 'N') px(x, y, '#292524');
+          if (c === 'T') px(x, y, '#44403c');
+        }));
+        [[2, 0], [7, 5], [4, 10]].forEach(([x, ph]) => { const k = (f + ph) % 16; const y = 2 - Math.floor(k / 5); if (y >= 0) px(x + (k % 4 < 2 ? 0 : 1), y, '#57534e'); });
+        [[1, 14], [8, 13]].forEach(([x, y]) => px(x, y, '#292524'));
+      }
+    },
+    {
+      // Koi: dos peces koi que dan vueltas en un estanque
+      id: 'koi', name: 'Koi', rarity: 'epic', frames: 24, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, (x * 3 + y * 5 + f) % 13 === 0 ? '#0891b2' : mix('#0e7490', '#164e63', y / 15));
+        [[1, 2], [2, 2], [1, 3], [2, 3], [3, 3]].forEach(([x, y]) => px(x, y, '#16a34a'));
+        px(8, 12, '#15803d'); px(7, 12, '#16a34a'); px(8, 13, '#16a34a'); px(7, 13, '#22c55e'); px(8, 11, '#f9a8d4');
+        const fish = (ph, body, spot) => {
+          for (let k = 0; k < 4; k++) {
+            const a = (f / 24 + ph) * TAU - k * 0.32;
+            const x = Math.round(4.5 + Math.cos(a) * 3), y = Math.round(7.5 + Math.sin(a) * 4.5);
+            px(x, y, k === 0 ? '#ffffff' : k === 3 ? mix(body, '#ffffff', 0.4) : k === 1 ? spot : body);
+          }
+        };
+        fish(0, '#f97316', '#ffffff'); fish(0.5, '#fafafa', '#ef4444');
+      }
+    },
+    {
+      // Setas mágicas: setas que brillan en el bosque y sueltan esporas
+      id: 'shrooms', name: 'Setas mágicas', rarity: 'epic', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU, glow = (Math.sin(t) + 1) / 2;
+        const bg = vgrad('#0b1120', '#052e16');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) { px(x, 15, '#14532d'); px(x, 14, x % 3 ? '#166534' : '#14532d'); }
+        const shroom = (x0, y0, w, cap, dot) => {
+          for (let y = y0 + 2; y < 14; y++) px(x0 + Math.floor(w / 2), y, '#f5f5f4');
+          for (let dx = 0; dx < w; dx++) { px(x0 + dx, y0 + 1, mix(cap, '#ffffff', glow * 0.25)); if (dx > 0 && dx < w - 1) px(x0 + dx, y0, mix(cap, '#ffffff', glow * 0.4)); }
+          px(x0 + 1, y0 + 1, dot);
+        };
+        shroom(0, 6, 5, '#22d3ee', '#ecfeff'); shroom(5, 9, 4, '#c084fc', '#faf5ff'); shroom(6, 3, 3, '#f472b6', '#fdf2f8');
+        [[1, 0, '#67e8f9'], [7, 5, '#e9d5ff'], [3, 9, '#a5f3fc'], [8, 12, '#fbcfe8']].forEach(([x, ph, c]) => {
+          const y = 12 - ((f + ph) % 16) * 12 / 16, ry = Math.round(y);
+          px(x + (Math.floor((f + ph) / 3) % 2), ry, c);
+        });
+      }
+    },
+    {
+      // Glitch: una imagen que se rompe en franjas de colores, como una pantalla estropeada
+      id: 'glitch', name: 'Glitch', rarity: 'epic', frames: 12, fps: 10,
+      draw(px, f) {
+        const rnd = (n) => { const s = Math.sin(n * 127.1 + f * 311.7) * 43758.5453; return s - Math.floor(s); };
+        for (let y = 0; y < H; y++) {
+          const bad = rnd(y) > 0.72, shift = bad ? Math.floor(rnd(y + 50) * 5) - 2 : 0;
+          for (let x = 0; x < W; x++) {
+            const sx = x - shift;
+            let c = mix('#1e1b4b', '#0f172a', y / 15);
+            if (sx >= 2 && sx <= 7 && y >= 4 && y <= 11) c = (sx + y) % 3 ? '#ec4899' : '#f472b6';
+            if (sx >= 3 && sx <= 6 && y >= 6 && y <= 9) c = '#22d3ee';
+            if (bad && rnd(x + y * 10) > 0.6) c = rnd(x * 3 + y) > 0.5 ? '#00ffaa' : '#ff2a6d';
+            px(x, y, c);
+          }
+        }
+        if (f % 6 === 0) for (let x = 0; x < W; x++) px(x, Math.floor(rnd(99) * 16), '#f8fafc');
+      }
+    },
+    // ---------------------------------------------------------------- raras
+    {
+      // Luciérnagas: lucecitas que se encienden y se apagan sobre la hierba de noche
+      id: 'fireflies', name: 'Luciérnagas', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#0b1a33', '#052e16');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) { const h = 13 - ((x * 5) % 3); for (let y = h; y < H; y++) px(x, y, y === h ? '#166534' : '#14532d'); }
+        [[1, 4, 0], [7, 3, 6], [4, 7, 12], [8, 9, 3], [2, 10, 15], [6, 12, 9], [5, 2, 17]].forEach(([x, y, p]) => {
+          const k = (f + p) % 20;
+          const dy = Math.round(Math.sin((f + p) * 0.5) * 0.6);
+          if (k < 9) { px(x, y + dy, k > 2 && k < 7 ? '#fef08a' : '#a3e635'); if (k > 2 && k < 7) { px(x - 1, y + dy, '#1a3d12'); px(x + 1, y + dy, '#1a3d12'); } }
+        });
+      }
+    },
+    {
+      // Lluvia: gotas que caen y salpican
+      id: 'rain', name: 'Lluvia', rarity: 'rare', frames: 16, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#64748b', '#1e293b');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) px(x, 15, '#334155');
+        [[0, 3], [2, 11], [3, 6], [5, 0], [6, 9], [8, 14], [9, 4], [4, 13], [7, 1]].forEach(([x, ph]) => {
+          const y = (f * 2 + ph) % 18 - 2;
+          if (y >= 0 && y < 15) px(x, y, '#bfdbfe');
+          if (y - 1 >= 0 && y - 1 < 15) px(x, y - 1, '#7dd3fc');
+          if (y === 15 || y === 16) { px(Math.max(0, x - 1), 14, '#93c5fd'); px(Math.min(9, x + 1), 14, '#93c5fd'); }
+        });
+      }
+    },
+    {
+      // Otoño: hojas naranjas, rojas y amarillas que caen meciéndose
+      id: 'autumn', name: 'Otoño', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#7c2d12', '#2a1206');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) { px(x, 15, x % 2 ? '#c2410c' : '#ea580c'); if (x % 3 === 0) px(x, 14, '#f59e0b'); }
+        [[1, 0, '#f97316'], [4, 5, '#dc2626'], [7, 11, '#facc15'], [2, 15, '#ea580c'], [8, 3, '#fbbf24'], [5, 8, '#ef4444']].forEach(([x, ph, c]) => {
+          const t = (f + ph) % 20, y = Math.round(t * 14 / 20);
+          const sx = Math.round(x + Math.sin((f + ph) * 0.55) * 1.3);
+          const xx = Math.max(0, Math.min(9, sx));
+          px(xx, y, c); if (xx < 9 && t % 4 < 2) px(xx + 1, y, mix(c, '#000000', 0.25));
+        });
+      }
+    },
+    {
+      // Calabaza: una calabaza tallada con la luz de dentro que tiembla
+      id: 'pumpkin', name: 'Calabaza', rarity: 'rare', frames: 12, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#1e1b4b', '#0c0a09');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        px(8, 1, '#fef9c3'); px(1, 2, '#c7d2fe');
+        const rows = [[4, 3, 6], [5, 2, 7], [6, 1, 8], [7, 1, 8], [8, 1, 8], [9, 1, 8], [10, 1, 8], [11, 1, 8], [12, 2, 7], [13, 3, 6]];
+        rows.forEach(([y, a, b]) => { for (let x = a; x <= b; x++) px(x, y, x === 3 || x === 6 ? '#c2410c' : y > 11 ? '#ea580c' : '#f97316'); });
+        px(5, 3, '#15803d'); px(5, 2, '#166534'); px(6, 2, '#16a34a');
+        const glow = [0, 1, 4, 5, 8].includes(f) ? '#fde047' : f % 3 ? '#fb923c' : '#facc15';
+        [[3, 7], [2, 8], [3, 8], [6, 7], [6, 8], [7, 8], [2, 10], [4, 10], [6, 10], [7, 10], [3, 11], [4, 11], [5, 11], [6, 11]].forEach(([x, y]) => px(x, y, glow));
+      }
+    },
+    {
+      // Caramelo: rayas rojas y blancas que bajan en diagonal
+      id: 'candy', name: 'Caramelo', rarity: 'rare', frames: 16, fps: 8,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const k = (x + y + 16 - f) % 4;
+          px(x, y, k < 2 ? (k ? '#dc2626' : '#ef4444') : (k === 2 ? '#fff1f2' : '#fecdd3'));
+        }
+      }
+    },
+    {
+      // Música: un ecualizador que salta y notas que suben
+      id: 'music', name: 'Música', rarity: 'rare', frames: 16, fps: 8,
+      draw(px, f) {
+        const t = f / 16 * TAU;
+        const bg = vgrad('#4c1d95', '#0f0a2e');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) {
+          const h = 2 + Math.round(2.5 * (Math.sin(x * 1.7 + t * 2) + 1) + (x % 3 === 1 ? 1 : 0));
+          for (let k = 0; k < h; k++) px(x, 15 - k, mix('#22d3ee', '#f472b6', k / 6));
+        }
+        [[2, 0], [7, 8]].forEach(([x, ph]) => {
+          const y = 8 - ((f + ph) % 16) / 2, ry = Math.round(y);
+          if (ry < 1) return;
+          px(x, ry, '#fef3c7'); px(x - 1, ry, '#fef3c7'); px(x, ry - 1, '#fde68a'); px(x, ry - 2, '#fde68a'); px(x + 1, ry - 2, '#fde68a');
+        });
+      }
+    },
+    {
+      // Gato: una carita de gato que parpadea y mueve los bigotes
+      id: 'cat', name: 'Gato', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const bg = vgrad('#312e81', '#1e1b4b');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        [[1, 3], [8, 3], [1, 4], [2, 4], [7, 4], [8, 4]].forEach(([x, y]) => px(x, y, '#f97316'));
+        px(1, 4, '#fda4af'); px(8, 4, '#fda4af');
+        for (let y = 5; y <= 12; y++) for (let x = 1; x <= 8; x++) {
+          if ((y === 12) && (x === 1 || x === 8)) continue;
+          px(x, y, y > 9 && x > 2 && x < 7 ? '#fed7aa' : (x + y) % 4 === 0 && y < 8 ? '#ea580c' : '#f97316');
+        }
+        const blink = f === 14 || f === 15;
+        [[3, 7], [6, 7]].forEach(([x, y]) => { if (blink) px(x, y, '#9a3412'); else { px(x, y, '#22c55e'); px(x, y - 1, '#bbf7d0'); } });
+        px(4, 9, '#f472b6'); px(5, 9, '#f472b6'); px(4, 10, '#9a3412'); px(5, 10, '#9a3412');
+        const w = f % 10 < 5 ? 0 : 1;
+        px(0, 9 + w, '#fef3c7'); px(9, 9 + w, '#fef3c7'); px(0, 10 - w, '#fef3c7'); px(9, 10 - w, '#fef3c7');
+        px(2, 14, '#fef3c7'); px(7, 1, '#fef3c7');
+      }
+    },
+    {
+      // Luna: la luna pasa por todas sus fases sobre unas colinas
+      id: 'moon', name: 'Luna', rarity: 'rare', frames: 20, fps: 5,
+      draw(px, f) {
+        const bg = vgrad('#0f172a', '#1e1b4b');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        const sh = -7 + f * 14 / 19;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const d = Math.hypot(x - 4.5, y - 5.5);
+          if (d > 3.2) continue;
+          const dark = Math.hypot(x - 4.5 - sh, y - 5.5) < 3.2;
+          px(x, y, dark ? '#1e293b' : (x + y) % 5 === 0 ? '#e2e8f0' : '#f8fafc');
+        }
+        [[1, 1], [8, 2], [0, 9], [9, 8]].forEach(([x, y], i) => { if ((f + i * 3) % 6 < 4) px(x, y, '#e0e7ff'); });
+        for (let x = 0; x < W; x++) { const h = 12 + Math.round(Math.sin(x * 0.8) * 1.2); for (let y = h; y < H; y++) px(x, y, y === h ? '#1f2937' : '#111827'); }
+      }
+    },
+    {
+      // Nubes: cielo azul con nubes que pasan y un sol
+      id: 'clouds', name: 'Nubes', rarity: 'rare', frames: 20, fps: 6,
+      draw(px, f) {
+        const bg = vgrad('#0ea5e9', '#bae6fd');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        px(7, 1, '#fde047'); px(8, 1, '#fde047'); px(7, 2, '#facc15'); px(8, 2, '#fde047');
+        const cloud = (cx, cy) => [[0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1], [1, -1]].forEach(([dx, dy]) => {
+          const x = ((Math.round(cx) + dx) % 14 + 14) % 14 - 2;
+          if (x >= 0 && x < W) px(x, cy + dy, dy === 1 ? '#e0f2fe' : '#ffffff');
+        });
+        cloud(f * 14 / 20, 5); cloud(f * 14 / 20 + 7, 10); cloud(Math.round(f * 7 / 20) + 3, 14);
+      }
+    },
+    {
+      // Girasol: un girasol que se mece con el viento
+      id: 'sunflower', name: 'Girasol', rarity: 'rare', frames: 16, fps: 8,
+      draw(px, f) {
+        const sway = Math.round(Math.sin(f / 16 * TAU));
+        const bg = vgrad('#38bdf8', '#e0f2fe');
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) px(x, y, bg(y));
+        for (let x = 0; x < W; x++) { px(x, 15, '#65a30d'); if (x % 2) px(x, 14, '#84cc16'); }
+        for (let y = 8; y < 15; y++) px(y < 11 ? 4 + (sway > 0 ? 1 : 0) : 4, y, '#15803d');
+        px(3, 11, '#16a34a'); px(2, 10, '#22c55e'); px(5, 12, '#16a34a'); px(6, 11, '#22c55e');
+        const cx = 4 + sway, cy = 5;
+        [[0, -2], [1, -2], [-1, -1], [2, -1], [-2, 0], [3, 0], [-2, 1], [3, 1], [-1, 2], [2, 2], [0, 3], [1, 3]].forEach(([dx, dy]) => {
+          const x = cx + dx; if (x >= 0 && x < W) px(x, cy + dy, (dx + dy) % 2 ? '#facc15' : '#fde047');
+        });
+        [[0, -1], [1, -1], [-1, 0], [2, 0], [-1, 1], [2, 1], [0, 2], [1, 2]].forEach(([dx, dy]) => { const x = cx + dx; if (x >= 0 && x < W) px(x, cy + dy, '#f59e0b'); });
+        [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([dx, dy]) => px(cx + dx, cy + dy, (dx + dy) % 2 ? '#78350f' : '#451a03'));
+      }
+    },
+    {
+      // Radar: un barrido verde que gira y descubre puntos
+      id: 'radar', name: 'Radar', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        const sweep = f / 20 * TAU;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const dx = x - 4.5, dy = y - 7.5, d = Math.hypot(dx, dy);
+          let a = Math.atan2(dy, dx) + Math.PI / 2; a = ((sweep - a) % TAU + TAU) % TAU;
+          let c = '#021a12';
+          if (Math.abs(d - 2.2) < 0.45 || Math.abs(d - 4.4) < 0.45) c = '#064e3b';
+          if (a < 1.4 && d < 6.5) c = mix(c, '#22c55e', (1 - a / 1.4) * 0.85);
+          px(x, y, c);
+        }
+        [[2, 4, 0.9], [7, 10, 3.2], [6, 3, 5.1]].forEach(([x, y, ang]) => {
+          let since = ((sweep - ang) % TAU + TAU) % TAU;
+          if (since < 2.4) px(x, y, since < 0.5 ? '#bbf7d0' : '#4ade80');
+        });
+        px(4, 7, '#86efac'); px(5, 8, '#86efac');
+      }
+    },
+    {
+      // Abeja: una abeja que vuela en ochos sobre un panal
+      id: 'bee', name: 'Abeja', rarity: 'rare', frames: 20, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const hx = (x + (Math.floor(y / 3) % 2 ? 2 : 0)) % 4, line = y % 3 === 2 || hx === 3;
+          px(x, y, line ? '#92400e' : (x * 3 + y) % 5 === 0 ? '#fbbf24' : '#f59e0b');
+        }
+        const t = f / 20 * TAU;
+        const bx = Math.round(4 + Math.sin(t) * 3), by = Math.round(7 + Math.sin(t * 2) * 3);
+        const wing = f % 2 ? '#f8fafc' : '#e0f2fe';
+        px(bx, by - 1, wing); px(bx + 1, by - 1, wing); if (f % 2) { px(bx, by - 2, '#ffffff'); px(bx + 1, by - 2, '#ffffff'); }
+        px(bx - 1, by, '#111827'); px(bx, by, '#facc15'); px(bx + 1, by, '#111827'); px(bx + 2, by, '#facc15');
+        px(bx - 1, by + 1, '#facc15'); px(bx, by + 1, '#111827'); px(bx + 1, by + 1, '#facc15'); px(bx + 2, by + 1, '#111827');
+        px(bx + 3, by, '#111827');
+      }
+    },
+    // ---------------------------------------------------------------- comunes (con un brillo que las recorre)
+    ...[
+      ['red', 'Rojo', (x, y) => (x === 0 || x === 9 || y === 0 || y === 15 ? '#7f1d1d' : mix('#ef4444', '#b91c1c', y / 15))],
+      ['blue', 'Azul', (x, y) => (x === 0 || x === 9 || y === 0 || y === 15 ? '#1e3a8a' : mix('#60a5fa', '#1d4ed8', y / 15))],
+      ['green', 'Verde', (x, y) => (x === 0 || x === 9 || y === 0 || y === 15 ? '#14532d' : mix('#4ade80', '#15803d', y / 15))],
+      ['black', 'Negro', (x, y) => (x === 0 || x === 9 || y === 0 || y === 15 ? '#52525b' : mix('#27272a', '#09090b', y / 15))],
+      ['white', 'Blanco', (x, y) => (x === 0 || x === 9 || y === 0 || y === 15 ? '#a1a1aa' : mix('#ffffff', '#d4d4d8', y / 15))],
+      ['sailor', 'Marinero', (x, y) => (y % 4 < 2 ? '#1e3a8a' : '#f8fafc')],
+      ['checker', 'Ajedrez', (x, y) => (((x >> 1) + (y >> 1)) % 2 ? '#18181b' : '#f4f4f5')],
+      ['duo', 'Dúo', (x, y) => (x < 5 ? mix('#f472b6', '#db2777', y / 15) : mix('#22d3ee', '#0891b2', y / 15))],
+      ['dots', 'Lunares', (x, y) => ((x + (y % 8 < 4 ? 0 : 2)) % 4 === 1 && y % 4 === 1 ? '#f5f3ff' : '#7c3aed')],
+      ['fade', 'Degradado', (x, y) => mix('#f472b6', '#fb923c', y / 15)],
+      ['grass', 'Hierba', (x, y) => {
+        const h = (x * 7 + y * 13) % 5;
+        if (y < 3 || (y === 3 && x % 3 === 0)) return h ? '#4ade80' : '#16a34a';
+        return h === 0 ? '#a16207' : h === 1 ? '#78350f' : '#92400e';
+      }],
+      ['stone', 'Piedra', (x, y) => ['#a1a1aa', '#71717a', '#8b8b94', '#52525b', '#9ca3af'][(x * 7 + y * 11 + (x * y) % 3) % 5]],
+      ['wood', 'Madera', (x, y) => {
+        if (y % 4 === 3) return '#713f12';
+        const plank = Math.floor(y / 4) % 2, grain = (x * 3 + y * 5) % 7 === 0;
+        return grain ? '#854d0e' : plank ? '#b45309' : '#a16207';
+      }],
+      ['brick', 'Ladrillos', (x, y) => {
+        const row = Math.floor(y / 3);
+        if (y % 3 === 2 || x % 5 === (row % 2 ? 2 : 4)) return '#d6d3d1';
+        return (x + row) % 3 ? '#b91c1c' : '#991b1b';
+      }]
+    ].map(([id, name, base]) => ({
+      id, name, rarity: 'common', frames: 20, fps: 10,
+      draw(px, f) {
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const c = base(x, y);
+          px(x, y, (x + y + 40 - f * 2) % 40 < 2 ? mix(c, '#ffffff', 0.32) : c);
+        }
+      }
+    })),
     {
       id: 'pink', name: 'Kopi Rosa', rarity: 'common', frames: 1, fps: 1,
       draw(px) {
