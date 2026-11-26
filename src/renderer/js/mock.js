@@ -102,7 +102,7 @@
       };
     })(),
     spin: {
-      get: () => wait({ ready: !mockSpin.next || Date.now() >= mockSpin.next, next: mockSpin.next, now: Date.now(), odds: [['none', 35], ['rare', 33], ['epic', 22], ['legendary', 10]], left: 31, total: 38, recent: mockSpin.recent }),
+      get: () => wait({ ready: !mockSpin.next || Date.now() >= mockSpin.next, next: mockSpin.next, now: Date.now(), odds: [['none', 45], ['rare', 42], ['epic', 10], ['legendary', 3]], left: 31, total: 38, recent: mockSpin.recent }),
       go: () => {
         const tier = q.get('spin') || 'legendary';
         const prizes = { legendary: { kind: 'cape', id: 'phoenix', rarity: 'legendary' }, epic: { kind: 'frame', id: 'fire', rarity: 'epic' }, rare: { kind: 'bg', id: 'sakura', rarity: 'rare' }, none: null };

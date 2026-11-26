@@ -46,7 +46,7 @@
 
     function render() {
       const ready = st && st.ready;
-      const odds = st ? st.odds : [['none', 35], ['rare', 33], ['epic', 22], ['legendary', 10]];
+      const odds = st ? st.odds : [['none', 45], ['rare', 42], ['epic', 10], ['legendary', 3]];
       root.innerHTML = html`<div class="page sp-page">
         <div class="page-head"><h1 class="title">${t('Ruleta diaria')}</h1></div>
         <div class="sp-grid">

@@ -11,7 +11,7 @@ import { checkOwner } from './capes.js';
 import { ownedLooks } from './looks.js';
 
 const CAPES = globalThis.KopiCapeArt, LOOKS = globalThis.KopiCosmetics;
-export const SPIN_ODDS = [['none', 35], ['rare', 33], ['epic', 22], ['legendary', 10]]; // %, suman 100
+export const SPIN_ODDS = [['none', 45], ['rare', 42], ['epic', 10], ['legendary', 3]]; // %, suman 100
 const NO_CAPES = new Set(['tachamanika']); // capas de una persona: no salen en la ruleta
 const MIN_GAP = 6 * 3600e3;
 const TIERS = ['legendary', 'epic', 'rare'];

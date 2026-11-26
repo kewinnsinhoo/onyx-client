@@ -437,7 +437,7 @@ Para que se cuenten solos:
 ## Ruleta diaria (desde la 1.8.16)
 
 - En el launcher: menú → **Ruleta diaria** (un puntito dorado en tu cara cuando está lista). Una tirada por día del jugador (según su zona horaria) y como mínimo 6 h entre una y otra.
-- Probabilidades (en `panel/src/spin.js`, `SPIN_ODDS`): 35 % «¡Casi!» (nada), 33 % rara, 22 % épica, 10 % legendaria. Se enseñan en la ruleta.
+- Probabilidades (en `panel/src/spin.js`, `SPIN_ODDS`): 45 % «¡Casi!» (nada), 42 % rara, 10 % épica, 3 % legendaria (bajadas el 25-11-2026; antes 35/33/22/10). Se enseñan en la ruleta.
 - El premio lo decide el panel: una capa, un marco o un fondo **que el jugador no tenga** de esa rareza (si ya los tiene todos, baja de rareza). Nunca salen los exclusivos: TACHAMANIKA, los gratis ni los de insignia (Creador, Trono, Equipo Kopi). Las comunes cuentan como raras.
 - Lo ganado se guarda como si fuera un regalo con «por Ruleta» (se ve en el panel, en Capas de Kopi y en Marcos y fondos). Tabla `spins`; rutas `GET/POST /api/l/spin`.
 - Para cambiar las probabilidades o quitar algo de la ruleta: `SPIN_ODDS` y `NO_CAPES` en `panel/src/spin.js`.
